@@ -78,6 +78,44 @@ public struct OpenRouterClient: LLMClient {
         return LLMResponse(text: text, model: reply.model, usage: usage)
     }
 
+    /// One entry from OpenRouter's public model catalog.
+    public struct ModelInfo: Identifiable, Hashable, Sendable {
+        public var id: String
+        public var name: String
+        /// USD per million tokens.
+        public var inputPrice: Double?
+        public var outputPrice: Double?
+        public var contextLength: Int?
+    }
+
+    /// OpenRouter's full, live model list. Public; no key required.
+    public static func models(session: URLSession = .shared) async throws -> [ModelInfo] {
+        struct Body: Decodable {
+            struct Model: Decodable {
+                struct Pricing: Decodable { var prompt: String?; var completion: String? }
+                var id: String
+                var name: String?
+                var pricing: Pricing?
+                var context_length: Int?
+            }
+            var data: [Model]
+        }
+        let (data, response) = try await session.data(from: URL(string: "https://openrouter.ai/api/v1/models")!)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else { throw error(status: status, data: data) }
+        func perMillion(_ s: String?) -> Double? { s.flatMap(Double.init).flatMap { $0 >= 0 ? $0 * 1_000_000 : nil } }
+        return try JSONDecoder().decode(Body.self, from: data).data.map {
+            ModelInfo(id: $0.id, name: displayName($0.name ?? $0.id), inputPrice: perMillion($0.pricing?.prompt),
+                      outputPrice: perMillion($0.pricing?.completion), contextLength: $0.context_length)
+        }
+    }
+
+    /// "Meta: Muse Spark 1.3 Contributor" → "Muse Spark 1.3 Contributor".
+    public static func displayName(_ name: String) -> String {
+        guard let colon = name.firstIndex(of: ":") else { return name }
+        return name[name.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+    }
+
     /// Cheap call used by Settings → "Test Key".
     public func verifyKey() async throws {
         guard !apiKey.isEmpty else { throw ClientError.missingKey }

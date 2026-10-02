@@ -184,10 +184,7 @@ final class GameModel {
 
     // MARK: - Generation
 
-    var lineupModel: String {
-        let stored = UserDefaults.standard.string(forKey: AppSettings.lineupModelKey) ?? ""
-        return stored.isEmpty ? OpenRouterClient.defaultLineupModel : stored
-    }
+    var lineupModel: String { ModelLibrary.shared.selectedID }
 
     /// One click: batting order, then defense.
     func generate(battingToo: Bool = true, feedback: String? = nil, undoManager: UndoManager?) {

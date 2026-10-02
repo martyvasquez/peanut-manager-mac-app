@@ -33,6 +33,7 @@ struct ContentView: View {
     @State private var selectedPlayer: Player?
     @State private var selectedRuleSet: RuleSet?
     @State private var showingNewTeam = false
+    @Environment(\.openSettings) private var openSettings
 
     private var team: Team? {
         teams.first { $0.uid.uuidString == selectedTeamID } ?? teams.first
@@ -60,6 +61,7 @@ struct ContentView: View {
             } else if DebugSupport.seedSample, selectedGame == nil {
                 selectedGame = team?.games.sorted { $0.date < $1.date }.last
             }
+            if UserDefaults.standard.bool(forKey: "PMOpenSettings") { openSettings() }
             if let open = UserDefaults.standard.string(forKey: "PMSection"), let target = SidebarSection(rawValue: open) {
                 section = target
                 selectedPlayer = team?.activePlayers.dropFirst(7).first

@@ -192,6 +192,7 @@ struct GameDetailView: View {
                 inningsMenu
                 priorityMenu
                 trustMenu
+                ModelMenu()
             }
             TextField("Notes", text: $game.notesForAI, axis: .vertical)
                 .textFieldStyle(.plain)
@@ -309,6 +310,26 @@ struct GameDetailView: View {
                 Label("More", systemImage: "ellipsis")
             }
         }
+    }
+}
+
+/// Which AI makes the lineup. Lists the models pinned in Settings → Models.
+struct ModelMenu: View {
+    @State private var library = ModelLibrary.shared
+
+    var body: some View {
+        Menu {
+            Picker("Model", selection: $library.selectedID) {
+                ForEach(library.models) { Text($0.name).tag($0.id) }
+            }
+            .pickerStyle(.inline)
+            Divider()
+            SettingsLink { Text("More Models…") }
+        } label: {
+            Chip(library.selected.name, symbol: "sparkles")
+        }
+        .menuStyle(.button).buttonStyle(.plain).fixedSize()
+        .help("The AI that makes this lineup")
     }
 }
 
