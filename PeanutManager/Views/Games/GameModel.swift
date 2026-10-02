@@ -103,6 +103,8 @@ final class GameModel {
 
     // MARK: - Edits (undoable)
 
+    /// `change` must only use its `doc` argument. Reading `document` (or anything derived from it, like
+    /// `context` or `rows`) inside the closure is a Swift exclusivity violation and aborts the app.
     func mutate(_ actionName: String, undoManager: UndoManager?, _ change: (inout LineupDocument) -> Void) {
         let before = document
         change(&document)
@@ -148,15 +150,22 @@ final class GameModel {
         }
     }
 
+    /// The full batting order: the saved order plus anyone here who isn't in it yet.
+    /// Computed *before* `mutate`: reading `document` inside a mutate closure is an exclusivity
+    /// violation (the document is already being written) and crashes the app.
+    private func fullBattingOrder() -> [PlayerID] {
+        let ctx = context
+        var order = document.lineup.battingOrder
+        for id in rows.map(\.id) where !order.contains(id) && ctx.availability(of: id).present { order.append(id) }
+        return order.filter { ctx.availability(of: $0).present }
+    }
+
     func moveBatter(_ player: PlayerID, by offset: Int, undoManager: UndoManager?) {
-        mutate("Move in Batting Order", undoManager: undoManager) { doc in
-            var order = doc.lineup.battingOrder
-            for id in rows.map(\.id) where !order.contains(id) && context.availability(of: id).present { order.append(id) }
-            guard let index = order.firstIndex(of: player) else { return }
-            let target = min(max(index + offset, 0), order.count - 1)
-            order.move(fromOffsets: IndexSet(integer: index), toOffset: target > index ? target + 1 : target)
-            doc.lineup.battingOrder = order
-        }
+        var order = fullBattingOrder()
+        guard let index = order.firstIndex(of: player) else { return }
+        let target = min(max(index + offset, 0), order.count - 1)
+        order.move(fromOffsets: IndexSet(integer: index), toOffset: target > index ? target + 1 : target)
+        mutate("Move in Batting Order", undoManager: undoManager) { $0.lineup.battingOrder = order }
     }
 
     /// Opens step 2 with an empty grid so the coach can lock spots before the AI fills the rest.
@@ -188,25 +197,18 @@ final class GameModel {
 
     /// List reordering in the batting order step.
     func moveBatters(fromOffsets source: IndexSet, toOffset destination: Int, undoManager: UndoManager?) {
-        mutate("Move in Batting Order", undoManager: undoManager) { doc in
-            var order = doc.lineup.battingOrder
-            for id in rows.map(\.id) where !order.contains(id) && context.availability(of: id).present { order.append(id) }
-            order = order.filter { context.availability(of: $0).present }
-            order.move(fromOffsets: source, toOffset: destination)
-            doc.lineup.battingOrder = order
-        }
+        var order = fullBattingOrder()
+        order.move(fromOffsets: source, toOffset: destination)
+        mutate("Move in Batting Order", undoManager: undoManager) { $0.lineup.battingOrder = order }
     }
 
     /// Drag and drop: moving down lands below `target`, moving up lands above it.
     func moveBatter(_ player: PlayerID, to target: PlayerID, undoManager: UndoManager?) {
-        mutate("Move in Batting Order", undoManager: undoManager) { doc in
-            var order = doc.lineup.battingOrder
-            for id in rows.map(\.id) where !order.contains(id) && context.availability(of: id).present { order.append(id) }
-            guard let from = order.firstIndex(of: player), let to = order.firstIndex(of: target), from != to else { return }
-            order.remove(at: from)
-            order.insert(player, at: to)
-            doc.lineup.battingOrder = order
-        }
+        var order = fullBattingOrder()
+        guard let from = order.firstIndex(of: player), let to = order.firstIndex(of: target), from != to else { return }
+        order.remove(at: from)
+        order.insert(player, at: to)
+        mutate("Move in Batting Order", undoManager: undoManager) { $0.lineup.battingOrder = order }
     }
 
     func setInnings(_ innings: Int, undoManager: UndoManager?) {
