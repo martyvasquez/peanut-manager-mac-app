@@ -81,6 +81,9 @@ public enum GameChangerImport {
             for position in Position.allCases {
                 if let innings = double(fld, position.rawValue), innings > 0 { f.innings[position] = innings }
             }
+            // Catching block inside the fielding section: INN, PB, SB, SB-ATT, CS…
+            if let i = fld["INN"], i < row.count { f.catcherOuts = PitchingLine.outs(fromIP: row[i].trimmingCharacters(in: .whitespaces)) ?? 0 }
+            f.passedBalls = int(fld, "PB"); f.stolenBasesAllowed = int(fld, "SB"); f.caughtStealing = int(fld, "CS")
 
             var p = PitchingLine()
             if let i = pit["IP"], i < row.count { p.outs = PitchingLine.outs(fromIP: row[i].trimmingCharacters(in: .whitespaces)) ?? 0 }

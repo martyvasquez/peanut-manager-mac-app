@@ -1,0 +1,53 @@
+name: PeanutManager
+options:
+  bundleIdPrefix: com.martyvasquez
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+packages:
+  LineupKit:
+    path: Packages/LineupKit
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "2.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  PeanutManager:
+    type: application
+    platform: macOS
+    sources:
+      - PeanutManager
+    dependencies:
+      - package: LineupKit
+        product: LineupKit
+      - package: LineupKit
+        product: LineupAI
+    info:
+      path: PeanutManager/Info.plist
+      properties:
+        CFBundleName: Peanut Manager
+        CFBundleDisplayName: Peanut Manager
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.sports
+        NSHumanReadableCopyright: AI lineups for youth baseball and softball.
+    settings:
+      base:
+        PRODUCT_NAME: Peanut Manager
+        PRODUCT_MODULE_NAME: PeanutManager
+        PRODUCT_BUNDLE_IDENTIFIER: com.martyvasquez.PeanutManager
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_APP_SANDBOX: NO
+        COMBINE_HIDPI_IMAGES: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+schemes:
+  PeanutManager:
+    build:
+      targets:
+        PeanutManager: all

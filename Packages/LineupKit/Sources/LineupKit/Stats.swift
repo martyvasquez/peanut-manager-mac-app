@@ -20,10 +20,33 @@ public struct BattingLine: Codable, Sendable, Hashable {
 
 public struct FieldingLine: Codable, Sendable, Hashable {
     public var tc = 0, po = 0, a = 0, e = 0, dp = 0
-    /// Innings played at each position (GameChanger's per-position fielding columns).
+    /// Innings played at each position (GameChanger's per-position fielding columns; often all zero).
     public var innings: [Position: Double] = [:]
+    /// Outs caught behind the plate (GameChanger's catching "INN" column), plus catching results.
+    public var catcherOuts = 0
+    public var passedBalls = 0
+    public var stolenBasesAllowed = 0
+    public var caughtStealing = 0
 
     public init() {}
+
+    public var catcherInnings: Double { Double(catcherOuts) / 3 }
+
+    enum CodingKeys: String, CodingKey { case tc, po, a, e, dp, innings, catcherOuts, passedBalls, stolenBasesAllowed, caughtStealing }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        tc = try c.decodeIfPresent(Int.self, forKey: .tc) ?? 0
+        po = try c.decodeIfPresent(Int.self, forKey: .po) ?? 0
+        a = try c.decodeIfPresent(Int.self, forKey: .a) ?? 0
+        e = try c.decodeIfPresent(Int.self, forKey: .e) ?? 0
+        dp = try c.decodeIfPresent(Int.self, forKey: .dp) ?? 0
+        innings = try c.decodeIfPresent([Position: Double].self, forKey: .innings) ?? [:]
+        catcherOuts = try c.decodeIfPresent(Int.self, forKey: .catcherOuts) ?? 0
+        passedBalls = try c.decodeIfPresent(Int.self, forKey: .passedBalls) ?? 0
+        stolenBasesAllowed = try c.decodeIfPresent(Int.self, forKey: .stolenBasesAllowed) ?? 0
+        caughtStealing = try c.decodeIfPresent(Int.self, forKey: .caughtStealing) ?? 0
+    }
 
     public var fpct: Double? { tc > 0 ? Double(po + a) / Double(tc) : nil }
 }

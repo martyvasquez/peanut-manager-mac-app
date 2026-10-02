@@ -294,6 +294,9 @@ public enum Prompts {
         if context.weighting.usesStats, let f = player.stats?.fielding, f.tc > 0 {
             text += "\nGameChanger Stats: FPCT: \(f3(f.fpct)), Errors: \(f.e), TC: \(f.tc)"
         }
+        if context.weighting.usesStats, let f = player.stats?.fielding, f.catcherOuts > 0 {
+            text += "\nCatching Stats: Innings caught: \(String(format: "%.1f", f.catcherInnings)), Passed balls: \(f.passedBalls), SB allowed: \(f.stolenBasesAllowed), CS: \(f.caughtStealing)"
+        }
         if context.weighting.usesStats, let p = player.stats?.pitching, p.outs > 0 {
             text += "\nPitching Stats: IP: \(String(format: "%.1f", p.innings)), ERA: \(f2(p.era)), WHIP: \(f2(p.whip)), K: \(p.so), BB: \(p.bb)"
         }

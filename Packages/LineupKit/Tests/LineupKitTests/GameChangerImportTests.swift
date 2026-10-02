@@ -57,6 +57,13 @@ struct GameChangerImportTests {
         #expect(GameChangerImport.match(rows[3], roster: roster) == .none)
     }
 
+    @Test func readsCatcherInnings() throws {
+        let rows = try GameChangerImport.parse(fixture())
+        let catcher = try #require(rows.first { $0.number == "18" })
+        #expect(catcher.fielding.catcherOuts == 46) // "15.1"
+        #expect(rows.filter { $0.fielding.catcherOuts > 0 }.count == 2)
+    }
+
     @Test func ipConversion() {
         #expect(PitchingLine.outs(fromIP: "12.1") == 37)
         #expect(PitchingLine.outs(fromIP: "0.0") == 0)
