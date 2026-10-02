@@ -259,7 +259,7 @@ struct StatsSummary: View {
                 Text("\(Fmt.rate(f.fpct)) fielding  ·  \(f.e) E")
             }
             if let p = stats.pitching, p.outs > 0 {
-                Text("\(String(format: "%.1f", p.innings)) IP  ·  \(Fmt.two(p.era)) ERA  ·  \(p.so) K  ·  \(p.bb) BB")
+                Text("\(p.ipText) IP  ·  \(Fmt.two(p.era)) ERA  ·  \(p.so) K  ·  \(p.bb) BB")
             }
         }
         .font(.callout.monospacedDigit())

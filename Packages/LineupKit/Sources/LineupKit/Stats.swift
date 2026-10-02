@@ -60,6 +60,8 @@ public struct PitchingLine: Codable, Sendable, Hashable {
     public init() {}
 
     public var innings: Double { Double(outs) / 3 }
+    /// Baseball notation: 10 outs → "3.1" (3⅓ innings).
+    public var ipText: String { "\(outs / 3).\(outs % 3)" }
     public var era: Double? { outs > 0 ? Double(er) * 9 / innings : nil }
     public var whip: Double? { outs > 0 ? Double(bb + h) / innings : nil }
     public var kPerBF: Double? { bf > 0 ? Double(so) / Double(bf) : nil }

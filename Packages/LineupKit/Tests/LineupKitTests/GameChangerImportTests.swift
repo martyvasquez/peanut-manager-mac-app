@@ -68,6 +68,9 @@ struct GameChangerImportTests {
         #expect(PitchingLine.outs(fromIP: "12.1") == 37)
         #expect(PitchingLine.outs(fromIP: "0.0") == 0)
         #expect(PitchingLine.outs(fromIP: "4.3") == nil)
+        var line = PitchingLine()
+        line.outs = 10
+        #expect(line.ipText == "3.1")
     }
 
     @Test func csvHandlesQuotesAndCommas() {

@@ -316,7 +316,7 @@ public enum Prompts {
             text += "\nCatching Stats: Innings caught: \(String(format: "%.1f", f.catcherInnings)), Passed balls: \(f.passedBalls), SB allowed: \(f.stolenBasesAllowed), CS: \(f.caughtStealing)"
         }
         if context.weighting.usesStats, let p = player.stats?.pitching, p.outs > 0 {
-            text += "\nPitching Stats: IP: \(String(format: "%.1f", p.innings)), ERA: \(f2(p.era)), WHIP: \(f2(p.whip)), K: \(p.so), BB: \(p.bb)"
+            text += "\nPitching Stats: IP: \(p.ipText), ERA: \(f2(p.era)), WHIP: \(f2(p.whip)), K: \(p.so), BB: \(p.bb)"
         }
         let yesNo = { (p: Position) in profile.canPlay(p) ? "yes" : "no" }
         text += "\nPremium Position Eligibility: Pitch: \(yesNo(.p)), Catch: \(yesNo(.c)), SS: \(yesNo(.ss)), 1B: \(yesNo(.first))"

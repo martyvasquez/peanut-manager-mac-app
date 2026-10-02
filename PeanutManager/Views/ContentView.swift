@@ -45,12 +45,21 @@ struct ContentView: View {
     var body: some View {
         Group {
             if let team {
-                NavigationSplitView {
-                    sidebar(team)
-                } content: {
-                    content(team)
-                } detail: {
-                    detail(team)
+                if section == .stats {
+                    // Stats is one full-width page, not a list + detail.
+                    NavigationSplitView {
+                        sidebar(team)
+                    } detail: {
+                        StatsView(team: team)
+                    }
+                } else {
+                    NavigationSplitView {
+                        sidebar(team)
+                    } content: {
+                        content(team)
+                    } detail: {
+                        detail(team)
+                    }
                 }
             } else {
                 WelcomeView { created in selectedTeamID = created.uid.uuidString }
@@ -148,7 +157,7 @@ struct ContentView: View {
         case .games: GamesListView(team: team, selection: $selectedGame)
         case .roster: RosterListView(team: team, selection: $selectedPlayer)
         case .rules: RuleSetsListView(team: team, selection: $selectedRuleSet)
-        case .stats: StatsListView(team: team)
+        case .stats: EmptyView()
         }
     }
 
@@ -174,7 +183,7 @@ struct ContentView: View {
                 ContentUnavailableView("No Rules Selected", systemImage: "list.bullet.clipboard")
             }
         case .stats:
-            ImportStatsView(team: team)
+            EmptyView()
         }
     }
 }
