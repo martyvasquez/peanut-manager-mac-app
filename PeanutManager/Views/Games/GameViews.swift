@@ -129,9 +129,7 @@ struct GameDetailView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     header
                     if model.hasBattingOrder || model.hasDefense {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            LineupGridView(model: model)
-                        }
+                        LineupGridView(model: model)
                         Summary(model: model).id("summary")
                     } else if !model.isGenerating {
                         generateButton
@@ -140,7 +138,7 @@ struct GameDetailView: View {
                 }
                 .padding(.horizontal, 36)
                 .padding(.vertical, 28)
-                .frame(maxWidth: 980, alignment: .leading)
+                .frame(maxWidth: 1200, alignment: .leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             #if DEBUG

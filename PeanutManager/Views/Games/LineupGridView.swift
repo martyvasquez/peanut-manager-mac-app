@@ -3,17 +3,25 @@ import LineupKit
 
 /// The hero view: batting order down the side, innings across the top.
 /// Click a cell to pick a position. Keyboard: arrows move · 1–9 assign by scorebook number (1 = P … 9 = RF) · 0 or B = bench ·
-/// Space = lock/unlock · ⌥↑/⌥↓ = move in batting order.
+/// Space = lock/unlock · ⌥↑/⌥↓ = move in batting order. Drag a name to reorder.
 struct LineupGridView: View {
     @Bindable var model: GameModel
     @Environment(\.undoManager) private var undoManager
     @State private var selected: CellKey?
     @State private var editing: CellKey?
     @FocusState private var focused: Bool
+    @State private var width: CGFloat = 600
+    @State private var dragging: PlayerID?
+    @State private var dropTarget: PlayerID?
 
-    private let nameWidth: CGFloat = 180
-    private let cellWidth: CGFloat = 46
-    private let rowHeight: CGFloat = 32
+    // Sized to fill the available width, within comfortable limits.
+    private var nameWidth: CGFloat { min(max(width * 0.26, 200), 280) }
+    private let sitWidth: CGFloat = 52
+    private var cellWidth: CGFloat {
+        let innings = CGFloat(max(model.game.innings, 1))
+        return min(max((width - nameWidth - sitWidth) / innings, 54), 120)
+    }
+    private let rowHeight: CGFloat = 46
 
     var body: some View {
         let rows = model.rows
@@ -34,9 +42,23 @@ struct LineupGridView: View {
                 }
                 .frame(height: rowHeight)
                 .overlay(alignment: .bottom) { Rectangle().fill(.separator.opacity(0.5)).frame(height: 0.5) }
+                .overlay(alignment: dropLineEdge(for: player.id, rows: rows)) {
+                    if dropTarget == player.id && dragging != player.id {
+                        Capsule().fill(Color.accentColor).frame(height: 3).offset(y: dropLineEdge(for: player.id, rows: rows) == .top ? -1.5 : 1.5)
+                    }
+                }
                 .opacity(present ? 1 : 0.4)
+                .onDrop(of: [.plainText], isTargeted: Binding(get: { dropTarget == player.id }, set: { dropTarget = $0 ? player.id : (dropTarget == player.id ? nil : dropTarget) })) { _ in
+                    defer { dragging = nil; dropTarget = nil }
+                    guard let dragging, dragging != player.id else { return false }
+                    withAnimation(.snappy) { model.moveBatter(dragging, to: player.id, undoManager: undoManager) }
+                    return true
+                }
             }
         }
+        .frame(width: nameWidth + cellWidth * CGFloat(max(innings, 1)) + sitWidth, alignment: .leading)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .focusable()
         .focusEffectDisabled()
         .focused($focused)
@@ -48,7 +70,7 @@ struct LineupGridView: View {
 
     private func header(innings: Int) -> some View {
         HStack(spacing: 0) {
-            Color.clear.frame(width: nameWidth)
+            Color.clear.frame(width: nameWidth, height: 1)
             ForEach(1...max(innings, 1), id: \.self) { inning in
                 let locked = model.isInningLocked(inning)
                 Button {
@@ -58,17 +80,25 @@ struct LineupGridView: View {
                         Text("\(inning)")
                         if locked { Image(systemName: "lock.fill").font(.system(size: 8)) }
                     }
-                    .font(.caption.monospacedDigit())
-                    .frame(width: cellWidth, height: 24)
+                    .font(.callout.monospacedDigit())
+                    .frame(width: cellWidth, height: 30)
                     .foregroundStyle(locked ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                 }
                 .buttonStyle(.plain)
                 .disabled(!model.hasDefense)
                 .help(inningHelp(inning, locked: locked))
             }
-            Text("Sit").font(.caption).foregroundStyle(.tertiary)
-                .frame(width: 40)
+            Text("Sit").font(.callout).foregroundStyle(.tertiary)
+                .frame(width: sitWidth)
         }
+    }
+
+    /// Dragging down drops below the target row; dragging up drops above it.
+    private func dropLineEdge(for target: PlayerID, rows: [PlayerSnapshot]) -> Alignment {
+        guard let dragging,
+              let from = rows.firstIndex(where: { $0.id == dragging }),
+              let to = rows.firstIndex(where: { $0.id == target }) else { return .top }
+        return from < to ? .bottom : .top
     }
 
     private func inningHelp(_ inning: Int, locked: Bool) -> String {
@@ -78,13 +108,21 @@ struct LineupGridView: View {
     }
 
     private func nameCell(_ player: PlayerSnapshot, slot: Int, present: Bool) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Text(model.lineup.battingOrder.contains(player.id) ? "\(slot)" : "")
-                .font(.callout.monospacedDigit()).foregroundStyle(.tertiary).frame(width: 18, alignment: .trailing)
-            Text(player.name).lineLimit(1)
+                .font(.title3.monospacedDigit()).foregroundStyle(.tertiary).frame(width: 26, alignment: .trailing)
+            Text(player.name).font(.title3).lineLimit(1)
             Spacer(minLength: 0)
         }
-        .frame(width: nameWidth, alignment: .leading)
+        .frame(width: nameWidth, height: rowHeight, alignment: .leading)
+        .contentShape(Rectangle())
+        .onDrag {
+            dragging = player.id
+            return NSItemProvider(object: player.id.uuidString as NSString)
+        } preview: {
+            Text(player.name).font(.title3).padding(.horizontal, 12).padding(.vertical, 6)
+                .background(.regularMaterial, in: Capsule())
+        }
         .help(model.document.battingReasons[player.id] ?? "")
         .contextMenu {
             Button("Move Up") { model.moveBatter(player.id, by: -1, undoManager: undoManager) }
@@ -107,14 +145,14 @@ struct LineupGridView: View {
                 RoundedRectangle(cornerRadius: 6).strokeBorder(Color.orange.opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
             }
             Text(label(slot: slot, available: available))
-                .font(.callout.weight(slot == .field(.p) ? .semibold : .regular))
+                .font(.title3.weight(slot == .field(.p) ? .semibold : .regular))
                 .foregroundStyle(textStyle(slot: slot, problem: problem))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             if locked {
-                Image(systemName: "lock.fill").font(.system(size: 6)).foregroundStyle(.secondary).padding(3)
+                Image(systemName: "lock.fill").font(.system(size: 8)).foregroundStyle(.secondary).padding(4)
             }
         }
-        .frame(width: cellWidth - 4, height: rowHeight - 6)
+        .frame(width: cellWidth - 6, height: rowHeight - 8)
         .frame(width: cellWidth, height: rowHeight)
         .contentShape(Rectangle())
         .onTapGesture {
@@ -147,9 +185,9 @@ struct LineupGridView: View {
         let sit = slots.filter { $0 == .bench }.count
         _ = field
         return Text(model.hasDefense ? "\(sit)" : "")
-            .font(.callout.monospacedDigit())
+            .font(.title3.monospacedDigit())
             .foregroundStyle(.tertiary)
-            .frame(width: 40)
+            .frame(width: sitWidth)
     }
 
     private func label(slot: Slot?, available: Bool) -> String {

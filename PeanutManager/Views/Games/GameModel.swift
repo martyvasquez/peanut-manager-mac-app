@@ -152,6 +152,18 @@ final class GameModel {
         }
     }
 
+    /// Drag and drop: moving down lands below `target`, moving up lands above it.
+    func moveBatter(_ player: PlayerID, to target: PlayerID, undoManager: UndoManager?) {
+        mutate("Move in Batting Order", undoManager: undoManager) { doc in
+            var order = doc.lineup.battingOrder
+            for id in rows.map(\.id) where !order.contains(id) && context.availability(of: id).present { order.append(id) }
+            guard let from = order.firstIndex(of: player), let to = order.firstIndex(of: target), from != to else { return }
+            order.remove(at: from)
+            order.insert(player, at: to)
+            doc.lineup.battingOrder = order
+        }
+    }
+
     func setInnings(_ innings: Int, undoManager: UndoManager?) {
         game.innings = innings
         mutate("Change Innings", undoManager: undoManager) { doc in
