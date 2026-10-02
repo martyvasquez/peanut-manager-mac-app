@@ -85,6 +85,11 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
      - **Structure:** rulebooks as tabs on one full-width page; *or* one team rulebook plus per-game tweaks; *or* rules living inside each game.
      - **Checks:** recognize common rules from plain English locally (number becomes an editable token in the sentence); *or* pick from a library; *or* AI interprets every rule.
      - **Adding:** type with suggestions; *or* a starter-library sheet; *or* a bare text line.
+   - **Decided: Jev is the rule engine** (Decisions API, same OpenRouter key; see §8.4):
+     - **Interpreter:** every rule's text → Jev *Choice* over the `RuleCheck` catalog (plus "judgment only"). The number comes from candidates found in the sentence ("select, don't generate"). Above a confidence threshold, the check is attached automatically and the number becomes an editable token; below it, the app shows "AI judgment" or asks the coach (Q8).
+     - **Evaluator for judgment rules:** after positions are filled, one Jev *Noul* per judgment-only rule against a compact text rendering of the lineup. It is shown as a probability ("Jev: 92% likely followed") and labeled as a second opinion, not a guarantee.
+     - **Not for countable rules:** Jev doesn't count reliably (TypeSafe's own docs); the `Validator` stays the source of truth for anything with a number.
+     - Needs: a Decisions API client in `LineupAI` (alpha endpoint, behind a protocol); an eval set of real rules with expected interpretations; threshold tuning.
 8. **Smaller gaps:**
    - Show AI cost: tracked per lineup in `LineupDocument.cost`, not displayed anywhere since the design pass.
    - JSON backup/export of the library (§7.2).
