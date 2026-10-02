@@ -140,13 +140,7 @@ enum SampleData {
             context.insert(player)
             player.team = team
             player.stats = PlayerStats(batting: row.batting, fielding: row.fielding, pitching: row.pitching)
-            // Seed positions from where they actually played: pitched → can pitch, caught → can catch,
-            // most-played position → primary.
-            var profile = PositionProfile.default
-            if row.pitching.outs > 0 { profile[.p] = .can }
-            if row.fielding.catcherOuts > 0 || (row.fielding.innings[.c] ?? 0) > 0 { profile[.c] = .good }
-            if let top = row.fielding.innings.max(by: { $0.value < $1.value })?.key { profile[top] = .primary }
-            player.profile = profile
+            player.applyGameChangerHistory()
         }
         team.statsImportedAt = .now
 

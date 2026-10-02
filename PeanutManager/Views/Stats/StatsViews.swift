@@ -131,7 +131,10 @@ struct ImportStatsView: View {
             let stats = PlayerStats(batting: row.batting, fielding: row.fielding, pitching: row.pitching)
             switch choices[index] ?? .skip {
             case .player(let uid):
-                team.players.first { $0.uid == uid }?.stats = stats
+                if let player = team.players.first(where: { $0.uid == uid }) {
+                    player.stats = stats
+                    player.applyGameChangerHistory()
+                }
                 count += 1
             case .newPlayer:
                 let player = Player(name: row.fullName, jersey: row.number, sortIndex: nextIndex)
@@ -139,6 +142,7 @@ struct ImportStatsView: View {
                 context.insert(player)
                 player.team = team
                 player.stats = stats
+                player.applyGameChangerHistory()
                 count += 1
             case .skip:
                 break

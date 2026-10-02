@@ -41,19 +41,34 @@ public struct Finding: Codable, Sendable, Hashable, Identifiable {
 /// Checks lineups in code. This — not the AI's self-report — is the source of truth for compliance.
 public enum Validator {
     /// Can any valid defense exist at all? Run before spending tokens.
+    /// Problems that hold for every inning are reported once, not once per inning.
     public static func feasibility(_ context: GameContext) -> [Finding] {
         var findings: [Finding] = []
-        for inning in 1...max(context.innings, 1) {
-            let available = context.availablePlayers(inning: inning)
-            if available.count < Position.allCases.count {
-                findings.append(Finding(.violation, .notEnoughPlayers,
-                    "Inning \(inning): only \(available.count) players available; 9 are needed to field a team.", inning: inning))
-                continue
+        let innings = Array(1...max(context.innings, 1))
+        let short = innings.filter { context.availablePlayers(inning: $0).count < Position.allCases.count }
+        if short.count == innings.count {
+            let n = context.availablePlayers(inning: 1).count
+            findings.append(Finding(.violation, .notEnoughPlayers, "Only \(n) players are coming. You need 9."))
+        } else {
+            for inning in short {
+                findings.append(Finding(.violation, .notEnoughPlayers, "Inning \(inning): only \(context.availablePlayers(inning: inning).count) players are here. You need 9.", inning: inning))
             }
-            for position in Position.allCases where !available.contains(where: { $0.profile.canPlay(position) }) {
-                findings.append(Finding(.violation, .notEnoughPlayers,
-                    "Inning \(inning): nobody available can play \(position.label). Mark someone as able to play it in the roster.",
-                    inning: inning, position: position))
+        }
+        for position in Position.allCases {
+            let missing = innings.filter { inning in
+                !short.contains(inning) && !context.availablePlayers(inning: inning).contains { $0.profile.canPlay(position) }
+            }
+            guard !missing.isEmpty else { continue }
+            let what = switch position {
+            case .p: "pitch"
+            case .c: "catch"
+            default: "play \(position.label)"
+            }
+            if missing.count == innings.count - short.count {
+                findings.append(Finding(.violation, .notEnoughPlayers, "Nobody can \(what).", position: position))
+            } else {
+                let list = missing.map(String.init).joined(separator: ", ")
+                findings.append(Finding(.violation, .notEnoughPlayers, "Nobody can \(what) in inning\(missing.count == 1 ? "" : "s") \(list).", position: position))
             }
         }
         return findings

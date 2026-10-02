@@ -121,11 +121,21 @@ struct ValidatorTests {
         #expect(Validator.feasibility(ctx).hasViolations)
     }
 
-    @Test func feasibilityFlagsNoCatcher() {
+    @Test func feasibilityFlagsNoCatcherOnce() {
         var ctx = context
         ctx.availability[players[3].id] = .absent
         ctx.availability[players[4].id] = .absent
-        #expect(Validator.feasibility(ctx).contains { $0.position == .c })
+        let findings = Validator.feasibility(ctx)
+        #expect(findings.count == 1)
+        #expect(findings.first?.message == "Nobody can catch.")
+    }
+
+    @Test func feasibilityNamesInningsWhenOnlySomeAreShort() {
+        var ctx = context
+        ctx.availability[players[3].id] = Availability(leavesAfterInning: 4)
+        ctx.availability[players[4].id] = .absent
+        let findings = Validator.feasibility(ctx)
+        #expect(findings.map(\.message) == ["Nobody can catch in innings 5, 6."])
     }
 
     @Test func swapMovesDisplacedPlayerToVacatedSlot() {

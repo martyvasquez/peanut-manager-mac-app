@@ -11,6 +11,8 @@ final class GameModel {
     private(set) var document: LineupDocument
     var status: String?
     var errorMessage: String?
+    /// True when the lineup is blocked because nobody can play some position (fixable in the roster).
+    var blockedByPositions = false
     var isGenerating: Bool { task != nil }
     private var task: Task<Void, Never>?
 
@@ -252,9 +254,11 @@ final class GameModel {
         // Check the game can be lined up at all before spending anything on the AI.
         let feasibility = Validator.feasibility(context)
         if feasibility.hasViolations {
+            blockedByPositions = feasibility.contains { $0.position != nil }
             errorMessage = feasibility.violations.map(\.message).joined(separator: "\n")
             return
         }
+        blockedByPositions = false
         var client: any LLMClient = OpenRouterClient(apiKey: Keychain.apiKey)
         #if DEBUG
         if DebugSupport.fakeAI { client = FakeLLMClient() }

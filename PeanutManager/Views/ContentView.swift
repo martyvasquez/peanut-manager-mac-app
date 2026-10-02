@@ -28,7 +28,8 @@ struct ContentView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Team.createdAt) private var teams: [Team]
     @AppStorage("selectedTeam") private var selectedTeamID = ""
-    @State private var section: SidebarSection? = .games
+    @State private var navigator = Navigator.shared
+    private var section: SidebarSection? { navigator.section }
     @State private var selectedGame: Game?
     @State private var selectedPlayer: Player?
     @State private var selectedRuleSet: RuleSet?
@@ -65,7 +66,7 @@ struct ContentView: View {
             }
             if UserDefaults.standard.bool(forKey: "PMOpenSettings") { openSettings() }
             if let open = UserDefaults.standard.string(forKey: "PMSection"), let target = SidebarSection(rawValue: open) {
-                section = target
+                navigator.section = target
                 selectedPlayer = team?.activePlayers.dropFirst(7).first
                 selectedRuleSet = team?.sortedRuleSets.first
             }
@@ -101,7 +102,7 @@ struct ContentView: View {
     }
 
     private func sidebar(_ team: Team) -> some View {
-        List(selection: $section) {
+        List(selection: $navigator.section) {
             ForEach(SidebarSection.allCases) { item in
                 Label(item.title, systemImage: item.symbol).tag(item)
             }

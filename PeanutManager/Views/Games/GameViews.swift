@@ -162,13 +162,25 @@ struct GameDetailView: View {
                 }
             }
         }
-        .alert("Couldn't Make a Lineup", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
-            if model.errorMessage?.contains("Settings") == true {
-                SettingsLink { Text("Open Settings") }
+        .alert(model.blockedByPositions ? "Who Pitches and Catches?" : "Couldn't Make a Lineup", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+            if model.blockedByPositions {
+                if canUseHistory {
+                    Button("Use GameChanger History") { useHistoryAndRetry() }
+                }
+                Button("Open Roster") { Navigator.shared.section = .roster }
+                Button("Cancel", role: .cancel) {}
+            } else {
+                if model.errorMessage?.contains("Settings") == true {
+                    SettingsLink { Text("Open Settings") }
+                }
+                Button("OK") {}
             }
-            Button("OK") {}
         } message: {
-            Text(model.errorMessage ?? "")
+            if model.blockedByPositions {
+                Text(model.errorMessage.map { $0 + (canUseHistory ? "\n\nTurn on P and C from who pitched and caught in GameChanger, or set them in the roster." : "\n\nTurn on P and C for those players in the roster.") } ?? "")
+            } else {
+                Text(model.errorMessage ?? "")
+            }
         }
         .confirmationDialog("Clear this lineup?", isPresented: $confirmStartOver) {
             Button("Clear Lineup", role: .destructive) { model.startOver(undoManager: undoManager) }
@@ -264,6 +276,16 @@ struct GameDetailView: View {
         }
         .menuStyle(.button).buttonStyle(.plain).fixedSize()
         .help("What the AI trusts: GameChanger stats, your ratings, or both")
+    }
+
+    private var canUseHistory: Bool {
+        (game.team?.activePlayers ?? []).contains { $0.stats != nil && $0.profile == .default }
+    }
+
+    private func useHistoryAndRetry() {
+        let changed = (game.team?.activePlayers ?? []).filter { $0.applyGameChangerHistory() }.count
+        model.errorMessage = nil
+        if changed > 0 { model.makeBattingOrder(undoManager: undoManager) }
     }
 
     // MARK: Steps

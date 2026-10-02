@@ -70,6 +70,23 @@ final class Player {
         set { statsData = newValue.flatMap { try? JSONEncoder().encode($0) } }
     }
 
+    /// Turns on positions the player has actually played in GameChanger: pitched → P, caught → C,
+    /// most-played position → best. Only touches players whose positions were never edited,
+    /// so a coach's deliberate "can't" is kept. Returns whether anything changed.
+    @discardableResult
+    func applyGameChangerHistory() -> Bool {
+        guard let stats, profile == .default else { return false }
+        var p = profile
+        if (stats.pitching?.outs ?? 0) > 0 { p[.p] = .can }
+        if let f = stats.fielding {
+            if f.catcherOuts > 0 || (f.innings[.c] ?? 0) > 0 { p[.c] = .can }
+            if let top = f.innings.filter({ $0.value > 0 }).max(by: { $0.value < $1.value })?.key { p[top] = .primary }
+        }
+        guard p != profile else { return false }
+        profile = p
+        return true
+    }
+
     var snapshot: PlayerSnapshot {
         PlayerSnapshot(id: uid, name: name, jersey: jersey.isEmpty ? nil : jersey, notes: notes, profile: profile, ratings: ratings, stats: stats)
     }
