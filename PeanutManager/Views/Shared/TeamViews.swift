@@ -11,9 +11,9 @@ struct WelcomeView: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            Image(systemName: "baseball")
-                .font(.system(size: 52, weight: .light))
-                .foregroundStyle(.tint)
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .frame(width: 128, height: 128)
             Text("Peanut Manager").font(.largeTitle.weight(.semibold))
             Text("Lineups in minutes.")
                 .font(.title3)
