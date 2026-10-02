@@ -260,11 +260,11 @@ struct FieldPositions: View {
     }
 }
 
-/// Little League dimensions in feet (60-ft bases, 46-ft mound, 200-ft fence), home plate at the origin and +y toward
-/// center field. Fielder spots follow the Situations app's field model.
+/// Little League infield proportions in feet (60-ft bases, 46-ft mound), home plate at the origin and +y toward
+/// center field. The outfield is drawn shallower than a real 200-ft fence so the infield has room.
 nonisolated enum FieldGeometry {
-    static let bases = 60.0, mound = 46.0, fence = 200.0, infieldArc = 95.0
-    static let size = CGSize(width: 380, height: 318)
+    static let bases = 60.0, mound = 46.0, fence = 140.0, infieldArc = 92.0
+    static let size = CGSize(width: 380, height: 300)
 
     /// Points per foot: the 90° wedge's width at the fence fills the view.
     static let scale: Double = (size.width - 16) / (2 * fence * sin(.pi / 4))
@@ -280,55 +280,46 @@ nonisolated enum FieldGeometry {
     }
 
     static let fielder: [Position: (Double, Double)] = {
-        let k = bases / 90
+        let b = bases / 2.0.squareRoot()
         return [
-            .p: (0, mound - 2.5 * k), .c: (0, -8),
-            .first: (70 * k, 88 * k), .second: (38 * k, 140 * k), .ss: (-38 * k, 140 * k), .third: (-68 * k, 86 * k),
-            .lf: polar(-32, fence * 0.72), .cf: polar(0, fence * 0.72), .rf: polar(32, fence * 0.72),
+            .p: (0, mound), .c: (0, -8),
+            // Corner infielders on their bags; middle infielders either side of second.
+            .first: (b, b), .third: (-b, b), .second: (30, 76), .ss: (-30, 76),
+            .lf: polar(-32, fence * 0.84), .cf: polar(0, fence * 0.86), .rf: polar(32, fence * 0.84),
         ]
     }()
 }
 
-/// Grass wedge, infield dirt, straight foul lines, a square diamond, mound and plate — drawn to scale in quiet tints.
+/// Straight foul lines, the fence, a square diamond, the infield arc and the mound: lines only.
 struct FieldDrawing: View {
     var body: some View {
         Canvas { context, _ in
             let g = FieldGeometry.self
             let home = g.home
             let b = g.bases / 2.0.squareRoot()
+            let line = Color.primary.opacity(0.28)
 
-            func wedge(radius feet: Double) -> Path {
+            func arc(_ feet: Double) -> Path {
                 var path = Path()
-                path.move(to: home)
                 path.addArc(center: home, radius: feet * g.scale, startAngle: .degrees(-135), endAngle: .degrees(-45), clockwise: false)
-                path.closeSubpath()
                 return path
             }
-
-            context.fill(wedge(radius: g.fence), with: .color(.green.opacity(0.10)))
-            context.fill(wedge(radius: g.infieldArc), with: .color(.brown.opacity(0.18)))
-
-            let first = g.point((b, b)), second = g.point((0, 2 * b)), third = g.point((-b, b))
-            var diamond = Path()
-            diamond.move(to: home); diamond.addLine(to: first); diamond.addLine(to: second); diamond.addLine(to: third); diamond.closeSubpath()
-            context.fill(diamond, with: .color(.green.opacity(0.12)))
-            context.stroke(diamond, with: .color(.primary.opacity(0.22)), lineWidth: 1)
 
             // Foul lines run straight from home plate to the fence.
             var foul = Path()
             foul.move(to: home); foul.addLine(to: g.point(g.polar(-45, g.fence)))
             foul.move(to: home); foul.addLine(to: g.point(g.polar(45, g.fence)))
-            context.stroke(foul, with: .color(.primary.opacity(0.4)), lineWidth: 1.5)
+            context.stroke(foul, with: .color(line), lineWidth: 1.5)
+            context.stroke(arc(g.fence), with: .color(line), lineWidth: 1.5)
+            context.stroke(arc(g.infieldArc), with: .color(Color.primary.opacity(0.14)), lineWidth: 1)
 
-            var fence = Path()
-            fence.addArc(center: home, radius: g.fence * g.scale, startAngle: .degrees(-135), endAngle: .degrees(-45), clockwise: false)
-            context.stroke(fence, with: .color(.primary.opacity(0.3)), lineWidth: 1.5)
+            let first = g.point((b, b)), second = g.point((0, 2 * b)), third = g.point((-b, b))
+            var diamond = Path()
+            diamond.move(to: home); diamond.addLine(to: first); diamond.addLine(to: second); diamond.addLine(to: third); diamond.closeSubpath()
+            context.stroke(diamond, with: .color(line), lineWidth: 1.5)
 
-            for base in [first, second, third, home] {
-                context.fill(Path(CGRect(x: base.x - 3, y: base.y - 3, width: 6, height: 6)), with: .color(.primary.opacity(0.55)))
-            }
             let mound = g.point((0, g.mound))
-            context.fill(Path(ellipseIn: CGRect(x: mound.x - 6, y: mound.y - 6, width: 12, height: 12)), with: .color(.brown.opacity(0.35)))
+            context.stroke(Path(ellipseIn: CGRect(x: mound.x - 7, y: mound.y - 7, width: 14, height: 14)), with: .color(Color.primary.opacity(0.18)), lineWidth: 1)
         }
     }
 }
