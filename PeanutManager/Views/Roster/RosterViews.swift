@@ -283,8 +283,8 @@ nonisolated enum FieldGeometry {
         let b = bases / 2.0.squareRoot()
         return [
             .p: (0, mound), .c: (0, 0),
-            // Corner infielders on their bags; middle infielders either side of second.
-            .first: (b, b), .third: (-b, b), .second: (30, 76), .ss: (-30, 76),
+            // Corner infielders on their bags; middle infielders on the baselines, halfway to second.
+            .first: (b, b), .third: (-b, b), .second: (b / 2, 1.5 * b), .ss: (-b / 2, 1.5 * b),
             .lf: polar(-32, fence * 0.84), .cf: polar(0, fence * 0.86), .rf: polar(32, fence * 0.84),
         ]
     }()
