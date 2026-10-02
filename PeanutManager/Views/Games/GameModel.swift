@@ -18,6 +18,7 @@ final class GameModel {
         self.game = game
         self.document = game.document ?? LineupDocument()
         normalize()
+        step = document.lineup.hasDefense ? .positions : .battingOrder
     }
 
     // MARK: - Derived
@@ -152,6 +153,17 @@ final class GameModel {
         }
     }
 
+    /// List reordering in the batting order step.
+    func moveBatters(fromOffsets source: IndexSet, toOffset destination: Int, undoManager: UndoManager?) {
+        mutate("Move in Batting Order", undoManager: undoManager) { doc in
+            var order = doc.lineup.battingOrder
+            for id in rows.map(\.id) where !order.contains(id) && context.availability(of: id).present { order.append(id) }
+            order = order.filter { context.availability(of: $0).present }
+            order.move(fromOffsets: source, toOffset: destination)
+            doc.lineup.battingOrder = order
+        }
+    }
+
     /// Drag and drop: moving down lands below `target`, moving up lands above it.
     func moveBatter(_ player: PlayerID, to target: PlayerID, undoManager: UndoManager?) {
         mutate("Move in Batting Order", undoManager: undoManager) { doc in
@@ -174,7 +186,8 @@ final class GameModel {
 
     func startOver(undoManager: UndoManager?) {
         snapshot("Before Start Over")
-        mutate("Start Over", undoManager: undoManager) { $0 = LineupDocument() }
+        mutate("Clear Lineup", undoManager: undoManager) { $0 = LineupDocument() }
+        step = .battingOrder
     }
 
     func restore(_ version: LineupVersion, undoManager: UndoManager?) {
@@ -186,8 +199,54 @@ final class GameModel {
 
     var lineupModel: String { ModelLibrary.shared.selectedID }
 
-    /// One click: batting order, then defense.
-    func generate(battingToo: Bool = true, feedback: String? = nil, undoManager: UndoManager?) {
+    enum Step { case battingOrder, positions }
+
+    /// Which step the coach is looking at. Positions once a defense exists, unless they go back.
+    var step: Step = .battingOrder
+    /// What's being generated right now, so the view can show progress in the right place.
+    private(set) var generating: Step?
+
+    /// Step 1: the AI proposes a batting order. With feedback, it adjusts the current one.
+    func makeBattingOrder(feedback: String? = nil, undoManager: UndoManager?) {
+        run(.battingOrder, undoManager: undoManager) { engine, report in
+            let current = self.hasBattingOrder ? self.document.lineup.battingOrder : nil
+            let batting = try await engine.battingOrder(self.context, currentOrder: current, feedback: feedback, progress: report)
+            try Task.checkCancellation()
+            self.mutate("Make Batting Order", undoManager: undoManager) { doc in
+                doc.lineup.battingOrder = batting.order
+                doc.battingReasons = batting.reasons
+                doc.battingRationale = batting.rationale
+                doc.cost = (doc.cost ?? 0) + (batting.usage.cost ?? 0)
+                doc.model = engine.model
+            }
+            self.step = .battingOrder
+        }
+    }
+
+    /// Step 2: the AI fills every inning around the batting order. Locked spots stay put.
+    func setPositions(feedback: String? = nil, undoManager: UndoManager?) {
+        run(.positions, undoManager: undoManager) { engine, report in
+            let current = self.hasDefense ? self.document.lineup : nil
+            let defense = try await engine.defense(self.context, battingOrder: self.document.lineup.battingOrder, currentLineup: current, feedback: feedback, progress: report)
+            try Task.checkCancellation()
+            self.mutate("Set Positions", undoManager: undoManager) { doc in
+                doc.lineup.innings = defense.innings
+                doc.provenance = defense.provenance
+                doc.inningReasons = defense.inningReasons
+                doc.defenseRationale = defense.rationale
+                doc.warnings = defense.warnings
+                doc.aiRuleNotes = defense.aiRuleNotes
+                doc.revisions = defense.revisions
+                doc.appAdjustedCount = defense.adjustedCells.count
+                doc.cost = (doc.cost ?? 0) + (defense.usage.cost ?? 0)
+                doc.model = engine.model
+                doc.generatedAt = .now
+            }
+            self.step = .positions
+        }
+    }
+
+    private func run(_ step: Step, undoManager: UndoManager?, _ work: @escaping (LineupEngine, @escaping @Sendable (GenerationProgress) -> Void) async throws -> Void) {
         guard task == nil else { return }
         errorMessage = nil
         // Check the game can be lined up at all before spending anything on the AI.
@@ -201,41 +260,17 @@ final class GameModel {
         if DebugSupport.fakeAI { client = FakeLLMClient() }
         #endif
         let engine = LineupEngine(client: client, model: lineupModel)
-        if hasBattingOrder || hasDefense { snapshot("Before Regenerate") }
+        if hasBattingOrder || hasDefense { snapshot("Before Remake") }
+        generating = step
 
         task = Task { [weak self] in
             guard let self else { return }
-            defer { self.task = nil; self.status = nil }
+            defer { self.task = nil; self.status = nil; self.generating = nil }
             do {
                 let report: @Sendable (GenerationProgress) -> Void = { event in
                     Task { @MainActor in self.status = Self.describe(event) }
                 }
-                if battingToo || !hasBattingOrder {
-                    let batting = try await engine.battingOrder(context, progress: report)
-                    try Task.checkCancellation()
-                    mutate("Generate Batting Order", undoManager: undoManager) { doc in
-                        doc.lineup.battingOrder = batting.order
-                        doc.battingReasons = batting.reasons
-                        doc.battingRationale = batting.rationale
-                        doc.cost = (doc.cost ?? 0) + (batting.usage.cost ?? 0)
-                    }
-                }
-                let current = hasDefense ? document.lineup : nil
-                let defense = try await engine.defense(context, battingOrder: document.lineup.battingOrder, currentLineup: current, feedback: feedback, progress: report)
-                try Task.checkCancellation()
-                mutate("Generate Lineup", undoManager: undoManager) { doc in
-                    doc.lineup.innings = defense.innings
-                    doc.provenance = defense.provenance
-                    doc.inningReasons = defense.inningReasons
-                    doc.defenseRationale = defense.rationale
-                    doc.warnings = defense.warnings
-                    doc.aiRuleNotes = defense.aiRuleNotes
-                    doc.revisions = defense.revisions
-                    doc.appAdjustedCount = defense.adjustedCells.count
-                    doc.cost = (doc.cost ?? 0) + (defense.usage.cost ?? 0)
-                    doc.model = engine.model
-                    doc.generatedAt = .now
-                }
+                try await work(engine, report)
             } catch is CancellationError {
             } catch {
                 errorMessage = error.localizedDescription
@@ -251,9 +286,9 @@ final class GameModel {
 
     nonisolated static func describe(_ event: GenerationProgress) -> String {
         switch event {
-        case .asking(.battingOrder): "Building the batting order…"
-        case .asking(.defense): "Setting the defense, inning by inning…"
-        case .revising(let phase, let round, let problems): "Checking the \(phase.rawValue): fixing \(problems) problem\(problems == 1 ? "" : "s") (pass \(round))…"
+        case .asking(.battingOrder): "Working out the batting order…"
+        case .asking(.defense): "Setting positions, inning by inning…"
+        case .revising(_, _, let problems): "Fixing \(problems) rule problem\(problems == 1 ? "" : "s")…"
         case .adjusting: "Making final adjustments…"
         }
     }

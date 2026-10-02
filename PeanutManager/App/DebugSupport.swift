@@ -7,12 +7,14 @@ import LineupKit
 ///   -PMStore Name        use a separate library file (keeps your real library untouched)
 ///   -PMSeedSample YES    create the sample team on launch if there are no teams, and open its game
 ///   -PMFakeAI YES        use a scripted local "AI" instead of OpenRouter
-///   -PMAutoGenerate YES  start generating as soon as a game opens
+///   -PMAutoGenerate YES  make the batting order as soon as a game opens
+///   -PMAutoPositions YES then set positions automatically
 ///   -PMScrollToChecks YES scroll to the game plan and checks once a lineup exists
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }
     static var fakeAI: Bool { UserDefaults.standard.bool(forKey: "PMFakeAI") }
     static var autoGenerate: Bool { UserDefaults.standard.bool(forKey: "PMAutoGenerate") }
+    static var autoPositions: Bool { UserDefaults.standard.bool(forKey: "PMAutoPositions") }
     static var scrollToChecks: Bool { UserDefaults.standard.bool(forKey: "PMScrollToChecks") }
 
     @MainActor

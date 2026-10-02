@@ -88,6 +88,14 @@ struct EngineTests {
         #expect(result.reasons[players[0].id] == "why")
     }
 
+    @Test func battingFeedbackIncludesCurrentOrder() {
+        let ids = PromptIDs(players: players)
+        let prompt = Prompts.battingOrder(context, ids: ids, currentOrder: players.map(\.id), feedback: "Lead off with Player 3")
+        #expect(prompt.contains("CURRENT BATTING ORDER"))
+        #expect(prompt.contains("Lead off with Player 3"))
+        #expect(!Prompts.battingOrder(context, ids: ids).contains("COACH FEEDBACK"))
+    }
+
     @Test func promptStatesUnratedInsteadOfAverage() {
         // v1 blind spot #13: unrated became 3.
         let prompt = Prompts.battingOrder(context, ids: PromptIDs(players: players))

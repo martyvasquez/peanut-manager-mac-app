@@ -110,8 +110,16 @@ public enum Prompts {
 
     // MARK: - Batting order (phase 1)
 
-    public static func battingOrder(_ context: GameContext, ids: PromptIDs) -> String {
+    public static func battingOrder(_ context: GameContext, ids: PromptIDs, currentOrder: [PlayerID]? = nil, feedback: String? = nil) -> String {
         let players = context.presentPlayers.map { battingPlayerText($0, context: context, ids: ids) }.joined(separator: "\n")
+        var regenerate = ""
+        if let feedback, !feedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if let currentOrder, !currentOrder.isEmpty {
+                regenerate += "\n\nCURRENT BATTING ORDER (for context - the coach wants adjustments):\n"
+                    + currentOrder.enumerated().map { "\($0.offset + 1). \(context.name($0.element)) (\(ids.token($0.element)))" }.joined(separator: "\n")
+            }
+            regenerate += "\n\nCOACH FEEDBACK (IMPORTANT - This is what the coach wants changed):\n\(feedback)"
+        }
         return """
         \(header(context))
         You will be coming up with the batting order.
@@ -121,7 +129,7 @@ public enum Prompts {
 
         Here are the available players:
         \(players)
-        \(footer(context))
+        \(footer(context))\(regenerate)
 
         Return JSON only:
 

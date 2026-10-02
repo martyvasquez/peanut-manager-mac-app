@@ -128,6 +128,8 @@ public struct LineupEngine: Sendable {
 
     public func battingOrder(
         _ context: GameContext,
+        currentOrder: [PlayerID]? = nil,
+        feedback: String? = nil,
         progress: @Sendable (GenerationProgress) -> Void = { _ in }
     ) async throws -> BattingResult {
         let present = context.presentPlayers
@@ -135,7 +137,7 @@ public struct LineupEngine: Sendable {
             throw GenerationError.infeasible([Finding(.violation, .notEnoughPlayers, "Nobody is marked as coming to this game.")])
         }
         let ids = PromptIDs(players: context.players)
-        var messages = [LLMMessage(.user, Prompts.battingOrder(context, ids: ids))]
+        var messages = [LLMMessage(.user, Prompts.battingOrder(context, ids: ids, currentOrder: currentOrder, feedback: feedback))]
         var usage = LLMUsage()
         var revisions = 0
         var best: MappedBattingOrder?

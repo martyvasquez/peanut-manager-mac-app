@@ -115,7 +115,7 @@ struct GameDetailView: View {
     @Bindable var game: Game
     @State private var model: GameModel
     @Environment(\.undoManager) private var undoManager
-    @State private var showingFeedback = false
+    @State private var feedbackFor: GameModel.Step?
     @State private var confirmStartOver = false
 
     init(game: Game) {
@@ -128,14 +128,17 @@ struct GameDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     header
-                    if model.hasBattingOrder || model.hasDefense {
-                        LineupGridView(model: model)
-                        Summary(model: model).id("summary")
-                    } else if !model.isGenerating {
-                        generateButton
+                    if model.hasBattingOrder || model.isGenerating {
+                        VStack(alignment: .leading, spacing: 18) {
+                            stepBar
+                            stepContent
+                        }
+                    } else {
+                        startButton
                     }
-                    if model.isGenerating { progress }
                 }
+                .animation(.snappy, value: model.step)
+                .animation(.snappy, value: model.hasBattingOrder)
                 .padding(.horizontal, 36)
                 .padding(.vertical, 28)
                 .frame(maxWidth: 1200, alignment: .leading)
@@ -150,9 +153,13 @@ struct GameDetailView: View {
             #endif
         }
         .toolbar { toolbar }
-        .sheet(isPresented: $showingFeedback) {
-            FeedbackSheet { feedback, battingToo in
-                model.generate(battingToo: battingToo, feedback: feedback, undoManager: undoManager)
+        .sheet(item: $feedbackFor) { step in
+            FeedbackSheet(prompt: step == .battingOrder ? "Bat Mia leadoff" : "Move Jake to the outfield") { feedback in
+                if step == .battingOrder {
+                    model.makeBattingOrder(feedback: feedback, undoManager: undoManager)
+                } else {
+                    model.setPositions(feedback: feedback, undoManager: undoManager)
+                }
             }
         }
         .alert("Couldn't Make a Lineup", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
@@ -170,9 +177,14 @@ struct GameDetailView: View {
         }
         .task {
             #if DEBUG
-            if DebugSupport.autoGenerate && !model.hasDefense { model.generate(undoManager: undoManager) }
+            if DebugSupport.autoGenerate && !model.hasBattingOrder { model.makeBattingOrder(undoManager: undoManager) }
             #endif
         }
+        #if DEBUG
+        .onChange(of: model.hasBattingOrder) {
+            if DebugSupport.autoPositions && model.hasBattingOrder && !model.hasDefense { model.setPositions(undoManager: undoManager) }
+        }
+        #endif
     }
 
     // MARK: Header
@@ -254,13 +266,13 @@ struct GameDetailView: View {
         .help("What the AI trusts: GameChanger stats, your ratings, or both")
     }
 
-    // MARK: States
+    // MARK: Steps
 
-    private var generateButton: some View {
+    private var startButton: some View {
         Button {
-            model.generate(battingToo: !model.hasBattingOrder, undoManager: undoManager)
+            model.makeBattingOrder(undoManager: undoManager)
         } label: {
-            Label("Make Lineup", systemImage: "sparkles")
+            Label("Make Batting Order", systemImage: "sparkles")
                 .font(.title3.weight(.medium))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 6)
@@ -272,6 +284,51 @@ struct GameDetailView: View {
         .padding(.top, 40)
     }
 
+    /// Batting Order › Positions — where you are, and the one next thing to do.
+    private var stepBar: some View {
+        HStack(spacing: 10) {
+            StepLink(title: "Batting Order", active: model.step == .battingOrder) { model.step = .battingOrder }
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.quaternary)
+            StepLink(title: "Positions", active: model.step == .positions) { model.step = .positions }
+                .disabled(!model.hasDefense && model.generating != .positions)
+            Spacer()
+            if !model.isGenerating {
+                Button("Remake…", systemImage: "sparkles") { feedbackFor = model.step }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .disabled(model.step == .positions && !model.hasDefense)
+                    .help(model.step == .battingOrder ? "Tell the AI what to change in the order" : "Tell the AI what to change. Locked spots stay.")
+                if model.step == .battingOrder {
+                    if model.hasDefense {
+                        Button { model.step = .positions } label: { Label("Positions", systemImage: "arrow.right") }
+                            .buttonStyle(.bordered)
+                            .buttonBorderShape(.capsule)
+                    } else {
+                        Button { model.setPositions(undoManager: undoManager) } label: {
+                            Label("Set Positions", systemImage: "arrow.right").padding(.horizontal, 4)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.capsule)
+                        .keyboardShortcut("g", modifiers: .command)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var stepContent: some View {
+        if model.isGenerating && (model.generating == .battingOrder || !model.hasDefense) {
+            progress
+        } else if model.step == .battingOrder {
+            BattingOrderList(model: model)
+        } else {
+            if model.isGenerating { progress }
+            LineupGridView(model: model)
+            Summary(model: model).id("summary")
+        }
+    }
+
     private var progress: some View {
         HStack(spacing: 10) {
             ProgressView().controlSize(.small)
@@ -279,17 +336,13 @@ struct GameDetailView: View {
             Button("Cancel") { model.cancel() }.buttonStyle(.link)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, model.hasDefense ? 0 : 40)
+        .padding(.vertical, model.hasDefense ? 0 : 60)
     }
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
             if model.hasDefense {
-                Button("Remake", systemImage: "sparkles") { showingFeedback = true }
-                    .keyboardShortcut("g", modifiers: .command)
-                    .disabled(model.isGenerating)
-                    .help("Remake the lineup (⌘G). Locked spots stay.")
                 Button("Print", systemImage: "printer") { LineupCardPrinter.print(model: model) }
                     .keyboardShortcut("p", modifiers: .command)
             }
@@ -342,6 +395,8 @@ struct Chip: View {
     var body: some View {
         Label(text, systemImage: symbol)
             .font(.callout)
+            .lineLimit(1)
+            .fixedSize()
             .foregroundStyle(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
@@ -352,24 +407,21 @@ struct Chip: View {
 
 struct FeedbackSheet: View {
     @Environment(\.dismiss) private var dismiss
-    var onSubmit: (String, Bool) -> Void
+    var prompt: String
+    var onSubmit: (String) -> Void
     @State private var feedback = ""
-    @State private var battingToo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TextField("What should change?", text: $feedback, prompt: Text("Move Jake to the outfield"), axis: .vertical)
+            TextField("What should change?", text: $feedback, prompt: Text(prompt), axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.title3)
                 .lineLimit(3...8)
-            Toggle("Batting order too", isOn: $battingToo)
-                .toggleStyle(.checkbox)
-                .foregroundStyle(.secondary)
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Button("Remake") {
-                    onSubmit(feedback, battingToo)
+                    onSubmit(feedback)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
@@ -377,6 +429,74 @@ struct FeedbackSheet: View {
         }
         .padding(20)
         .frame(width: 420)
+    }
+}
+
+/// One crumb in "Batting Order › Positions".
+struct StepLink: View {
+    let title: String
+    let active: Bool
+    let action: () -> Void
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.title3.weight(active ? .semibold : .regular))
+                .foregroundStyle(active ? AnyShapeStyle(.primary) : (isEnabled ? AnyShapeStyle(.secondary) : AnyShapeStyle(.quaternary)))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Step 1: the batting order as a list. Drag to reorder; each player's reason sits beside them.
+struct BattingOrderList: View {
+    let model: GameModel
+    @Environment(\.undoManager) private var undoManager
+
+    private let rowHeight: CGFloat = 52
+
+    var body: some View {
+        let ctx = model.context
+        let order = model.rows.filter { ctx.availability(of: $0.id).present }
+        let ids = PromptIDs(players: ctx.players)
+
+        VStack(alignment: .leading, spacing: 16) {
+            List {
+                ForEach(Array(order.enumerated()), id: \.element.id) { index, player in
+                    HStack(spacing: 14) {
+                        Text("\(index + 1)")
+                            .font(.title3.monospacedDigit())
+                            .foregroundStyle(.tertiary)
+                            .frame(width: 26, alignment: .trailing)
+                        Text(player.name).font(.title3)
+                        if let reason = model.document.battingReasons[player.id], !reason.isEmpty {
+                            Text(ids.humanize(reason, players: ctx.players))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .help(reason)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "line.3.horizontal").foregroundStyle(.quaternary)
+                    }
+                    .frame(height: rowHeight)
+                    .listRowSeparator(.visible)
+                }
+                .onMove { source, destination in
+                    withAnimation(.snappy) { model.moveBatters(fromOffsets: source, toOffset: destination, undoManager: undoManager) }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .scrollDisabled(true)
+            .frame(height: CGFloat(order.count) * (rowHeight + 1) + 8)
+
+            if !model.document.battingRationale.isEmpty {
+                Text(ids.humanize(model.document.battingRationale, players: ctx.players))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }
 
@@ -546,4 +666,8 @@ struct RuleLine: View {
             Text(text).foregroundStyle(.secondary)
         }
     }
+}
+
+extension GameModel.Step: Identifiable {
+    var id: Self { self }
 }
