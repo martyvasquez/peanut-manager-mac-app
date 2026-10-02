@@ -11,9 +11,9 @@ struct LineupGridView: View {
     @State private var editing: CellKey?
     @FocusState private var focused: Bool
 
-    private let nameWidth: CGFloat = 170
-    private let cellWidth: CGFloat = 50
-    private let rowHeight: CGFloat = 30
+    private let nameWidth: CGFloat = 180
+    private let cellWidth: CGFloat = 46
+    private let rowHeight: CGFloat = 32
 
     var body: some View {
         let rows = model.rows
@@ -23,7 +23,6 @@ struct LineupGridView: View {
 
         VStack(alignment: .leading, spacing: 0) {
             header(innings: innings)
-            Divider()
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, player in
                 let present = ctx.availability(of: player.id).present
                 HStack(spacing: 0) {
@@ -34,8 +33,8 @@ struct LineupGridView: View {
                     tally(player, innings: innings)
                 }
                 .frame(height: rowHeight)
-                .background(index.isMultiple(of: 2) ? Color.clear : Color.primary.opacity(0.025))
-                .opacity(present ? 1 : 0.45)
+                .overlay(alignment: .bottom) { Rectangle().fill(.separator.opacity(0.5)).frame(height: 0.5) }
+                .opacity(present ? 1 : 0.4)
             }
         }
         .focusable()
@@ -49,8 +48,7 @@ struct LineupGridView: View {
 
     private func header(innings: Int) -> some View {
         HStack(spacing: 0) {
-            Text("Batting Order").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                .frame(width: nameWidth, alignment: .leading).padding(.leading, 8)
+            Color.clear.frame(width: nameWidth)
             ForEach(1...max(innings, 1), id: \.self) { inning in
                 let locked = model.isInningLocked(inning)
                 Button {
@@ -60,16 +58,16 @@ struct LineupGridView: View {
                         Text("\(inning)")
                         if locked { Image(systemName: "lock.fill").font(.system(size: 8)) }
                     }
-                    .font(.caption.weight(.semibold).monospacedDigit())
-                    .frame(width: cellWidth, height: 26)
-                    .foregroundStyle(locked ? Color.accentColor : .secondary)
+                    .font(.caption.monospacedDigit())
+                    .frame(width: cellWidth, height: 24)
+                    .foregroundStyle(locked ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                 }
                 .buttonStyle(.plain)
                 .disabled(!model.hasDefense)
                 .help(inningHelp(inning, locked: locked))
             }
-            Text("Field / Sit").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                .frame(width: 64)
+            Text("Sit").font(.caption).foregroundStyle(.tertiary)
+                .frame(width: 40)
         }
     }
 
@@ -80,15 +78,12 @@ struct LineupGridView: View {
     }
 
     private func nameCell(_ player: PlayerSnapshot, slot: Int, present: Bool) -> some View {
-        HStack(spacing: 6) {
-            Text(model.lineup.battingOrder.contains(player.id) ? "\(slot)" : "–")
-                .font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 18, alignment: .trailing)
-            Text(player.jersey.map { "#\($0)" } ?? "").font(.caption.monospacedDigit()).foregroundStyle(.tertiary).frame(width: 30, alignment: .leading)
+        HStack(spacing: 10) {
+            Text(model.lineup.battingOrder.contains(player.id) ? "\(slot)" : "")
+                .font(.callout.monospacedDigit()).foregroundStyle(.tertiary).frame(width: 18, alignment: .trailing)
             Text(player.name).lineLimit(1)
-            if !present { Text("Not here").font(.caption2).foregroundStyle(.secondary) }
             Spacer(minLength: 0)
         }
-        .padding(.leading, 8)
         .frame(width: nameWidth, alignment: .leading)
         .help(model.document.battingReasons[player.id] ?? "")
         .contextMenu {
@@ -106,23 +101,20 @@ struct LineupGridView: View {
         let isSelected = selected == key
 
         return ZStack(alignment: .topTrailing) {
-            RoundedRectangle(cornerRadius: 5)
-                .fill(fill(slot: slot, problem: problem, locked: locked))
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isSelected ? Color.accentColor.opacity(0.18) : (problem ? Color.red.opacity(0.12) : Color.clear))
             if provenance == .appAdjusted {
-                RoundedRectangle(cornerRadius: 5).strokeBorder(Color.orange, lineWidth: 1.5)
-            }
-            if isSelected {
-                RoundedRectangle(cornerRadius: 5).strokeBorder(Color.accentColor, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 6).strokeBorder(Color.orange.opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
             }
             Text(label(slot: slot, available: available))
-                .font(.callout.weight(slot == .field(.p) || slot == .field(.c) ? .bold : .medium).monospaced())
-                .foregroundStyle(slot == .bench || slot == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+                .font(.callout.weight(slot == .field(.p) ? .semibold : .regular))
+                .foregroundStyle(textStyle(slot: slot, problem: problem))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             if locked {
-                Image(systemName: "lock.fill").font(.system(size: 7)).foregroundStyle(Color.accentColor).padding(3)
+                Image(systemName: "lock.fill").font(.system(size: 6)).foregroundStyle(.secondary).padding(3)
             }
         }
-        .frame(width: cellWidth - 6, height: rowHeight - 6)
+        .frame(width: cellWidth - 4, height: rowHeight - 6)
         .frame(width: cellWidth, height: rowHeight)
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { if available && model.hasDefense { selected = key; editing = key } }
@@ -150,28 +142,27 @@ struct LineupGridView: View {
         let slots = (1...max(innings, 1)).map { model.lineup.slot(of: player.id, inning: $0) }
         let field = slots.filter { if case .field = $0 { true } else { false } }.count
         let sit = slots.filter { $0 == .bench }.count
-        return Text(model.hasDefense ? "\(field) / \(sit)" : "")
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(.secondary)
-            .frame(width: 64)
+        _ = field
+        return Text(model.hasDefense ? "\(sit)" : "")
+            .font(.callout.monospacedDigit())
+            .foregroundStyle(.tertiary)
+            .frame(width: 40)
     }
 
     private func label(slot: Slot?, available: Bool) -> String {
         guard available else { return "·" }
         switch slot {
         case .field(let p): return p.label
-        case .bench: return "—"
+        case .bench: return "–"
         case nil: return model.hasDefense ? "?" : ""
         }
     }
 
-    private func fill(slot: Slot?, problem: Bool, locked: Bool) -> Color {
-        if problem { return Color.red.opacity(0.18) }
-        if locked { return Color.accentColor.opacity(0.12) }
+    private func textStyle(slot: Slot?, problem: Bool) -> AnyShapeStyle {
+        if problem { return AnyShapeStyle(Color.red) }
         switch slot {
-        case .field(let p) where p.isInfield: return Color.primary.opacity(0.06)
-        case .field: return Color.green.opacity(0.08)
-        default: return Color.clear
+        case .field: return AnyShapeStyle(.primary)
+        default: return AnyShapeStyle(.quaternary)
         }
     }
 
@@ -259,8 +250,6 @@ struct PositionPicker: View {
                 Text("Sit").frame(maxWidth: .infinity)
             }
             .controlSize(.large)
-            Text("Picking a taken spot swaps the two players. Your pick is locked.")
-                .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .padding(14)
         .frame(width: 290)

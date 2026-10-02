@@ -12,7 +12,7 @@ struct RuleSetsListView: View {
             ForEach(team.sortedRuleSets) { set in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(set.name)
-                    Text("\(set.rules.filter(\.enabled).count) active rules")
+                    Text(set.rules.filter(\.enabled).count == 1 ? "1 rule" : "\(set.rules.filter(\.enabled).count) rules")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .tag(set)
@@ -46,25 +46,28 @@ struct RuleSetEditorView: View {
     @FocusState private var focusedRule: UUID?
 
     var body: some View {
-        Form {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
                 TextField("Name", text: $ruleSet.name)
-            }
-            Section {
-                ForEach(ruleSet.sortedRules) { rule in
-                    RuleRow(rule: rule, focused: $focusedRule) { delete(rule) }
+                    .textFieldStyle(.plain)
+                    .font(.largeTitle.weight(.bold))
+
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(ruleSet.sortedRules) { rule in
+                        RuleRow(rule: rule, focused: $focusedRule) { context.delete(rule) }
+                    }
+                    Button { addRule() } label: {
+                        Label("New Rule", systemImage: "plus").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.vertical, 10)
                 }
-                .onMove(perform: move)
-                Button("Add Rule", systemImage: "plus") { addRule() }
-                    .buttonStyle(.borderless)
-            } header: {
-                Text("Rules, in priority order")
-            } footer: {
-                Text("Write rules the way you'd say them. The AI reads every rule as written. Rules with a code check (✓) are also verified by the app on every lineup; the others are left to the AI's judgment and labeled that way.")
             }
+            .padding(.horizontal, 36)
+            .padding(.vertical, 28)
+            .frame(maxWidth: 680, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .formStyle(.grouped)
-        .navigationTitle(ruleSet.name)
     }
 
     private func addRule() {
@@ -73,74 +76,69 @@ struct RuleSetEditorView: View {
         rule.ruleSet = ruleSet
         focusedRule = rule.uid
     }
-
-    private func delete(_ rule: Rule) {
-        context.delete(rule)
-    }
-
-    private func move(from source: IndexSet, to destination: Int) {
-        var rules = ruleSet.sortedRules
-        rules.move(fromOffsets: source, toOffset: destination)
-        for (index, rule) in rules.enumerated() { rule.order = index }
-    }
 }
 
 struct RuleRow: View {
     @Bindable var rule: Rule
     var focused: FocusState<UUID?>.Binding
     var onDelete: () -> Void
+    @State private var hovering = false
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Toggle("", isOn: $rule.enabled).labelsHidden().toggleStyle(.checkbox)
-            VStack(alignment: .leading, spacing: 4) {
-                TextField("Rule", text: $rule.text, prompt: Text("e.g. Every player must play at least 3 innings in the field"), axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .focused(focused, equals: rule.uid)
-                    .foregroundStyle(rule.enabled ? .primary : .secondary)
-                CheckPicker(check: Binding(get: { rule.check }, set: { rule.check = $0 }))
-            }
+            TextField("Rule", text: $rule.text, prompt: Text("Everyone plays at least 3 innings"), axis: .vertical)
+                .textFieldStyle(.plain)
+                .focused(focused, equals: rule.uid)
+                .foregroundStyle(rule.enabled ? .primary : .tertiary)
             Spacer()
-            Button(role: .destructive, action: onDelete) { Image(systemName: "minus.circle") }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
-                .help("Delete rule")
+            CheckTag(check: Binding(get: { rule.check }, set: { rule.check = $0 }))
+                .opacity(rule.check != nil || hovering ? 1 : 0)
+            Button(action: onDelete) { Image(systemName: "xmark") }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tertiary)
+                .opacity(hovering ? 1 : 0)
+                .help("Delete")
         }
+        .padding(.vertical, 9)
+        .overlay(alignment: .bottom) { Rectangle().fill(.separator.opacity(0.5)).frame(height: 0.5) }
+        .onHover { hovering = $0 }
     }
 }
 
-/// "Understood as…" — attach a code check to a rule. (The AI rule interpreter will fill this in automatically later.)
-struct CheckPicker: View {
+/// A rule with a check is verified by the app on every lineup; without one, it's left to the AI's judgment.
+struct CheckTag: View {
     @Binding var check: RuleCheck?
 
     var body: some View {
-        HStack(spacing: 6) {
-            Menu {
-                Button("AI judgment only") { check = nil }
-                Divider()
+        Menu {
+            Section("Check With the App") {
                 ForEach(RuleCheck.catalog, id: \.self) { template in
-                    Button(template.summary.replacingOccurrences(of: "\(template.value)", with: "N")) {
-                        check = .make(template.kind, check?.kind == template.kind ? check!.value : template.value)
-                    }
-                }
-            } label: {
-                if let check {
-                    Label(check.summary, systemImage: "checkmark.seal")
-                } else {
-                    Label("AI judgment only", systemImage: "sparkles")
+                    Toggle(template.summary.replacingOccurrences(of: "\(template.value)", with: "N"), isOn: Binding(
+                        get: { check?.kind == template.kind },
+                        set: { on in check = on ? .make(template.kind, template.value) : nil }
+                    ))
                 }
             }
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .font(.caption)
-            .foregroundStyle(check == nil ? Color.secondary : Color.accentColor)
-            .fixedSize()
-
             if let current = check {
-                Stepper("", value: Binding(get: { current.value }, set: { check = .make(current.kind, max(1, $0)) }), in: 1...9)
-                    .labelsHidden()
-                    .controlSize(.mini)
+                Picker("N", selection: Binding(get: { current.value }, set: { check = .make(current.kind, $0) })) {
+                    ForEach(1...9, id: \.self) { Text("\($0)").tag($0) }
+                }
+                Divider()
+                Button("Don't Check") { check = nil }
             }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: check == nil ? "checkmark.seal" : "checkmark.seal.fill")
+                if let check { Text("\(check.value)").monospacedDigit() }
+            }
+            .font(.callout)
+            .foregroundStyle(check == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Color.green))
         }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(check?.summary.appending(" — checked by the app") ?? "Have the app check this rule")
     }
 }

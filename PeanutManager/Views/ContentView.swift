@@ -60,6 +60,11 @@ struct ContentView: View {
             } else if DebugSupport.seedSample, selectedGame == nil {
                 selectedGame = team?.games.sorted { $0.date < $1.date }.last
             }
+            if let open = UserDefaults.standard.string(forKey: "PMSection"), let target = SidebarSection(rawValue: open) {
+                section = target
+                selectedPlayer = team?.activePlayers.dropFirst(7).first
+                selectedRuleSet = team?.sortedRuleSets.first
+            }
             #endif
         }
         .sheet(isPresented: $showingNewTeam) {

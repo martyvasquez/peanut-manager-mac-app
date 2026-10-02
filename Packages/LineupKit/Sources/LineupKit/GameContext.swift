@@ -31,7 +31,7 @@ public enum DataWeighting: String, CaseIterable, Codable, Sendable {
         switch self {
         case .gcOnly: "Stats Only"
         case .gcHeavy: "Mostly Stats"
-        case .equal: "Balanced"
+        case .equal: "Stats + Ratings"
         case .coachHeavy: "Mostly Ratings"
         case .coachOnly: "Ratings Only"
         }

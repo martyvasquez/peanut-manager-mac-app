@@ -4,6 +4,7 @@ import SwiftData
 import LineupKit
 
 /// Debug-only launch flags for exercising the app without clicking or an API key:
+///   -PMStore Name        use a separate library file (keeps your real library untouched)
 ///   -PMSeedSample YES    create the sample team on launch if there are no teams, and open its game
 ///   -PMFakeAI YES        use a scripted local "AI" instead of OpenRouter
 ///   -PMAutoGenerate YES  start generating as soon as a game opens

@@ -29,7 +29,11 @@ struct PeanutManagerApp: App {
     static func makeContainer() -> ModelContainer {
         let folder = URL.applicationSupportDirectory.appending(path: "Peanut Manager", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let configuration = ModelConfiguration(url: folder.appending(path: "Library.store"))
+        var name = "Library"
+        #if DEBUG
+        if let scratch = UserDefaults.standard.string(forKey: "PMStore"), !scratch.isEmpty { name = scratch }
+        #endif
+        let configuration = ModelConfiguration(url: folder.appending(path: "\(name).store"))
         do {
             return try ModelContainer(for: Team.self, Player.self, RuleSet.self, Rule.self, Game.self, configurations: configuration)
         } catch {

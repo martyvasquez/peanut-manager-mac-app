@@ -10,7 +10,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section {
-                SecureField("API Key", text: $apiKey, prompt: Text("sk-or-…"))
+                SecureField("Key", text: $apiKey, prompt: Text("sk-or-…"))
                     .onSubmit(save)
                 HStack {
                     Button("Save") { save() }
@@ -21,11 +21,11 @@ struct SettingsView: View {
             } header: {
                 Text("OpenRouter")
             } footer: {
-                Text("Peanut Manager uses your own OpenRouter key; AI costs go to your OpenRouter account. The key is kept in your Mac's keychain. Get one at openrouter.ai/settings/keys.")
+                Link("Get a key", destination: URL(string: "https://openrouter.ai/settings/keys")!)
             }
 
             Section {
-                TextField("Lineup model", text: $lineupModel, prompt: Text(OpenRouterClient.defaultLineupModel))
+                TextField("Lineups", text: $lineupModel, prompt: Text(OpenRouterClient.defaultLineupModel))
                 Menu("Suggestions") {
                     ForEach(["anthropic/claude-sonnet-5.5", "anthropic/claude-opus-5.5", "openai/gpt-5.6-sol", "google/gemini-3.8-flash"], id: \.self) { slug in
                         Button(slug) { lineupModel = slug }
@@ -35,9 +35,7 @@ struct SettingsView: View {
                 }
                 .fixedSize()
             } header: {
-                Text("Models")
-            } footer: {
-                Text("Any OpenRouter model ID works. Every lineup is checked by the app regardless of model; weaker models may just need more revision passes.")
+                Text("Model")
             }
         }
         .formStyle(.grouped)
@@ -47,7 +45,7 @@ struct SettingsView: View {
 
     private func save() {
         Keychain.apiKey = apiKey
-        testResult = "Saved."
+        testResult = "Saved"
     }
 
     private func test() {
@@ -57,7 +55,7 @@ struct SettingsView: View {
         Task {
             do {
                 try await OpenRouterClient(apiKey: apiKey).verifyKey()
-                testResult = "Key works."
+                testResult = "Works"
             } catch {
                 testResult = error.localizedDescription
             }

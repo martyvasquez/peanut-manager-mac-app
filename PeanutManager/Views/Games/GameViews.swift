@@ -11,29 +11,29 @@ struct GamesListView: View {
     var body: some View {
         let games = team.games.sorted { $0.date < $1.date }
         let upcoming = games.filter { !$0.isPast }
-        let past = games.filter(\.isPast).reversed()
+        let past = Array(games.filter(\.isPast).reversed())
 
         List(selection: $selection) {
             if !upcoming.isEmpty {
                 Section("Upcoming") { ForEach(upcoming) { GameRow(game: $0).tag($0) } }
             }
             if !past.isEmpty {
-                Section("Past") { ForEach(Array(past)) { GameRow(game: $0).tag($0) } }
+                Section("Past") { ForEach(past) { GameRow(game: $0).tag($0) } }
             }
         }
         .navigationTitle("Games")
-        .navigationSplitViewColumnWidth(min: 240, ideal: 270)
+        .navigationSplitViewColumnWidth(min: 220, ideal: 250)
         .overlay {
             if games.isEmpty {
                 ContentUnavailableView {
                     Label("No Games", systemImage: "calendar")
                 } actions: {
-                    Button("Add Game") { showingNewGame = true }
+                    Button("New Game") { showingNewGame = true }
                 }
             }
         }
         .toolbar {
-            Button("Add Game", systemImage: "plus") { showingNewGame = true }
+            Button("New Game", systemImage: "plus") { showingNewGame = true }
                 .keyboardShortcut("n", modifiers: .command)
         }
         .sheet(isPresented: $showingNewGame) {
@@ -54,15 +54,16 @@ struct GameRow: View {
     let game: Game
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("vs \(game.opponent)")
-            HStack(spacing: 6) {
-                Text(game.date.formatted(date: .abbreviated, time: .omitted))
-                if game.document?.lineup.hasDefense == true {
-                    Label("Lineup ready", systemImage: "checkmark.circle.fill").labelStyle(.iconOnly).foregroundStyle(.green)
-                }
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(game.opponent)
+                Text(game.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                    .font(.caption).foregroundStyle(.secondary)
             }
-            .font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            if game.document?.lineup.hasDefense == true {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).imageScale(.small)
+            }
         }
         .padding(.vertical, 2)
     }
@@ -75,57 +76,46 @@ struct NewGameSheet: View {
     var onCreate: (Game) -> Void
     @State private var opponent = ""
     @State private var date = Calendar.current.date(byAdding: .day, value: 1, to: .now)!
-    @State private var innings = 6
-    @State private var ruleSet: RuleSet?
 
     var body: some View {
         Form {
             TextField("Opponent", text: $opponent)
             DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
-            Picker("Innings", selection: $innings) { ForEach([3, 4, 5, 6, 7, 9], id: \.self) { Text("\($0)").tag($0) } }
-            Picker("Rules", selection: $ruleSet) {
-                Text("None").tag(RuleSet?.none)
-                ForEach(team.sortedRuleSets) { Text($0.name).tag(Optional($0)) }
-            }
         }
         .formStyle(.grouped)
-        .frame(width: 380)
-        .navigationTitle("New Game")
+        .frame(width: 360)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Add") {
-                    let game = Game(opponent: opponent.trimmingCharacters(in: .whitespaces), date: date, innings: innings)
-                    context.insert(game)
-                    game.team = team
-                    game.ruleSet = ruleSet
-                    // Carry over the last game's settings so the night-before path is one click.
-                    if let last = team.games.filter({ $0 !== game }).max(by: { $0.date < $1.date }) {
-                        game.priority = last.priority
-                        game.weighting = last.weighting
-                        if ruleSet == nil { game.ruleSet = last.ruleSet }
-                    }
-                    onCreate(game)
-                    dismiss()
-                }
-                .disabled(opponent.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button("Add") { add() }
+                    .disabled(opponent.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
-        .onAppear {
-            innings = team.defaultInnings
-            ruleSet = team.sortedRuleSets.first
+    }
+
+    /// Everything else carries over from the last game, so the common path is one click.
+    private func add() {
+        let last = team.games.max { $0.date < $1.date }
+        let game = Game(opponent: opponent.trimmingCharacters(in: .whitespaces), date: date, innings: last?.innings ?? team.defaultInnings)
+        context.insert(game)
+        game.team = team
+        game.ruleSet = last?.ruleSet ?? team.sortedRuleSets.first
+        if let last {
+            game.priority = last.priority
+            game.weighting = last.weighting
         }
+        onCreate(game)
+        dismiss()
     }
 }
 
-// MARK: - Game detail
+// MARK: - Game
 
 struct GameDetailView: View {
     @Bindable var game: Game
     @State private var model: GameModel
     @Environment(\.undoManager) private var undoManager
     @State private var showingFeedback = false
-    @State private var showingDetails = false
     @State private var confirmStartOver = false
 
     init(game: Game) {
@@ -135,161 +125,209 @@ struct GameDetailView: View {
 
     var body: some View {
         ScrollViewReader { proxy in
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                setup
-                AttendanceSection(game: game)
-                actionBar
-                if model.hasBattingOrder || model.hasDefense {
-                    ScrollView(.horizontal) {
-                        LineupGridView(model: model)
-                            .padding(10)
-                    }
-                    .background(.background, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.separator))
-                    gridLegend
-                    HStack(alignment: .top, spacing: 16) {
-                        GamePlanView(model: model).frame(maxWidth: .infinity, alignment: .topLeading)
-                        ChecksView(model: model).frame(maxWidth: .infinity, alignment: .topLeading)
-                    }
-                    .id("checks")
-                }
-            }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        #if DEBUG
-        .onChange(of: model.hasDefense) {
-            if DebugSupport.scrollToChecks { Task { try? await Task.sleep(for: .milliseconds(300)); withAnimation { proxy.scrollTo("checks", anchor: .bottom) } } }
-        }
-        #endif
-        }
-        .navigationTitle("vs \(game.opponent)")
-        .navigationSubtitle(game.date.formatted(date: .complete, time: .shortened))
-        .toolbar {
-            ToolbarItemGroup {
-                Menu {
-                    let history = game.history
-                    if history.isEmpty { Text("No earlier versions") }
-                    ForEach(history.reversed()) { version in
-                        Button("\(version.label) — \(version.savedAt.formatted(date: .omitted, time: .shortened))") {
-                            model.restore(version, undoManager: undoManager)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    header
+                    if model.hasBattingOrder || model.hasDefense {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            LineupGridView(model: model)
                         }
+                        Summary(model: model).id("summary")
+                    } else if !model.isGenerating {
+                        generateButton
                     }
-                } label: {
-                    Label("Versions", systemImage: "clock.arrow.circlepath")
+                    if model.isGenerating { progress }
                 }
-                .help("Earlier versions of this lineup")
-                Button("Print Lineup Card", systemImage: "printer") { LineupCardPrinter.print(model: model) }
-                    .keyboardShortcut("p", modifiers: .command)
-                    .disabled(!model.hasDefense)
+                .padding(.horizontal, 36)
+                .padding(.vertical, 28)
+                .frame(maxWidth: 980, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            #if DEBUG
+            .onChange(of: model.hasDefense) {
+                if DebugSupport.scrollToChecks {
+                    Task { try? await Task.sleep(for: .milliseconds(300)); withAnimation { proxy.scrollTo("summary", anchor: .bottom) } }
+                }
+            }
+            #endif
         }
+        .toolbar { toolbar }
         .sheet(isPresented: $showingFeedback) {
             FeedbackSheet { feedback, battingToo in
                 model.generate(battingToo: battingToo, feedback: feedback, undoManager: undoManager)
             }
         }
-        .alert("Couldn't Generate the Lineup", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
-            Button("OK") {}
+        .alert("Couldn't Make a Lineup", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             if model.errorMessage?.contains("Settings") == true {
                 SettingsLink { Text("Open Settings") }
             }
+            Button("OK") {}
         } message: {
             Text(model.errorMessage ?? "")
+        }
+        .confirmationDialog("Clear this lineup?", isPresented: $confirmStartOver) {
+            Button("Clear Lineup", role: .destructive) { model.startOver(undoManager: undoManager) }
+        } message: {
+            Text("You can undo, or restore it from Versions.")
         }
         .task {
             #if DEBUG
             if DebugSupport.autoGenerate && !model.hasDefense { model.generate(undoManager: undoManager) }
             #endif
         }
-        .confirmationDialog("Start over?", isPresented: $confirmStartOver) {
-            Button("Start Over", role: .destructive) { model.startOver(undoManager: undoManager) }
-        } message: {
-            Text("This clears the batting order, defense and locks. The current lineup is saved under Versions, and you can undo.")
+    }
+
+    // MARK: Header
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
+                TextField("Opponent", text: $game.opponent)
+                    .textFieldStyle(.plain)
+                    .font(.largeTitle.weight(.bold))
+                Text(game.date.formatted(.dateTime.weekday(.wide).month(.wide).day().hour().minute()))
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: 6) {
+                AttendanceButton(game: game)
+                ruleSetMenu
+                inningsMenu
+                priorityMenu
+                trustMenu
+            }
+            TextField("Notes", text: $game.notesForAI, axis: .vertical)
+                .textFieldStyle(.plain)
+                .foregroundStyle(.secondary)
+                .lineLimit(1...6)
+                .padding(.top, 4)
+                .help("Anything the AI should know: \"Cole pitches the 1st and 2nd,\" \"their lineup is lefty-heavy.\"")
         }
     }
 
-    private var setup: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 20) {
-                Picker("Rules", selection: $game.ruleSet) {
-                    Text("None").tag(RuleSet?.none)
-                    ForEach(game.team?.sortedRuleSets ?? []) { Text($0.name).tag(Optional($0)) }
-                }
-                .fixedSize()
-                Picker("Innings", selection: Binding(get: { game.innings }, set: { model.setInnings($0, undoManager: undoManager) })) {
-                    ForEach([3, 4, 5, 6, 7, 9], id: \.self) { Text("\($0)").tag($0) }
-                }
-                .fixedSize()
-                Picker("Trust", selection: Binding(get: { game.weighting }, set: { game.weighting = $0 })) {
-                    ForEach(DataWeighting.allCases, id: \.self) { Text($0.label).tag($0) }
-                }
-                .fixedSize()
-                .help("How much the AI trusts GameChanger stats vs. your ratings")
+    private var ruleSetMenu: some View {
+        Menu {
+            Picker("Rules", selection: $game.ruleSet) {
+                Text("No Rules").tag(RuleSet?.none)
+                ForEach(game.team?.sortedRuleSets ?? []) { Text($0.name).tag(Optional($0)) }
             }
-            HStack(spacing: 10) {
-                Text("Win").font(.caption).foregroundStyle(.secondary)
-                Picker("Priority", selection: Binding(get: { game.priority }, set: { game.priority = $0 })) {
-                    ForEach(GamePriority.allCases, id: \.self) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 440)
-                Text("Develop").font(.caption).foregroundStyle(.secondary)
-            }
-            DisclosureGroup("Scouting & notes for the AI", isExpanded: $showingDetails) {
-                VStack(alignment: .leading, spacing: 8) {
-                    TextField("Scouting report", text: $game.scoutingReport, prompt: Text("e.g. They bunt a lot; lefty-heavy lineup"), axis: .vertical)
-                    TextField("Notes for AI", text: $game.notesForAI, prompt: Text("e.g. Cole should pitch the 1st and 2nd"), axis: .vertical)
-                }
-                .textFieldStyle(.roundedBorder)
-                .padding(.top, 6)
-            }
+            .pickerStyle(.inline)
+        } label: {
+            Chip(game.ruleSet?.name ?? "No Rules", symbol: "list.bullet")
         }
+        .menuStyle(.button).buttonStyle(.plain).fixedSize()
     }
 
-    private var actionBar: some View {
+    private var inningsMenu: some View {
+        Menu {
+            Picker("Innings", selection: Binding(get: { game.innings }, set: { model.setInnings($0, undoManager: undoManager) })) {
+                ForEach([3, 4, 5, 6, 7, 9], id: \.self) { Text("\($0) Innings").tag($0) }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Chip("\(game.innings) Innings", symbol: "number")
+        }
+        .menuStyle(.button).buttonStyle(.plain).fixedSize()
+    }
+
+    private var priorityMenu: some View {
+        Menu {
+            Picker("Priority", selection: Binding(get: { game.priority }, set: { game.priority = $0 })) {
+                ForEach(GamePriority.allCases, id: \.self) { Text($0.label).tag($0) }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Chip(game.priority == .balanced ? "Win + Develop" : game.priority.label, symbol: "trophy")
+        }
+        .menuStyle(.button).buttonStyle(.plain).fixedSize()
+        .help("Win ↔ Develop")
+    }
+
+    private var trustMenu: some View {
+        Menu {
+            Picker("Trust", selection: Binding(get: { game.weighting }, set: { game.weighting = $0 })) {
+                ForEach(DataWeighting.allCases, id: \.self) { Text($0.label).tag($0) }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Chip(game.weighting.label, symbol: "chart.bar")
+        }
+        .menuStyle(.button).buttonStyle(.plain).fixedSize()
+        .help("What the AI trusts: GameChanger stats, your ratings, or both")
+    }
+
+    // MARK: States
+
+    private var generateButton: some View {
+        Button {
+            model.generate(battingToo: !model.hasBattingOrder, undoManager: undoManager)
+        } label: {
+            Label("Make Lineup", systemImage: "sparkles")
+                .font(.title3.weight(.medium))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.capsule)
+        .keyboardShortcut("g", modifiers: .command)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 40)
+    }
+
+    private var progress: some View {
         HStack(spacing: 10) {
-            if model.isGenerating {
-                ProgressView().controlSize(.small)
-                Text(model.status ?? "Working…").foregroundStyle(.secondary)
-                Button("Cancel") { model.cancel() }
-            } else if model.hasDefense {
-                Button("Regenerate…", systemImage: "sparkles") { showingFeedback = true }
+            ProgressView().controlSize(.small)
+            Text(model.status ?? "Thinking…").foregroundStyle(.secondary)
+            Button("Cancel") { model.cancel() }.buttonStyle(.link)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, model.hasDefense ? 0 : 40)
+    }
+
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItemGroup {
+            if model.hasDefense {
+                Button("Remake", systemImage: "sparkles") { showingFeedback = true }
                     .keyboardShortcut("g", modifiers: .command)
-                    .help("Tell the AI what to change. Locked cells stay put.")
-                Button("Start Over", role: .destructive) { confirmStartOver = true }
-                Spacer()
-                if let cost = model.document.cost, cost > 0 {
-                    Text("AI cost so far: \(cost, format: .currency(code: "USD").precision(.fractionLength(2...3)))")
-                        .font(.caption).foregroundStyle(.tertiary)
+                    .disabled(model.isGenerating)
+                    .help("Remake the lineup (⌘G). Locked spots stay.")
+                Button("Print", systemImage: "printer") { LineupCardPrinter.print(model: model) }
+                    .keyboardShortcut("p", modifiers: .command)
+            }
+            Menu {
+                let history = game.history
+                Section("Versions") {
+                    if history.isEmpty { Text("None yet") }
+                    ForEach(history.reversed()) { version in
+                        Button(version.savedAt.formatted(date: .abbreviated, time: .shortened)) {
+                            model.restore(version, undoManager: undoManager)
+                        }
+                    }
                 }
-            } else {
-                Button {
-                    model.generate(battingToo: !model.hasBattingOrder, undoManager: undoManager)
-                } label: {
-                    Label(model.hasBattingOrder ? "Fill the Defense" : "Generate Lineup", systemImage: "sparkles")
-                        .padding(.horizontal, 6)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .keyboardShortcut("g", modifiers: .command)
-                Text("Batting order and defense for every inning, checked against your rules.")
-                    .font(.callout).foregroundStyle(.secondary)
+                Divider()
+                Button("Clear Lineup…", role: .destructive) { confirmStartOver = true }
+                    .disabled(!model.hasBattingOrder && !model.hasDefense)
+            } label: {
+                Label("More", systemImage: "ellipsis")
             }
         }
     }
+}
 
-    private var gridLegend: some View {
-        HStack(spacing: 14) {
-            Text("Double-click a cell, or select it and type 1–9 (scorebook) · 0 to sit · Space to lock · ⌥↑↓ to move a batter")
-            Spacer()
-            Label("Locked", systemImage: "lock.fill")
-            Label("Adjusted by app", systemImage: "square").foregroundStyle(.orange)
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
+/// A quiet, borderless menu label: icon + value.
+struct Chip: View {
+    let text: String
+    let symbol: String
+    init(_ text: String, symbol: String) { self.text = text; self.symbol = symbol }
+
+    var body: some View {
+        Label(text, systemImage: symbol)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(.quaternary.opacity(0.6), in: Capsule())
+            .contentShape(Capsule())
     }
 }
 
@@ -300,60 +338,51 @@ struct FeedbackSheet: View {
     @State private var battingToo = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("What should change?").font(.headline)
-            TextEditor(text: $feedback)
-                .font(.body)
-                .frame(minHeight: 90)
-                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.separator))
-            Text("e.g. \"Move Jake to the outfield,\" \"Ava should catch the first three.\" Leave blank for a fresh take. Locked cells stay put.")
-                .font(.caption).foregroundStyle(.secondary)
-            Toggle("Also redo the batting order", isOn: $battingToo)
+        VStack(alignment: .leading, spacing: 14) {
+            TextField("What should change?", text: $feedback, prompt: Text("Move Jake to the outfield"), axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.title3)
+                .lineLimit(3...8)
+            Toggle("Batting order too", isOn: $battingToo)
+                .toggleStyle(.checkbox)
+                .foregroundStyle(.secondary)
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Regenerate") {
+                Button("Remake") {
                     onSubmit(feedback, battingToo)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(18)
-        .frame(width: 440)
+        .padding(20)
+        .frame(width: 420)
     }
 }
 
 // MARK: - Attendance
 
-struct AttendanceSection: View {
+/// "12 Players" chip; click to check off who's coming.
+struct AttendanceButton: View {
     @Bindable var game: Game
-    @State private var expanded = false
+    @State private var showing = false
 
     var body: some View {
         let players = game.team?.activePlayers ?? []
         let availability = game.availability
         let present = players.filter { (availability[$0.uid] ?? .present).present }.count
-
-        DisclosureGroup(isExpanded: $expanded) {
-            VStack(spacing: 0) {
-                ForEach(players) { player in
-                    AttendanceRow(game: game, player: player)
-                    Divider()
-                }
-                HStack {
-                    Button("Everyone's Here") { game.availability = [:] }
-                    Spacer()
-                }
-                .buttonStyle(.link)
-                .padding(.top, 6)
+        Button { showing.toggle() } label: {
+            Chip(present == players.count ? "\(present) Players" : "\(present) of \(players.count) Players", symbol: "person.2")
+                .foregroundStyle(present < 9 ? .red : .secondary)
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showing, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(players) { AttendanceRow(game: game, player: $0) }
             }
-            .padding(.top, 6)
-        } label: {
-            HStack {
-                Text("Who's Coming").font(.headline)
-                Text("\(present) of \(players.count)").foregroundStyle(present < 9 ? .red : .secondary)
-            }
+            .padding(.vertical, 8)
+            .frame(width: 340)
         }
     }
 }
@@ -361,6 +390,7 @@ struct AttendanceSection: View {
 struct AttendanceRow: View {
     @Bindable var game: Game
     let player: Player
+    @State private var hovering = false
 
     private var availability: Availability { game.availability[player.uid] ?? .present }
 
@@ -373,140 +403,125 @@ struct AttendanceRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Toggle(isOn: Binding(get: { availability.present }, set: { value in update { $0.present = value } })) {
-                Text(player.name).frame(width: 160, alignment: .leading)
+                Text(player.name).foregroundStyle(availability.present ? .primary : .secondary)
             }
             .toggleStyle(.checkbox)
+            Spacer()
             if availability.present {
-                Picker("Arrives", selection: Binding(get: { availability.arrivesInning ?? 1 }, set: { value in update { $0.arrivesInning = value == 1 ? nil : value } })) {
-                    Text("On time").tag(1)
-                    ForEach(2...max(game.innings, 2), id: \.self) { Text("Inning \($0)").tag($0) }
+                Menu {
+                    Picker("Arrives", selection: Binding(get: { availability.arrivesInning ?? 1 }, set: { value in update { $0.arrivesInning = value == 1 ? nil : value } })) {
+                        Text("On Time").tag(1)
+                        ForEach(2...max(game.innings, 2), id: \.self) { Text("Inning \($0)").tag($0) }
+                    }
+                    Picker("Leaves", selection: Binding(get: { availability.leavesAfterInning ?? game.innings }, set: { value in update { $0.leavesAfterInning = value >= game.innings ? nil : value } })) {
+                        Text("Stays").tag(game.innings)
+                        ForEach(1..<max(game.innings, 2), id: \.self) { Text("After \($0)").tag($0) }
+                    }
+                } label: {
+                    Text(timing).font(.caption).foregroundStyle(availability.isPartial ? .orange : .secondary)
                 }
-                .fixedSize()
-                Picker("Leaves", selection: Binding(get: { availability.leavesAfterInning ?? game.innings }, set: { value in update { $0.leavesAfterInning = value >= game.innings ? nil : value } })) {
-                    ForEach(1..<max(game.innings, 2), id: \.self) { Text("After \($0)").tag($0) }
-                    Text("Stays").tag(game.innings)
-                }
-                .fixedSize()
-                TextField("Note for today", text: Binding(get: { availability.note }, set: { value in update { $0.note = value } }), prompt: Text("e.g. sore arm, no pitching"))
-                    .textFieldStyle(.roundedBorder)
-            } else {
-                Text("Not coming").foregroundStyle(.secondary)
-                Spacer()
+                .menuStyle(.button).buttonStyle(.plain).fixedSize()
+                .opacity(availability.isPartial || hovering ? 1 : 0)
             }
         }
-        .controlSize(.small)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 4)
+        .onHover { hovering = $0 }
     }
-}
 
-// MARK: - Plan & checks
-
-struct GamePlanView: View {
-    let model: GameModel
-
-    var body: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                if !model.document.battingRationale.isEmpty {
-                    LabeledText(title: "Batting order", text: model.document.battingRationale)
-                }
-                if !model.document.defenseRationale.isEmpty {
-                    LabeledText(title: "Defense", text: model.document.defenseRationale)
-                }
-                ForEach(model.document.warnings, id: \.self) { warning in
-                    Label(warning, systemImage: "exclamationmark.triangle").font(.callout).foregroundStyle(.orange)
-                }
-                if let generated = model.document.generatedAt {
-                    Text("Generated \(generated.formatted(date: .abbreviated, time: .shortened)) with \(model.document.model). Hover a name or inning for the AI's reasoning.")
-                        .font(.caption).foregroundStyle(.tertiary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Label("Game Plan", systemImage: "sparkles")
+    private var timing: String {
+        switch (availability.arrivesInning, availability.leavesAfterInning) {
+        case (nil, nil): "All game"
+        case (let a?, nil): "From \(a)"
+        case (nil, let l?): "Through \(l)"
+        case (let a?, let l?): "\(a)–\(l)"
         }
     }
 }
 
-struct LabeledText: View {
-    let title: String
-    let text: String
+// MARK: - Summary under the grid
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-            Text(text).font(.callout).textSelection(.enabled)
-        }
-    }
-}
-
-/// Compliance as computed by the app — not the AI's self-report.
-struct ChecksView: View {
+/// One line when all is well; details only when asked for or when something's wrong.
+struct Summary: View {
     let model: GameModel
+    @State private var expanded = false
 
     var body: some View {
-        let findings = model.findings
-        let violations = findings.violations
+        let violations = model.findings.violations
         let rules = model.context.activeRules
         let checked = rules.filter { $0.check != nil }
-        let judgment = rules.filter { $0.check == nil }
+        let judged = rules.filter { $0.check == nil }
 
-        GroupBox {
-            VStack(alignment: .leading, spacing: 8) {
-                if violations.isEmpty {
-                    Label(model.hasDefense ? "Lineup verified" : "Batting order verified", systemImage: "checkmark.seal.fill")
-                        .foregroundStyle(.green).font(.callout.weight(.semibold))
-                    Text(model.hasDefense
-                         ? "All 9 positions every inning, nobody in two places, everyone accounted for, eligibility, locks and the pitcher re-entry rule — checked by the app."
-                         : "Everyone here bats exactly once.")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else {
-                    Label("\(violations.count) problem\(violations.count == 1 ? "" : "s")", systemImage: "exclamationmark.octagon.fill")
-                        .foregroundStyle(.red).font(.callout.weight(.semibold))
-                    ForEach(violations) { finding in
-                        Text(finding.message).font(.callout)
+        VStack(alignment: .leading, spacing: 14) {
+            Button { withAnimation(.snappy) { expanded.toggle() } } label: {
+                HStack(spacing: 6) {
+                    if violations.isEmpty {
+                        Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
+                        Text("Follows your rules")
+                    } else {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                        Text(violations.count == 1 ? "1 problem" : "\(violations.count) problems")
                     }
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(expanded ? 90 : 0))
                 }
+                .font(.callout.weight(.medium))
+            }
+            .buttonStyle(.plain)
+            .disabled(!model.hasDefense && violations.isEmpty)
 
-                if !checked.isEmpty && model.hasDefense {
-                    Divider()
-                    Text("Checked by the app").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            if !violations.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(violations) { Text($0.message).foregroundStyle(.secondary) }
+                }
+                .font(.callout)
+            }
+
+            if expanded && model.hasDefense {
+                VStack(alignment: .leading, spacing: 6) {
                     ForEach(checked) { rule in
                         let failed = violations.contains { $0.ruleID == rule.id }
-                        Label(rule.text, systemImage: failed ? "xmark.circle.fill" : "checkmark.circle.fill")
-                            .foregroundStyle(failed ? .red : .green)
-                            .font(.callout)
+                        RuleLine(text: rule.text, symbol: failed ? "xmark" : "checkmark", tint: failed ? .red : .green)
+                    }
+                    ForEach(judged) { rule in
+                        RuleLine(text: rule.text, symbol: "sparkles", tint: .secondary)
+                            .help("Judged by the AI, not checked by the app")
+                    }
+                    if model.document.appAdjustedCount > 0 {
+                        RuleLine(text: "\(model.document.appAdjustedCount) spots adjusted by the app (outlined)", symbol: "wrench.adjustable", tint: .orange)
                     }
                 }
-
-                if !judgment.isEmpty && model.hasDefense {
-                    Divider()
-                    Text("AI judgment (not verified by the app)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    ForEach(judgment) { rule in
-                        let note = model.document.aiRuleNotes.first { $0.rule.localizedCaseInsensitiveContains(rule.text.prefix(25)) || rule.text.localizedCaseInsensitiveContains($0.rule.prefix(25)) }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Label(rule.text, systemImage: "sparkles").font(.callout)
-                            if let note, !note.details.isEmpty {
-                                Text("AI: \(note.details)").font(.caption).foregroundStyle(.secondary).padding(.leading, 22)
-                            }
-                        }
-                    }
-                }
-
-                if model.document.appAdjustedCount > 0 {
-                    Divider()
-                    Label("The AI couldn't fix every problem after \(model.document.revisions) tries, so the app changed \(model.document.appAdjustedCount) cell\(model.document.appAdjustedCount == 1 ? "" : "s") (outlined in orange).", systemImage: "wrench.adjustable")
-                        .font(.caption).foregroundStyle(.orange)
-                } else if model.document.revisions > 0 {
-                    Text("The AI fixed \(model.document.revisions == 1 ? "a rule problem" : "rule problems") after the app's check.")
-                        .font(.caption).foregroundStyle(.tertiary)
-                }
+                .font(.callout)
+                .padding(.leading, 2)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Label("Checks", systemImage: "checklist")
+
+            let plan = [model.document.battingRationale, model.document.defenseRationale].filter { !$0.isEmpty }
+            if !plan.isEmpty {
+                Text(plan.joined(separator: " "))
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(model.document.warnings, id: \.self) { warning in
+                Label(warning, systemImage: "exclamationmark.triangle").foregroundStyle(.orange).font(.callout)
+            }
+        }
+    }
+}
+
+struct RuleLine: View {
+    let text: String
+    let symbol: String
+    let tint: Color
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: symbol).foregroundStyle(tint).frame(width: 14)
+            Text(text).foregroundStyle(.secondary)
         }
     }
 }

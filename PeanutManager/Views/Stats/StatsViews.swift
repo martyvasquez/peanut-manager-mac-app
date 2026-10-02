@@ -26,7 +26,7 @@ struct StatsListView: View {
         .navigationSplitViewColumnWidth(min: 380, ideal: 440)
         .overlay {
             if players.allSatisfy({ $0.stats == nil }) {
-                ContentUnavailableView("No Stats Yet", systemImage: "chart.bar.xaxis", description: Text("Import a GameChanger season stats export →"))
+                ContentUnavailableView("No Stats", systemImage: "chart.bar.xaxis")
             }
         }
     }
@@ -51,11 +51,11 @@ struct ImportStatsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Import GameChanger Stats").font(.title2.weight(.semibold))
-            Text("In GameChanger, export your team's season stats as CSV, then drop the file here. Players are matched by jersey number, then exact name; anything uncertain is left for you to choose.")
+            Text("Import Stats").font(.largeTitle.weight(.bold))
+            Text("Drop a GameChanger season export here.")
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Choose CSV…") { importing = true }
+                Button("Choose File…") { importing = true }
                 if !fileName.isEmpty { Text(fileName).foregroundStyle(.secondary) }
             }
             if let error { Text(error).foregroundStyle(.red) }
@@ -67,11 +67,10 @@ struct ImportStatsView: View {
                         HStack {
                             Text("#\(row.number)").monospacedDigit().foregroundStyle(.secondary).frame(width: 40, alignment: .leading)
                             Text(row.fullName).frame(width: 160, alignment: .leading)
-                            Text("\(row.batting.pa) PA").font(.caption).foregroundStyle(.secondary).frame(width: 50)
                             Picker("Match", selection: Binding(get: { choices[index] ?? .skip }, set: { choices[index] = $0 })) {
                                 ForEach(team.activePlayers) { Text($0.name).tag(Choice.player($0.uid)) }
                                 Divider()
-                                Text("Add as new player").tag(Choice.newPlayer)
+                                Text("New Player").tag(Choice.newPlayer)
                                 Text("Skip").tag(Choice.skip)
                             }
                             .labelsHidden()
@@ -82,13 +81,14 @@ struct ImportStatsView: View {
                 HStack {
                     Spacer()
                     Button("Cancel") { rows = []; fileName = "" }
-                    Button("Import \(choices.values.filter { $0 != .skip }.count) Players") { apply() }
+                    Button("Import") { apply() }
                         .buttonStyle(.borderedProminent)
                 }
             }
             Spacer()
         }
-        .padding(20)
+        .padding(.horizontal, 36)
+        .padding(.vertical, 28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .fileImporter(isPresented: $importing, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
             if case .success(let url) = result { load(url) }
@@ -145,7 +145,7 @@ struct ImportStatsView: View {
             }
         }
         team.statsImportedAt = .now
-        done = "Imported stats for \(count) players."
+        done = "\(count) players updated"
         rows = []
     }
 }

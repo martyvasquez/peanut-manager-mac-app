@@ -15,15 +15,16 @@ struct WelcomeView: View {
                 .font(.system(size: 52, weight: .light))
                 .foregroundStyle(.tint)
             Text("Peanut Manager").font(.largeTitle.weight(.semibold))
-            Text("Set your lineup in minutes, not an hour. AI builds the batting order and every inning's defense from your stats, ratings and rules — and the app checks every rule before you see it.")
-                .multilineTextAlignment(.center)
+            Text("Lineups in minutes.")
+                .font(.title3)
                 .foregroundStyle(.secondary)
-                .frame(maxWidth: 460)
             HStack(spacing: 12) {
-                Button("Create a Team…") { showingNewTeam = true }
+                Button("New Team") { showingNewTeam = true }
                     .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
                     .controlSize(.large)
-                Button("Try the Sample Team") { loadSample() }
+                Button("Try a Sample") { loadSample() }
+                    .buttonBorderShape(.capsule)
                     .controlSize(.large)
             }
             if let error { Text(error).foregroundStyle(.red).font(.callout) }
@@ -59,15 +60,14 @@ struct TeamSheet: View {
     var body: some View {
         Form {
             TextField("Team Name", text: $name)
-            TextField("Age Group", text: $ageGroup, prompt: Text("e.g. 10U"))
-            Picker("Innings per Game", selection: $innings) {
+            TextField("Age Group", text: $ageGroup, prompt: Text("10U"))
+            Picker("Innings", selection: $innings) {
                 ForEach([3, 4, 5, 6, 7, 9], id: \.self) { Text("\($0)").tag($0) }
             }
         }
         .formStyle(.grouped)
         .frame(width: 380)
-        .navigationTitle(team == nil ? "New Team" : "Edit Team")
-        .toolbar {
+                .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             ToolbarItem(placement: .confirmationAction) {
                 Button(team == nil ? "Create" : "Save") { save() }
