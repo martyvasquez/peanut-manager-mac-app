@@ -278,13 +278,20 @@ nonisolated struct FieldLines: Shape {
         let second = CGPoint(x: rect.midX, y: rect.height * 0.36)
         let third = CGPoint(x: rect.width * 0.20, y: rect.height * 0.63)
         path.move(to: home); path.addLine(to: first); path.addLine(to: second); path.addLine(to: third); path.closeSubpath()
-        // Foul lines out to the outfield arc.
-        let leftFoul = CGPoint(x: rect.width * 0.0, y: rect.height * 0.30)
-        let rightFoul = CGPoint(x: rect.width * 1.0, y: rect.height * 0.30)
+        // Foul lines run straight from home plate through first and third to the fence.
+        func extend(through base: CGPoint, toX x: CGFloat) -> CGPoint {
+            let t = (x - home.x) / (base.x - home.x)
+            return CGPoint(x: x, y: home.y + t * (base.y - home.y))
+        }
+        let leftFoul = extend(through: third, toX: rect.width * 0.01)
+        let rightFoul = extend(through: first, toX: rect.width * 0.99)
         path.move(to: third); path.addLine(to: leftFoul)
         path.move(to: first); path.addLine(to: rightFoul)
+        // Outfield fence: a quad curve whose top sits just above center field.
+        let apexY = rect.height * 0.0
+        let control = CGPoint(x: rect.midX, y: 2 * apexY - (leftFoul.y + rightFoul.y) / 2)
         path.move(to: leftFoul)
-        path.addQuadCurve(to: rightFoul, control: CGPoint(x: rect.midX, y: -rect.height * 0.12))
+        path.addQuadCurve(to: rightFoul, control: control)
         return path
     }
 }
