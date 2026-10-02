@@ -230,7 +230,7 @@ public enum Prompts {
     }
 
     static func footer(_ context: GameContext) -> String {
-        var text = "\nScouting Report: " + (context.scoutingReport.isEmpty ? "None provided" : context.scoutingReport)
+        var text = "\nScouting Report (the opponent; use it where it should change your choices): " + (context.scoutingReport.isEmpty ? "None provided" : context.scoutingReport)
         if !context.notesForAI.isEmpty {
             text += "\n\nNotes for AI: \(context.notesForAI)"
         }

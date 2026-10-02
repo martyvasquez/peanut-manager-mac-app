@@ -1,9 +1,93 @@
 # Peanut Manager v2 — Improvement Plan & Mac Port Direction
 
-**Status:** Draft 7 · October 2, 2026 (fully local; no v1 data import)
+**Status:** Draft 8 · October 2, 2026 · First build shipped to `main` (see *Build status*)
 **Audience:** Marty, other developers, coding agents
 **Source app:** `~/Development/baseball-lineups` (Next.js + Supabase, v1.7.6, Feb 2026)
 **Target app:** this repo (`~/Development/peanut-manager-mac`), a native macOS app
+
+---
+
+## Build status (Oct 2, 2026)
+
+Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID `com.martyvasquez.PeanutManager`, macOS 26+. Marty is using it with a real team (SMV Trojans, LL Majors).
+
+### Done
+
+- **Core (`LineupKit`, 42 tests):**
+  - Validator: all built-in invariants (§4.3) plus 8 checkable rule types.
+  - Feasibility check: reports each problem once.
+  - Minimal-change safety net: property-tested over 300 random broken lineups.
+  - v1 prompts ported, with the audited fixes (Appendix B #13, #15, #16, #18).
+  - Decide → verify → revise engine.
+  - Batting-order feedback.
+  - Short player IDs; the model's prose is converted back to names.
+  - GameChanger import: section-aware; batting, fielding, pitching and catcher innings; exact matching.
+- **The night-before path (M2):**
+  - Two-step lineup: (1) batting order list with drag reorder and "Remake…"; (2) empty grid → lock spots → **Fill the Rest**.
+  - Click-to-pick position picker: open / taken (swap) / current / can't / best.
+  - Real swaps and persisted edits.
+  - Undo; versions (snapshot before every remake); Clear Positions / Clear Lineup.
+  - Keyboard (1–9 scorebook, 0 sit, Space lock, ⌥↑↓), drag reorder in the grid.
+  - Summary: "Follows your rules," checked vs. AI-judged rules, notes, plan.
+- **Roster:**
+  - Field-diagram positions (doesn't play / plays / best).
+  - Notes; grouped star ratings (pitching and catching only when relevant); stat tiles.
+  - GameChanger history turns on P/C automatically, without overriding coach edits.
+- **Rules:** rule sets, plain text, attach a code check per rule.
+- **Games:**
+  - Chips: attendance with late/early, rules, innings, priority, trust, model.
+  - Notes for the AI, and an opponent **scouting report** that is sent to both prompts and carries over to the next game against the same opponent.
+  - Settings carry over from the last game.
+  - Feasibility alert offers "Use GameChanger History" / "Open Roster."
+- **Stats:** full-width sortable table; import sheet with match review.
+- **Settings:** OpenRouter key in keychain + test; Models tab with OpenRouter's live catalog (search, prices, pin); default `anthropic/claude-sonnet-5.5`; Muse Spark 1.3 Contributor included.
+- **App:** icon and accent color; local SwiftData store in its own folder; debug launch flags (README).
+
+### Still to do (priority order)
+
+1. **Sparkle auto-update + release workflow** (M0 remainder). Follow `baseball-situational-simulator/docs/mac-auto-update-playbook.md`:
+   - Add Sparkle via SPM; `AppUpdater`; "Check for Updates…".
+   - `generate_keys --account com.martyvasquez.PeanutManager`; `SPARKLE_PRIVATE_KEY` secret.
+   - `.github/workflows/release-mac.yml`.
+   - Feed URL `https://github.com/martyvasquez/peanut-manager-mac-app/releases/latest/download/appcast.xml`.
+   - Local 127.0.0.1 update test and tamper test.
+   - **Needs Marty's OK** (adds a workflow and a secret). The bundle ID is now fixed forever.
+2. **AI player & team assessments (§5, M3).** Not started. Needs:
+   - Scout task and cached `PlayerAssessment` / `TeamAssessment` models.
+   - Fact sheets with citation IDs; Insights screens (player tab or section; team page).
+   - Coach pushback; re-assess on import.
+   - Feed assessments into the Strategist prompt.
+   - Port v1's stats-analysis prompts as the baseline, with coach ratings back in.
+3. **Evals (§10).** Not started. Needs:
+   - A golden set: fixture teams as JSON, Marty's real rules/rosters, expected rule templates, assessment fixtures.
+   - Harness: `swift test --filter Evals`, or a small CLI hitting OpenRouter.
+   - Metrics: valid-first-try, revisions, safety-net use, cost, latency, Marty-graded quality.
+   - Use the results to compare models (Sonnet vs. Muse, etc.) and gate prompt changes against v1.
+4. **Printing & sharing (§6.6).**
+   - A lineup card prints via `NSPrintOperation` but has **never been tested on paper**.
+   - Needs a real print check, layout polish (jersey numbers, position key, big type), PDF export, "Copy as text" for team chats, and an optional per-inning dugout card.
+5. **Season & game day (§6.2–6.5, M4).**
+   - Playing-time ledger across games, fed to the AI as facts.
+   - Pitching tracker with rest-day presets.
+   - Game-day mode with mid-game re-plan.
+   - Game status/score entry: `ourScore` / `theirScore` exist in the model with no UI.
+6. **Rules intelligence (§4.3, §8.4, M5).**
+   - AI Rule Interpreter that fills "Understood as…" checks automatically (today the coach attaches checks by hand).
+   - Jev (Decisions API) cascade.
+   - Learn-from-edits suggestions (§6.9).
+7. **Smaller gaps:**
+   - Show AI cost: tracked per lineup in `LineupDocument.cost`, not displayed anywhere since the design pass.
+   - JSON backup/export of the library (§7.2).
+   - Edit a game's date after creation (only the opponent is editable inline).
+   - Per-task model picker: only the lineup task exists today; Scout/Interpreter will need their own.
+   - Structured outputs (`response_format: json_schema`) and prompt caching (§8.3).
+   - Softball / 10-fielder formats (Q4).
+   - No app-target UI tests; only `LineupKit` is tested.
+8. **Unverified by the builder (needs Marty's hands):**
+   - Drag-to-reorder in the grid and list (code path exercised programmatically after the crash fix).
+   - A real model filling around locks.
+   - Printing.
+   - In some Debug launches two identical windows appeared; investigate window restoration.
 
 ---
 
@@ -490,7 +574,7 @@ Most rule interpretations then resolve instantly and cheaply. Feedback becomes a
 | Area | Decision |
 |---|---|
 | UI | SwiftUI, AppKit where needed (grid keyboard handling, printing) |
-| Minimum OS | **macOS 26** (Tahoe) proposed: latest SwiftUI, Liquid Glass, `@Observable`. Open question Q2. |
+| Minimum OS | **macOS 26** (decided). |
 | Language | Swift 6, strict concurrency |
 | Persistence | SwiftData (local store). JSON backup/export. |
 | Secrets | Keychain (one OpenRouter key covers LLMs and Jev) |
@@ -562,27 +646,27 @@ Goal: feels like Apple or Cultured Code (Things 3) built it. Detailed design is 
 
 | # | Milestone | Outcome |
 |---|---|---|
-| M0 | Scaffold | XcodeGen project, `LineupKit` package, CI test + Sparkle release pipeline proven end to end (playbook steps 1–7). |
-| M1 | Core + v1 AI port | SwiftData model, validator + fact sheets, OpenRouter BYOK client. **v1's prompts ported as-is** as the baseline, wrapped in the verify → revise loop, and a CLI/eval harness over fixture teams. Success: v1-quality lineups with zero rule violations. |
-| M2 | The night-before path | The UX milestone and **first usable build**. Roster, games, attendance, one-click generate, the keyboard-driven grid (locks, real swaps, undo, history, persisted edits), regenerate with a sentence, game plan + verified compliance, print/share. Polish until it's faster than a spreadsheet. |
-| M3 | Insights | Player and Team Insights screens; Scout assessment upgrades (ratings back in, grounded citations, eye-vs-data, trends, coach pushback), eval-gated against v1's analysis; GameChanger import v2. |
-| M4 | Season & game day | Fair-play ledger, pitching tracker and rest presets, availability windows, game-day mode, mid-game AI re-plan. |
-| M5 | Smarter rules & learning | Rule Interpreter + Jev cascade with "Understood as…", learn-from-edits suggestions, per-task model picker with tested badges, Jev claim checks. |
+| M0 | Scaffold *(done except Sparkle/CI)* | XcodeGen project, `LineupKit` package, CI test + Sparkle release pipeline proven end to end (playbook steps 1–7). |
+| M1 | Core + v1 AI port *(done; eval harness not built)* | SwiftData model, validator + fact sheets, OpenRouter BYOK client. **v1's prompts ported as-is** as the baseline, wrapped in the verify → revise loop, and a CLI/eval harness over fixture teams. Success: v1-quality lineups with zero rule violations. |
+| M2 | The night-before path *(done; printing untested)* | The UX milestone and **first usable build**. Roster, games, attendance, one-click generate, the keyboard-driven grid (locks, real swaps, undo, history, persisted edits), regenerate with a sentence, game plan + verified compliance, print/share. Polish until it's faster than a spreadsheet. |
+| M3 | Insights *(not started; GameChanger import v2 done)* | Player and Team Insights screens; Scout assessment upgrades (ratings back in, grounded citations, eye-vs-data, trends, coach pushback), eval-gated against v1's analysis; GameChanger import v2. |
+| M4 | Season & game day *(availability windows done; rest not started)* | Fair-play ledger, pitching tracker and rest presets, availability windows, game-day mode, mid-game AI re-plan. |
+| M5 | Smarter rules & learning *(model picker done; rest not started)* | Rule Interpreter + Jev cascade with "Understood as…", learn-from-edits suggestions, per-task model picker with tested badges, Jev claim checks. |
 | M6 | Beyond | iPad/iPhone exploration (reusing `LineupKit`); retire the web app and Supabase. |
 
 The first usable build arrives after M2. AI quality starts at v1's B from day one, because M1 ports the proven prompts. M3 and M5 push it toward an A, and every change is gated on beating v1 in the replay evals.
 
 ## 13. Open questions
 
-- **Q1. App name.** Keep "Peanut Manager"? It also decides the bundle ID, which Sparkle needs fixed forever.
-- **Q2. Minimum macOS.** 26 (Tahoe) is the cleanest and best looking. Do friends you'd give it to run older versions?
-- **Q3. Repo visibility.** Sparkle needs public releases. Public source repo, or private source plus a public releases repo?
+- **Q1. App name.** *Resolved:* Peanut Manager, `com.martyvasquez.PeanutManager`.
+- **Q2. Minimum macOS.** *Resolved:* macOS 26.
+- **Q3. Repo visibility.** *Resolved:* public (github.com/martyvasquez/peanut-manager-mac-app), so Sparkle can use its releases directly.
 - **Q4. Field formats.** The pitch says baseball **and** softball, so sport becomes a team setting. Do you also need 10-fielder formats (4 outfielders, common in younger softball and coach-pitch)? Supporting a configurable field early is cheap; adding it later is not.
-- **Q5. League presets.** Which league(s) do you coach in? Your real rules seed the template catalog and the golden eval set.
+- **Q5. League presets.** *Partly answered:* LL Majors (11–12). Still need the real league rules as written to seed rule checks and evals.
 - **Q6. Ratings.** Keep all 14, or collapse to about 6 after we see which ones actually move the AI's decisions (measurable with evals)?
-- **Q7. Multi-team.** Kept in the model (cheap). Confirm it's still wanted.
+- **Q7. Multi-team.** *Resolved:* kept; team menu has New / Edit / Delete.
 - **Q8. Jev cascade threshold UX.** When Jev is unsure, should the app silently escalate to the LLM (costs a few cents), or ask the coach to pick among Jev's top 2–3 interpretations (free, one click)? Proposed: ask the coach for rule interpretation, escalate silently for feedback.
-- **Q9. Eval fixtures.** v1 data isn't imported, so the eval set is hand-built: fixture teams written as local JSON, plus Marty's real rosters and rules once he enters them in the app. Exportable via JSON backup.
+- **Q9. Eval fixtures.** *Resolved direction:* no v1 import; hand-built fixtures plus Marty's real Trojans data (export once backup exists).
 
 ---
 

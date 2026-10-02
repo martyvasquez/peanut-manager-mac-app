@@ -103,6 +103,13 @@ struct EngineTests {
         #expect(!prompt.contains("Plate Discipline: 3"))
     }
 
+    @Test func promptIncludesScoutingReport() {
+        var ctx = context
+        ctx.scoutingReport = "They bunt a lot"
+        #expect(Prompts.battingOrder(ctx, ids: PromptIDs(players: players)).contains("They bunt a lot"))
+        #expect(Prompts.defense(ctx, battingOrder: players.map(\.id), ids: PromptIDs(players: players)).contains("They bunt a lot"))
+    }
+
     @Test func promptIncludesCoachNotes() {
         // v1 blind spot #15: player notes never reached the lineup AI.
         var team = players

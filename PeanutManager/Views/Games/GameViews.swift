@@ -104,6 +104,11 @@ struct NewGameSheet: View {
             game.priority = last.priority
             game.weighting = last.weighting
         }
+        // Scouting notes on an opponent carry over to the next game against them.
+        let name = game.opponent.lowercased()
+        if let previous = team.games.filter({ $0 !== game && $0.opponent.lowercased() == name && !$0.scoutingReport.isEmpty }).max(by: { $0.date < $1.date }) {
+            game.scoutingReport = previous.scoutingReport
+        }
         onCreate(game)
         dismiss()
     }
@@ -225,12 +230,16 @@ struct GameDetailView: View {
                 trustMenu
                 ModelMenu()
             }
-            TextField("Notes", text: $game.notesForAI, axis: .vertical)
-                .textFieldStyle(.plain)
-                .foregroundStyle(.secondary)
-                .lineLimit(1...6)
-                .padding(.top, 4)
-                .help("Anything the AI should know: \"Cole pitches the 1st and 2nd,\" \"their lineup is lefty-heavy.\"")
+            VStack(alignment: .leading, spacing: 6) {
+                TextField("Notes", text: $game.notesForAI, axis: .vertical)
+                    .help("For the AI: \"Cole pitches the 1st and 2nd,\" \"Ava's arm is sore.\"")
+                TextField("Scouting report on \(game.opponent.isEmpty ? "the opponent" : game.opponent)", text: $game.scoutingReport, axis: .vertical)
+                    .help("What you know about this team: \"They bunt a lot,\" \"lefty-heavy lineup,\" \"fast kids at the top.\" The AI uses it when it helps; it carries over the next time you play them.")
+            }
+            .textFieldStyle(.plain)
+            .foregroundStyle(.secondary)
+            .lineLimit(1...6)
+            .padding(.top, 4)
         }
     }
 
