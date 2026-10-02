@@ -61,7 +61,7 @@ struct GameRow: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            if game.document?.lineup.hasDefense == true {
+            if game.document?.generatedAt != nil && game.document?.lineup.hasDefense == true {
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).imageScale(.small)
             }
         }
@@ -145,7 +145,7 @@ struct GameDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             #if DEBUG
-            .onChange(of: model.hasDefense) {
+            .onChange(of: model.isFilled) {
                 if DebugSupport.scrollToChecks {
                     Task { try? await Task.sleep(for: .milliseconds(300)); withAnimation { proxy.scrollTo("summary", anchor: .bottom) } }
                 }
@@ -194,7 +194,14 @@ struct GameDetailView: View {
         }
         #if DEBUG
         .onChange(of: model.hasBattingOrder) {
-            if DebugSupport.autoPositions && model.hasBattingOrder && !model.hasDefense { model.setPositions(undoManager: undoManager) }
+            if DebugSupport.autoPositions && model.hasBattingOrder && !model.isFilled { model.setPositions(undoManager: undoManager) }
+            if UserDefaults.standard.bool(forKey: "PMOpenPositions") && model.hasBattingOrder {
+                model.preparePositions()
+                // Lock one spot the way a coach would, to show the state before Fill the Rest.
+                if let first = model.lineup.battingOrder.first(where: { model.context.player($0)?.profile.canPlay(.p) == true }) {
+                    model.assign(first, to: .field(.p), inning: 1, undoManager: undoManager)
+                }
+            }
         }
         #endif
     }
@@ -311,28 +318,30 @@ struct GameDetailView: View {
         HStack(spacing: 10) {
             StepLink(title: "Batting Order", active: model.step == .battingOrder) { model.step = .battingOrder }
             Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.quaternary)
-            StepLink(title: "Positions", active: model.step == .positions) { model.step = .positions }
-                .disabled(!model.hasDefense && model.generating != .positions)
+            StepLink(title: "Positions", active: model.step == .positions) { model.preparePositions() }
+                .disabled(!model.hasBattingOrder)
             Spacer()
             if !model.isGenerating {
-                Button("Remake…", systemImage: "sparkles") { feedbackFor = model.step }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
-                    .disabled(model.step == .positions && !model.hasDefense)
-                    .help(model.step == .battingOrder ? "Tell the AI what to change in the order" : "Tell the AI what to change. Locked spots stay.")
+                if model.step == .battingOrder || model.isFilled {
+                    Button("Remake…", systemImage: "sparkles") { feedbackFor = model.step }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.secondary)
+                        .help(model.step == .battingOrder ? "Tell the AI what to change in the order" : "Tell the AI what to change. Locked spots stay.")
+                }
                 if model.step == .battingOrder {
-                    if model.hasDefense {
-                        Button { model.step = .positions } label: { Label("Positions", systemImage: "arrow.right") }
-                            .buttonStyle(.bordered)
-                            .buttonBorderShape(.capsule)
-                    } else {
-                        Button { model.setPositions(undoManager: undoManager) } label: {
-                            Label("Set Positions", systemImage: "arrow.right").padding(.horizontal, 4)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .buttonBorderShape(.capsule)
-                        .keyboardShortcut("g", modifiers: .command)
+                    Button { model.preparePositions() } label: {
+                        Label("Positions", systemImage: "arrow.right").padding(.horizontal, 4)
                     }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
+                    .keyboardShortcut("g", modifiers: .command)
+                } else if !model.isFilled {
+                    Button { model.setPositions(undoManager: undoManager) } label: {
+                        Label(model.document.locks.isEmpty ? "Fill Positions" : "Fill the Rest", systemImage: "sparkles").padding(.horizontal, 4)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
+                    .keyboardShortcut("g", modifiers: .command)
                 }
             }
         }
@@ -340,14 +349,19 @@ struct GameDetailView: View {
 
     @ViewBuilder
     private var stepContent: some View {
-        if model.isGenerating && (model.generating == .battingOrder || !model.hasDefense) {
+        if model.isGenerating && model.generating == .battingOrder {
             progress
         } else if model.step == .battingOrder {
             BattingOrderList(model: model)
         } else {
-            if model.isGenerating { progress }
+            if model.isGenerating {
+                progress
+            } else if !model.isFilled {
+                Text("Click any spot to lock it in. The AI fills the rest.")
+                    .foregroundStyle(.secondary)
+            }
             LineupGridView(model: model)
-            Summary(model: model).id("summary")
+            if model.isFilled { Summary(model: model).id("summary") }
         }
     }
 
@@ -358,13 +372,13 @@ struct GameDetailView: View {
             Button("Cancel") { model.cancel() }.buttonStyle(.link)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, model.hasDefense ? 0 : 60)
+        .padding(.vertical, model.step == .positions ? 0 : 60)
     }
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
-            if model.hasDefense {
+            if model.isFilled {
                 Button("Print", systemImage: "printer") { LineupCardPrinter.print(model: model) }
                     .keyboardShortcut("p", modifiers: .command)
             }
@@ -379,6 +393,8 @@ struct GameDetailView: View {
                     }
                 }
                 Divider()
+                Button("Clear Positions") { model.clearPositions(undoManager: undoManager) }
+                    .disabled(!model.hasDefense)
                 Button("Clear Lineup…", role: .destructive) { confirmStartOver = true }
                     .disabled(!model.hasBattingOrder && !model.hasDefense)
             } label: {

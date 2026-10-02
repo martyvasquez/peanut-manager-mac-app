@@ -20,7 +20,7 @@ final class GameModel {
         self.game = game
         self.document = game.document ?? LineupDocument()
         normalize()
-        step = document.lineup.hasDefense ? .positions : .battingOrder
+        step = hasGrid && hasBattingOrder ? .positions : .battingOrder
     }
 
     // MARK: - Derived
@@ -56,6 +56,10 @@ final class GameModel {
     var lineup: Lineup { document.lineup }
     var hasBattingOrder: Bool { !document.lineup.battingOrder.isEmpty }
     var hasDefense: Bool { document.lineup.hasDefense }
+    /// The positions grid exists (it may be empty, or hold only the coach's locked spots).
+    var hasGrid: Bool { game.innings > 0 && document.lineup.innings.count == game.innings }
+    /// The AI has filled the positions at least once.
+    var isFilled: Bool { document.generatedAt != nil && hasDefense }
 
     /// Live validation — recomputed on every edit, never taken from the AI.
     var findings: [Finding] {
@@ -72,7 +76,7 @@ final class GameModel {
         let ctx = context
         var result: [Finding] = []
         if hasBattingOrder { result += Validator.validateBattingOrder(document.lineup.battingOrder, context: ctx) }
-        if hasDefense { result += Validator.validateDefense(document.lineup, context: ctx) }
+        if isFilled { result += Validator.validateDefense(document.lineup, context: ctx) }
         return result
     }
 
@@ -155,6 +159,33 @@ final class GameModel {
         }
     }
 
+    /// Opens step 2 with an empty grid so the coach can lock spots before the AI fills the rest.
+    func preparePositions() {
+        if !hasGrid {
+            document.lineup.resize(innings: game.innings)
+            save()
+        }
+        step = .positions
+    }
+
+    /// Back to an empty grid, keeping the batting order.
+    func clearPositions(undoManager: UndoManager?) {
+        snapshot("Before Clear Positions")
+        mutate("Clear Positions", undoManager: undoManager) { doc in
+            doc.lineup.innings = Array(repeating: InningAssignment(), count: game.innings)
+            doc.locks = []
+            doc.provenance = [:]
+            doc.inningReasons = []
+            doc.defenseRationale = ""
+            doc.warnings = []
+            doc.aiRuleNotes = []
+            doc.revisions = 0
+            doc.appAdjustedCount = 0
+            doc.generatedAt = nil
+        }
+        step = .positions
+    }
+
     /// List reordering in the batting order step.
     func moveBatters(fromOffsets source: IndexSet, toOffset destination: Int, undoManager: UndoManager?) {
         mutate("Move in Batting Order", undoManager: undoManager) { doc in
@@ -181,7 +212,7 @@ final class GameModel {
     func setInnings(_ innings: Int, undoManager: UndoManager?) {
         game.innings = innings
         mutate("Change Innings", undoManager: undoManager) { doc in
-            if doc.lineup.hasDefense { doc.lineup.resize(innings: innings) }
+            if doc.lineup.innings.count > 0 { doc.lineup.resize(innings: innings) }
             doc.locks.removeAll { $0.inning > innings }
         }
     }
@@ -228,7 +259,7 @@ final class GameModel {
     /// Step 2: the AI fills every inning around the batting order. Locked spots stay put.
     func setPositions(feedback: String? = nil, undoManager: UndoManager?) {
         run(.positions, undoManager: undoManager) { engine, report in
-            let current = self.hasDefense ? self.document.lineup : nil
+            let current = self.isFilled ? self.document.lineup : nil
             let defense = try await engine.defense(self.context, battingOrder: self.document.lineup.battingOrder, currentLineup: current, feedback: feedback, progress: report)
             try Task.checkCancellation()
             self.mutate("Set Positions", undoManager: undoManager) { doc in

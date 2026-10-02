@@ -13,6 +13,7 @@ struct LineupGridView: View {
     @State private var width: CGFloat = 600
     @State private var dragging: PlayerID?
     @State private var dropTarget: PlayerID?
+    @State private var hovered: CellKey?
 
     // Sized to fill the available width, within comfortable limits.
     private var nameWidth: CGFloat { min(max(width * 0.26, 200), 280) }
@@ -85,7 +86,7 @@ struct LineupGridView: View {
                     .foregroundStyle(locked ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                 }
                 .buttonStyle(.plain)
-                .disabled(!model.hasDefense)
+                .disabled(!model.isFilled)
                 .help(inningHelp(inning, locked: locked))
             }
             Text("Sit").font(.callout).foregroundStyle(.tertiary)
@@ -140,9 +141,16 @@ struct LineupGridView: View {
 
         return ZStack(alignment: .topTrailing) {
             RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.accentColor.opacity(0.18) : (problem ? Color.red.opacity(0.12) : Color.clear))
+                .fill(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.18))
+                      : problem ? AnyShapeStyle(Color.red.opacity(0.12))
+                      : (!model.isFilled && model.hasGrid && available) ? AnyShapeStyle(.quaternary.opacity(hovered == key ? 0.8 : 0.35))
+                      : AnyShapeStyle(Color.clear))
             if provenance == .appAdjusted {
                 RoundedRectangle(cornerRadius: 6).strokeBorder(Color.orange.opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+            }
+            if slot == nil && available && model.hasGrid && !model.isFilled && hovered == key {
+                Image(systemName: "plus").foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             Text(label(slot: slot, available: available))
                 .font(.title3.weight(slot == .field(.p) ? .semibold : .regular))
@@ -155,10 +163,11 @@ struct LineupGridView: View {
         .frame(width: cellWidth - 6, height: rowHeight - 8)
         .frame(width: cellWidth, height: rowHeight)
         .contentShape(Rectangle())
+        .onHover { inside in hovered = inside ? key : (hovered == key ? nil : hovered) }
         .onTapGesture {
             selected = key
             focused = true
-            if available && model.hasDefense { editing = key }
+            if available && model.hasGrid { editing = key }
         }
         .popover(isPresented: Binding(get: { editing == key }, set: { if !$0 { editing = nil } })) {
             PositionPicker(model: model, player: player, inning: inning) { slot in
@@ -167,7 +176,7 @@ struct LineupGridView: View {
             }
         }
         .contextMenu {
-            if available && model.hasDefense {
+            if available && model.hasGrid {
                 ForEach(Position.allCases, id: \.self) { position in
                     Button(position.label) { model.assign(player.id, to: .field(position), inning: inning, undoManager: undoManager) }
                 }
@@ -184,7 +193,7 @@ struct LineupGridView: View {
         let field = slots.filter { if case .field = $0 { true } else { false } }.count
         let sit = slots.filter { $0 == .bench }.count
         _ = field
-        return Text(model.hasDefense ? "\(sit)" : "")
+        return Text(model.isFilled ? "\(sit)" : "")
             .font(.title3.monospacedDigit())
             .foregroundStyle(.tertiary)
             .frame(width: sitWidth)
@@ -195,7 +204,7 @@ struct LineupGridView: View {
         switch slot {
         case .field(let p): return p.label
         case .bench: return "–"
-        case nil: return model.hasDefense ? "?" : ""
+        case nil: return model.isFilled ? "?" : ""
         }
     }
 
@@ -252,9 +261,9 @@ struct LineupGridView: View {
         case .space:
             model.toggleLock(current, undoManager: undoManager); return .handled
         case .return:
-            if model.hasDefense { editing = current }; return .handled
+            if model.hasGrid { editing = current }; return .handled
         default:
-            guard model.hasDefense, model.context.availability(of: current.player).isAvailable(inning: current.inning) else { return .ignored }
+            guard model.hasGrid, model.context.availability(of: current.player).isAvailable(inning: current.inning) else { return .ignored }
             let ch = press.characters.lowercased()
             if let n = Int(ch), (1...9).contains(n) {
                 model.assign(current.player, to: .field(Position.allCases[n - 1]), inning: current.inning, undoManager: undoManager)
