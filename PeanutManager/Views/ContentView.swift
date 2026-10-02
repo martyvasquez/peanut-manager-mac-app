@@ -33,6 +33,8 @@ struct ContentView: View {
     @State private var selectedPlayer: Player?
     @State private var selectedRuleSet: RuleSet?
     @State private var showingNewTeam = false
+    @State private var editingTeam: Team?
+    @State private var deletingTeam: Team?
     @Environment(\.openSettings) private var openSettings
 
     private var team: Team? {
@@ -69,6 +71,21 @@ struct ContentView: View {
             }
             #endif
         }
+        .sheet(item: $editingTeam) { team in
+            TeamSheet(team: team)
+        }
+        .confirmationDialog("Delete \(deletingTeam?.name ?? "team")?", isPresented: Binding(get: { deletingTeam != nil }, set: { if !$0 { deletingTeam = nil } })) {
+            Button("Delete Team", role: .destructive) {
+                if let team = deletingTeam {
+                    resetSelection()
+                    context.delete(team)
+                    selectedTeamID = teams.first { $0.uid != team.uid }?.uid.uuidString ?? ""
+                }
+                deletingTeam = nil
+            }
+        } message: {
+            Text("Its players, rules and games are deleted too. This can't be undone.")
+        }
         .sheet(isPresented: $showingNewTeam) {
             TeamSheet(team: nil) { created in
                 selectedTeamID = created.uid.uuidString
@@ -102,6 +119,8 @@ struct ContentView: View {
                 }
                 Divider()
                 Button("New Team…") { showingNewTeam = true }
+                Button("Edit \(team.name)…") { editingTeam = team }
+                Button("Delete \(team.name)…", role: .destructive) { deletingTeam = team }
             } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
@@ -139,19 +158,19 @@ struct ContentView: View {
             if let selectedGame, selectedGame.team?.uid == team.uid {
                 GameDetailView(game: selectedGame).id(selectedGame.persistentModelID)
             } else {
-                ContentUnavailableView("No Game Selected", systemImage: "calendar", description: Text("Pick a game, or press ⌘N to add one."))
+                ContentUnavailableView("No Game Selected", systemImage: "calendar")
             }
         case .roster:
             if let selectedPlayer, selectedPlayer.team?.uid == team.uid {
                 PlayerEditorView(player: selectedPlayer).id(selectedPlayer.persistentModelID)
             } else {
-                ContentUnavailableView("No Player Selected", systemImage: "person", description: Text("Pick a player to edit positions, ratings and notes."))
+                ContentUnavailableView("No Player Selected", systemImage: "person")
             }
         case .rules:
             if let selectedRuleSet, selectedRuleSet.team?.uid == team.uid {
                 RuleSetEditorView(ruleSet: selectedRuleSet).id(selectedRuleSet.persistentModelID)
             } else {
-                ContentUnavailableView("No Rule Set Selected", systemImage: "list.bullet.clipboard", description: Text("Rule sets hold the rules for a kind of game: league, tournament, practice."))
+                ContentUnavailableView("No Rules Selected", systemImage: "list.bullet.clipboard")
             }
         case .stats:
             ImportStatsView(team: team)

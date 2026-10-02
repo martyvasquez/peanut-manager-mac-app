@@ -81,7 +81,8 @@ struct PlayerRow: View {
 
     private var summary: String {
         let profile = player.profile
-        return profile.strengths.filter { profile[$0] >= .good }.prefix(3).map(\.label).joined(separator: " · ")
+        let best = profile.strengths.filter { profile[$0] >= .good }.prefix(3).map(\.label)
+        return best.isEmpty ? "" : "Best at " + best.joined(separator: ", ")
     }
 }
 
@@ -158,59 +159,63 @@ struct SectionTitle: View {
     }
 }
 
-/// One chip per position. Click to cycle Can → Good → Primary → Can't.
+/// Two plain questions instead of a color code: which positions can they play, and where are they best?
+/// (Stored as the position profile: not played = Can't, played = Can, best = Primary.)
 struct PositionChips: View {
     @Binding var profile: PositionProfile
 
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(Position.allCases, id: \.self) { position in
-                let fit = profile[position]
-                Button { profile[position] = next(fit) } label: {
-                    Text(position.label)
-                        .font(.callout.weight(fit >= .good ? .semibold : .regular))
-                        .strikethrough(fit == .cant)
-                        .frame(width: 38, height: 28)
-                        .foregroundStyle(foreground(fit))
-                        .background(background(fit), in: RoundedRectangle(cornerRadius: 7))
-                        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(fit == .good ? Color.accentColor.opacity(0.7) : .clear))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("\(position.label): \(fit.label)")
-                .contextMenu {
-                    ForEach(Fit.allCases.reversed(), id: \.self) { option in
-                        Button(option.label) { profile[position] = option }
+        Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 10) {
+            GridRow {
+                Text("Plays").foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    ForEach(Position.allCases, id: \.self) { position in
+                        let plays = profile.canPlay(position)
+                        Button {
+                            profile[position] = plays ? .cant : .can
+                        } label: {
+                            Text(position.label)
+                                .font(.callout.weight(.medium))
+                                .frame(width: 40, height: 28)
+                                .foregroundStyle(plays ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+                                .background(plays ? AnyShapeStyle(.quaternary) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 7))
+                                .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(plays ? Color.clear : Color.secondary.opacity(0.25), style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help(plays ? "Plays \(position.label). Click if they can't." : "Doesn't play \(position.label). Click if they can.")
                     }
                 }
             }
-        }
-    }
-
-    private func next(_ fit: Fit) -> Fit {
-        switch fit {
-        case .can: .good
-        case .good: .primary
-        case .primary: .cant
-        case .cant: .can
-        }
-    }
-
-    private func foreground(_ fit: Fit) -> AnyShapeStyle {
-        switch fit {
-        case .cant: AnyShapeStyle(.quaternary)
-        case .can: AnyShapeStyle(.secondary)
-        case .good: AnyShapeStyle(Color.accentColor)
-        case .primary: AnyShapeStyle(Color.white)
-        }
-    }
-
-    private func background(_ fit: Fit) -> AnyShapeStyle {
-        switch fit {
-        case .cant: AnyShapeStyle(Color.clear)
-        case .can: AnyShapeStyle(.quaternary.opacity(0.5))
-        case .good: AnyShapeStyle(Color.accentColor.opacity(0.08))
-        case .primary: AnyShapeStyle(Color.accentColor)
+            GridRow {
+                Text("Best at").foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    let playable = Position.allCases.filter { profile.canPlay($0) }
+                    if playable.isEmpty {
+                        Text("—").foregroundStyle(.tertiary)
+                    }
+                    ForEach(playable, id: \.self) { position in
+                        let best = profile[position] >= .good
+                        Button {
+                            profile[position] = best ? .can : .primary
+                        } label: {
+                            HStack(spacing: 3) {
+                                if best { Image(systemName: "star.fill").font(.system(size: 9)) }
+                                Text(position.label)
+                            }
+                            .font(.callout.weight(best ? .semibold : .regular))
+                            .padding(.horizontal, 10)
+                            .frame(height: 28)
+                            .foregroundStyle(best ? AnyShapeStyle(Color.white) : AnyShapeStyle(.secondary))
+                            .background(best ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(Color.clear), in: Capsule())
+                            .overlay(Capsule().strokeBorder(best ? Color.clear : Color.secondary.opacity(0.25)))
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .help(best ? "Best at \(position.label)" : "Click if \(position.label) is one of their best spots")
+                    }
+                }
+            }
         }
     }
 }
