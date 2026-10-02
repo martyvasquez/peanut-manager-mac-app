@@ -27,6 +27,7 @@ Free, local-first, bring your own [OpenRouter](https://openrouter.ai) key. No ac
 4. **Printing and sharing** that's actually tested (lineup card, PDF, copy as text).
 5. Season playing-time ledger, pitching tracker, game-day mode.
 6. AI rule interpreter (automatic "Understood as…"), Jev, learning from edits.
+7. **Rules UI/UX redesign** (how rules are presented, created and edited; direction not decided yet).
 
 Full list with details: [`docs/v2-plan.md` → Build status](docs/v2-plan.md#build-status-oct-2-2026).
 

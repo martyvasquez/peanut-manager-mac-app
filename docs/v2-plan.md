@@ -75,7 +75,17 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - AI Rule Interpreter that fills "Understood as…" checks automatically (today the coach attaches checks by hand).
    - Jev (Decisions API) cascade.
    - Learn-from-edits suggestions (§6.9).
-7. **Smaller gaps:**
+7. **Rules UI/UX redesign.** Marty doesn't like how rules are presented, created or edited today. Direction **not yet decided**; revisit with him before building.
+   - Problems seen so far:
+     - Rules live far from where they're used: a separate sidebar section, plus a "rule sets" middle column.
+     - A rule's code check is hidden and separate from its words. The text can say 3 while the check says 2.
+     - Adding a rule starts from an empty line with no suggestions.
+     - Enforced rules and AI-judgment rules look almost the same.
+   - Options discussed, none chosen:
+     - **Structure:** rulebooks as tabs on one full-width page; *or* one team rulebook plus per-game tweaks; *or* rules living inside each game.
+     - **Checks:** recognize common rules from plain English locally (number becomes an editable token in the sentence); *or* pick from a library; *or* AI interprets every rule.
+     - **Adding:** type with suggestions; *or* a starter-library sheet; *or* a bare text line.
+8. **Smaller gaps:**
    - Show AI cost: tracked per lineup in `LineupDocument.cost`, not displayed anywhere since the design pass.
    - JSON backup/export of the library (§7.2).
    - Edit a game's date after creation (only the opponent is editable inline).
@@ -83,7 +93,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Structured outputs (`response_format: json_schema`) and prompt caching (§8.3).
    - Softball / 10-fielder formats (Q4).
    - No app-target UI tests; only `LineupKit` is tested.
-8. **Unverified by the builder (needs Marty's hands):**
+9. **Unverified by the builder (needs Marty's hands):**
    - Drag-to-reorder in the grid and list (code path exercised programmatically after the crash fix).
    - A real model filling around locks.
    - Printing.
