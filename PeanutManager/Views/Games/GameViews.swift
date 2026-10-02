@@ -460,6 +460,9 @@ struct Summary: View {
                     if violations.isEmpty {
                         Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
                         Text("Follows your rules")
+                        if !model.document.warnings.isEmpty {
+                            Text("· \(model.document.warnings.count) note\(model.document.warnings.count == 1 ? "" : "s")").foregroundStyle(.orange)
+                        }
                     } else {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
                         Text(violations.count == 1 ? "1 problem" : "\(violations.count) problems")
@@ -491,6 +494,9 @@ struct Summary: View {
                         RuleLine(text: rule.text, symbol: "sparkles", tint: .secondary)
                             .help("Judged by the AI, not checked by the app")
                     }
+                    ForEach(model.document.warnings, id: \.self) { warning in
+                        RuleLine(text: warning, symbol: "exclamationmark.triangle", tint: .orange)
+                    }
                     if model.document.appAdjustedCount > 0 {
                         RuleLine(text: "\(model.document.appAdjustedCount) spots adjusted by the app (outlined)", symbol: "wrench.adjustable", tint: .orange)
                     }
@@ -501,13 +507,10 @@ struct Summary: View {
 
             let plan = [model.document.battingRationale, model.document.defenseRationale].filter { !$0.isEmpty }
             if !plan.isEmpty {
-                Text(plan.joined(separator: " "))
+                Text(PromptIDs(players: model.context.players).humanize(plan.joined(separator: " "), players: model.context.players))
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-            ForEach(model.document.warnings, id: \.self) { warning in
-                Label(warning, systemImage: "exclamationmark.triangle").foregroundStyle(.orange).font(.callout)
             }
         }
     }

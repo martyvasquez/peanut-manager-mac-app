@@ -19,6 +19,14 @@ public struct PromptIDs: Sendable {
     }
 
     public func token(_ id: PlayerID) -> String { byPlayer[id] ?? "?" }
+
+    /// Replaces any stray IDs ("P7") in the model's prose with the player's name.
+    public func humanize(_ text: String, players: [PlayerSnapshot]) -> String {
+        text.replacing(/\bP(\d+)\b/) { match in
+            guard let id = byToken["P\(match.1)"], let player = players.first(where: { $0.id == id }) else { return String(match.0) }
+            return player.name.components(separatedBy: " ").first ?? player.name
+        }
+    }
 }
 
 /// Prompts ported from v1 (`lib/ai/claude-client.ts` and `lib/ai/prompt-builder.ts`), which graded a B in real use.
@@ -48,6 +56,7 @@ public enum Prompts {
     OUTPUT FORMAT:
     Return valid JSON only. No markdown, no explanation outside the JSON structure.
     Use each player's ID exactly as given (for example "P3"). Include every available player exactly once.
+    In reasoning and rationale, refer to players by first name, never by ID. Keep each reasoning to one short sentence and the rationale to 2-3 sentences.
     """
 
     public static let defensiveSystem = """
@@ -79,6 +88,7 @@ public enum Prompts {
     OUTPUT FORMAT:
     Return valid JSON only. No markdown, no explanation outside the JSON structure.
     Use each player's ID exactly as given (for example "P3").
+    In reasoning, rationale and warnings, refer to players by first name, never by ID. Keep each inning's reasoning to one short sentence, the rationale to 2-3 sentences, and include only warnings the coach must act on.
     IMPORTANT: Every inning object MUST have all 9 positions (P, C, 1B, 2B, 3B, SS, LF, CF, RF) with valid player assignments. No nulls or missing positions allowed.
     """
 

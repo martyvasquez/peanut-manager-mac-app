@@ -104,6 +104,11 @@ struct EngineTests {
         #expect(prompt.contains("Afraid of fly balls"))
     }
 
+    @Test func idsInProseBecomeNames() {
+        let ids = PromptIDs(players: players)
+        #expect(ids.humanize("P1 leads off; P12 catches. SP2 stays.", players: players) == "Player leads off; Player catches. SP2 stays.")
+    }
+
     @Test func acceptsV1StyleObjectReferences() throws {
         let ids = PromptIDs(players: players)
         let json = """

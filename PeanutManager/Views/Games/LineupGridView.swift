@@ -2,7 +2,7 @@ import SwiftUI
 import LineupKit
 
 /// The hero view: batting order down the side, innings across the top.
-/// Keyboard: arrows move · 1–9 assign by scorebook number (1 = P … 9 = RF) · 0 or B = bench ·
+/// Click a cell to pick a position. Keyboard: arrows move · 1–9 assign by scorebook number (1 = P … 9 = RF) · 0 or B = bench ·
 /// Space = lock/unlock · ⌥↑/⌥↓ = move in batting order.
 struct LineupGridView: View {
     @Bindable var model: GameModel
@@ -28,7 +28,7 @@ struct LineupGridView: View {
                 HStack(spacing: 0) {
                     nameCell(player, slot: index + 1, present: present)
                     ForEach(1...max(innings, 1), id: \.self) { inning in
-                        cell(player: player, inning: inning, problem: problems.contains(CellKey(inning: inning, player: player.id)))
+                        cell(player: player, inning: inning, problem: problems.contains(CellKey(inning: inning, player: player.id)), ctx: ctx)
                     }
                     tally(player, innings: innings)
                 }
@@ -92,9 +92,9 @@ struct LineupGridView: View {
         }
     }
 
-    private func cell(player: PlayerSnapshot, inning: Int, problem: Bool) -> some View {
+    private func cell(player: PlayerSnapshot, inning: Int, problem: Bool, ctx: GameContext) -> some View {
         let key = CellKey(inning: inning, player: player.id)
-        let available = model.context.availability(of: player.id).isAvailable(inning: inning)
+        let available = ctx.availability(of: player.id).isAvailable(inning: inning)
         let slot = model.lineup.slot(of: player.id, inning: inning)
         let locked = model.isLocked(key)
         let provenance = model.document.provenance[key]
@@ -117,8 +117,11 @@ struct LineupGridView: View {
         .frame(width: cellWidth - 4, height: rowHeight - 6)
         .frame(width: cellWidth, height: rowHeight)
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) { if available && model.hasDefense { selected = key; editing = key } }
-        .onTapGesture { selected = key; focused = true }
+        .onTapGesture {
+            selected = key
+            focused = true
+            if available && model.hasDefense { editing = key }
+        }
         .popover(isPresented: Binding(get: { editing == key }, set: { if !$0 { editing = nil } })) {
             PositionPicker(model: model, player: player, inning: inning) { slot in
                 model.assign(player.id, to: slot, inning: inning, undoManager: undoManager)

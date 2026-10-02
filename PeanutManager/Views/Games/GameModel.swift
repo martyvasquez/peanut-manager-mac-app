@@ -22,13 +22,50 @@ final class GameModel {
 
     // MARK: - Derived
 
-    var context: GameContext { game.context(locks: document.locks) }
+    @ObservationIgnored private var contextCache: (key: Int, value: GameContext)?
+    @ObservationIgnored private var findingsCache: (key: Int, value: [Finding])?
+
+    /// Built from the store only when something it depends on changed. Decoding every player on each
+    /// redraw made clicks in the grid feel laggy.
+    var context: GameContext {
+        let key = contextKey
+        if let cache = contextCache, cache.key == key { return cache.value }
+        let value = game.context(locks: document.locks)
+        contextCache = (key, value)
+        return value
+    }
+
+    private var contextKey: Int {
+        var h = Hasher()
+        h.combine(game.innings); h.combine(game.priorityRaw); h.combine(game.weightingRaw)
+        h.combine(game.notesForAI); h.combine(game.scoutingReport); h.combine(game.availabilityData)
+        h.combine(game.team?.ageGroup)
+        for rule in game.ruleSet?.sortedRules ?? [] {
+            h.combine(rule.uid); h.combine(rule.text); h.combine(rule.enabled); h.combine(rule.checkData)
+        }
+        for player in game.team?.activePlayers ?? [] {
+            h.combine(player.uid); h.combine(player.name); h.combine(player.jersey); h.combine(player.notes)
+            h.combine(player.profileData); h.combine(player.ratingsData); h.combine(player.statsData)
+        }
+        h.combine(document.locks)
+        return h.finalize()
+    }
     var lineup: Lineup { document.lineup }
     var hasBattingOrder: Bool { !document.lineup.battingOrder.isEmpty }
     var hasDefense: Bool { document.lineup.hasDefense }
 
     /// Live validation — recomputed on every edit, never taken from the AI.
     var findings: [Finding] {
+        var h = Hasher()
+        h.combine(contextKey); h.combine(document.lineup)
+        let key = h.finalize()
+        if let cache = findingsCache, cache.key == key { return cache.value }
+        let value = computeFindings()
+        findingsCache = (key, value)
+        return value
+    }
+
+    private func computeFindings() -> [Finding] {
         let ctx = context
         var result: [Finding] = []
         if hasBattingOrder { result += Validator.validateBattingOrder(document.lineup.battingOrder, context: ctx) }

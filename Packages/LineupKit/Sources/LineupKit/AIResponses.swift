@@ -156,9 +156,9 @@ extension BattingOrderResponse {
         for (_, entry) in sorted {
             guard let id = entry.player_id.resolve(ids: ids, players: players) else { unresolved += 1; continue }
             order.append(id)
-            if let reasoning = entry.reasoning, reasons[id] == nil { reasons[id] = reasoning }
+            if let reasoning = entry.reasoning, reasons[id] == nil { reasons[id] = ids.humanize(reasoning, players: players) }
         }
-        return MappedBattingOrder(order: order, reasons: reasons, unresolved: unresolved, rationale: rationale ?? "")
+        return MappedBattingOrder(order: order, reasons: reasons, unresolved: unresolved, rationale: ids.humanize(rationale ?? "", players: players))
     }
 }
 
@@ -182,9 +182,13 @@ extension DefenseResponse {
                 if let id = ref.resolve(ids: ids, players: players) { assignment.sitting.append(id) } else { unresolved.append((offset + 1, nil)) }
             }
             result.append(assignment)
-            reasons.append(inning.reasoning ?? "")
+            reasons.append(ids.humanize(inning.reasoning ?? "", players: players))
         }
-        let notes = (rules_check ?? []).map { AIRuleNote(rule: $0.rule, satisfied: $0.satisfied, details: $0.details ?? "") }
-        return MappedDefense(innings: result, inningReasons: reasons, unresolved: unresolved, aiRuleNotes: notes, warnings: warnings ?? [], rationale: rationale ?? "")
+        let notes = (rules_check ?? []).map { AIRuleNote(rule: $0.rule, satisfied: $0.satisfied, details: ids.humanize($0.details ?? "", players: players)) }
+        return MappedDefense(
+            innings: result, inningReasons: reasons, unresolved: unresolved, aiRuleNotes: notes,
+            warnings: (warnings ?? []).map { ids.humanize($0, players: players) },
+            rationale: ids.humanize(rationale ?? "", players: players)
+        )
     }
 }
