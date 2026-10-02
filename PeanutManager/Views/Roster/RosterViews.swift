@@ -263,7 +263,7 @@ struct FieldPositions: View {
 /// Little League infield proportions in feet (60-ft bases, 46-ft mound), home plate at the origin and +y toward
 /// center field. The outfield is drawn shallower than a real 200-ft fence so the infield has room.
 nonisolated enum FieldGeometry {
-    static let bases = 60.0, mound = 46.0, fence = 140.0, infieldArc = 92.0
+    static let bases = 60.0, mound = 46.0, fence = 140.0
     static let size = CGSize(width: 380, height: 300)
 
     /// Points per foot: the 90° wedge's width at the fence fills the view.
@@ -282,7 +282,7 @@ nonisolated enum FieldGeometry {
     static let fielder: [Position: (Double, Double)] = {
         let b = bases / 2.0.squareRoot()
         return [
-            .p: (0, mound), .c: (0, -8),
+            .p: (0, mound), .c: (0, 0),
             // Corner infielders on their bags; middle infielders either side of second.
             .first: (b, b), .third: (-b, b), .second: (30, 76), .ss: (-30, 76),
             .lf: polar(-32, fence * 0.84), .cf: polar(0, fence * 0.86), .rf: polar(32, fence * 0.84),
@@ -290,7 +290,7 @@ nonisolated enum FieldGeometry {
     }()
 }
 
-/// Straight foul lines, the fence, a square diamond, the infield arc and the mound: lines only.
+/// Straight foul lines, the fence, a square diamond and the mound: lines only.
 struct FieldDrawing: View {
     var body: some View {
         Canvas { context, _ in
@@ -311,7 +311,6 @@ struct FieldDrawing: View {
             foul.move(to: home); foul.addLine(to: g.point(g.polar(45, g.fence)))
             context.stroke(foul, with: .color(line), lineWidth: 1.5)
             context.stroke(arc(g.fence), with: .color(line), lineWidth: 1.5)
-            context.stroke(arc(g.infieldArc), with: .color(Color.primary.opacity(0.14)), lineWidth: 1)
 
             let first = g.point((b, b)), second = g.point((0, 2 * b)), third = g.point((-b, b))
             var diamond = Path()
