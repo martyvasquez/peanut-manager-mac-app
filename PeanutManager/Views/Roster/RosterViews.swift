@@ -263,11 +263,11 @@ struct FieldPositions: View {
 /// Little League infield proportions in feet (60-ft bases, 46-ft mound), home plate at the origin and +y toward
 /// center field. The outfield is drawn shallower than a real 200-ft fence so the infield has room.
 nonisolated enum FieldGeometry {
-    static let bases = 60.0, mound = 46.0, fence = 140.0
-    static let size = CGSize(width: 380, height: 300)
+    static let bases = 60.0, mound = 46.0, fence = 120.0
+    static let size = CGSize(width: 336, height: 262)
 
     /// Points per foot: the 90° wedge's width at the fence fills the view.
-    static let scale: Double = (size.width - 16) / (2 * fence * sin(.pi / 4))
+    static let scale: Double = (size.width - 24) / (2 * fence * sin(.pi / 4))
     static var home: CGPoint { CGPoint(x: size.width / 2, y: size.height - 26) }
 
     static func point(_ feet: (Double, Double)) -> CGPoint {
@@ -282,10 +282,10 @@ nonisolated enum FieldGeometry {
     static let fielder: [Position: (Double, Double)] = {
         let b = bases / 2.0.squareRoot()
         return [
-            .p: (0, mound), .c: (0, 0),
+            .p: (0, b), .c: (0, 0),  // pitcher level with 1B and 3B
             // Corner infielders on their bags; middle infielders on the baselines, halfway to second.
             .first: (b, b), .third: (-b, b), .second: (b / 2, 1.5 * b), .ss: (-b / 2, 1.5 * b),
-            .lf: polar(-32, fence * 0.84), .cf: polar(0, fence * 0.86), .rf: polar(32, fence * 0.84),
+            .lf: polar(-30, fence * 0.8), .cf: polar(0, fence * 0.82), .rf: polar(30, fence * 0.8),
         ]
     }()
 }
