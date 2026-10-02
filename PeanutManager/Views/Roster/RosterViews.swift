@@ -173,31 +173,21 @@ struct SectionTitle: View {
     }
 }
 
-/// Positions on a field. Tap to cycle: doesn't play → plays → best → doesn't play.
+/// Positions on a to-scale Little League field. Tap to cycle: doesn't play → plays → best → doesn't play.
 /// (Stored as the position profile: Can't / Can / Primary.)
 struct FieldPositions: View {
     @Binding var profile: PositionProfile
 
-    private static let spots: [(Position, CGPoint)] = [
-        (.lf, CGPoint(x: 0.14, y: 0.20)), (.cf, CGPoint(x: 0.50, y: 0.08)), (.rf, CGPoint(x: 0.86, y: 0.20)),
-        (.ss, CGPoint(x: 0.34, y: 0.43)), (.second, CGPoint(x: 0.66, y: 0.43)),
-        (.third, CGPoint(x: 0.20, y: 0.63)), (.p, CGPoint(x: 0.50, y: 0.63)), (.first, CGPoint(x: 0.80, y: 0.63)),
-        (.c, CGPoint(x: 0.50, y: 0.92)),
-    ]
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            GeometryReader { geo in
-                let size = geo.size
-                ZStack {
-                    FieldLines().stroke(Color.primary.opacity(0.12), lineWidth: 1.5)
-                    ForEach(Self.spots, id: \.0) { position, point in
-                        marker(position)
-                            .position(x: point.x * size.width, y: point.y * size.height)
-                    }
+            ZStack(alignment: .topLeading) {
+                FieldDrawing()
+                ForEach(Position.allCases, id: \.self) { position in
+                    marker(position)
+                        .position(FieldGeometry.point(FieldGeometry.fielder[position]!))
                 }
             }
-            .frame(width: 300, height: 250)
+            .frame(width: FieldGeometry.size.width, height: FieldGeometry.size.height)
 
             HStack(spacing: 14) {
                 legend(.cant, "Doesn't play")
@@ -218,7 +208,7 @@ struct FieldPositions: View {
             case .good, .primary: .cant
             }
         } label: {
-            Dot(fit: fit, label: position.label, size: 46)
+            Dot(fit: fit, label: position.label, size: 40)
         }
         .buttonStyle(.plain)
         .help("\(position.label): \(fit == .cant ? "doesn't play" : fit == .can ? "plays" : "best") — click to change")
@@ -245,22 +235,23 @@ struct FieldPositions: View {
             ZStack {
                 switch fit {
                 case .cant:
-                    Circle().strokeBorder(Color.secondary.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+                    Circle().fill(.background)
+                        .overlay(Circle().strokeBorder(Color.secondary.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
                 case .can:
-                    Circle().fill(Color.primary.opacity(0.14))
+                    Circle().fill(Color(white: 0.34))
                 case .good, .primary:
                     Circle().fill(Color.accentColor)
                 }
                 if !label.isEmpty {
                     Text(label)
-                        .font(.callout.weight(fit >= .good ? .bold : .medium))
-                        .foregroundStyle(fit >= .good ? AnyShapeStyle(Color.white) : fit == .can ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+                        .font(.system(size: 13, weight: fit >= .good ? .bold : .semibold))
+                        .foregroundStyle(fit == .cant ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Color.white))
                 }
                 if fit >= .good && size > 20 {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 9))
+                        .font(.system(size: 8))
                         .foregroundStyle(.white)
-                        .offset(y: -size * 0.32)
+                        .offset(y: -size * 0.31)
                 }
             }
             .frame(width: size, height: size)
@@ -269,30 +260,76 @@ struct FieldPositions: View {
     }
 }
 
-/// Faint diamond and outfield arc behind the position markers.
-nonisolated struct FieldLines: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let home = CGPoint(x: rect.midX, y: rect.height * 0.92)
-        let first = CGPoint(x: rect.width * 0.80, y: rect.height * 0.63)
-        let second = CGPoint(x: rect.midX, y: rect.height * 0.36)
-        let third = CGPoint(x: rect.width * 0.20, y: rect.height * 0.63)
-        path.move(to: home); path.addLine(to: first); path.addLine(to: second); path.addLine(to: third); path.closeSubpath()
-        // Foul lines run straight from home plate through first and third to the fence.
-        func extend(through base: CGPoint, toX x: CGFloat) -> CGPoint {
-            let t = (x - home.x) / (base.x - home.x)
-            return CGPoint(x: x, y: home.y + t * (base.y - home.y))
+/// Little League dimensions in feet (60-ft bases, 46-ft mound, 200-ft fence), home plate at the origin and +y toward
+/// center field. Fielder spots follow the Situations app's field model.
+nonisolated enum FieldGeometry {
+    static let bases = 60.0, mound = 46.0, fence = 200.0, infieldArc = 95.0
+    static let size = CGSize(width: 380, height: 318)
+
+    /// Points per foot: the 90° wedge's width at the fence fills the view.
+    static let scale: Double = (size.width - 16) / (2 * fence * sin(.pi / 4))
+    static var home: CGPoint { CGPoint(x: size.width / 2, y: size.height - 26) }
+
+    static func point(_ feet: (Double, Double)) -> CGPoint {
+        CGPoint(x: home.x + feet.0 * scale, y: home.y - feet.1 * scale)
+    }
+
+    static func polar(_ degrees: Double, _ distance: Double) -> (Double, Double) {
+        let r = degrees * .pi / 180
+        return (distance * sin(r), distance * cos(r))
+    }
+
+    static let fielder: [Position: (Double, Double)] = {
+        let k = bases / 90
+        return [
+            .p: (0, mound - 2.5 * k), .c: (0, -8),
+            .first: (70 * k, 88 * k), .second: (38 * k, 140 * k), .ss: (-38 * k, 140 * k), .third: (-68 * k, 86 * k),
+            .lf: polar(-32, fence * 0.72), .cf: polar(0, fence * 0.72), .rf: polar(32, fence * 0.72),
+        ]
+    }()
+}
+
+/// Grass wedge, infield dirt, straight foul lines, a square diamond, mound and plate — drawn to scale in quiet tints.
+struct FieldDrawing: View {
+    var body: some View {
+        Canvas { context, _ in
+            let g = FieldGeometry.self
+            let home = g.home
+            let b = g.bases / 2.0.squareRoot()
+
+            func wedge(radius feet: Double) -> Path {
+                var path = Path()
+                path.move(to: home)
+                path.addArc(center: home, radius: feet * g.scale, startAngle: .degrees(-135), endAngle: .degrees(-45), clockwise: false)
+                path.closeSubpath()
+                return path
+            }
+
+            context.fill(wedge(radius: g.fence), with: .color(.green.opacity(0.10)))
+            context.fill(wedge(radius: g.infieldArc), with: .color(.brown.opacity(0.18)))
+
+            let first = g.point((b, b)), second = g.point((0, 2 * b)), third = g.point((-b, b))
+            var diamond = Path()
+            diamond.move(to: home); diamond.addLine(to: first); diamond.addLine(to: second); diamond.addLine(to: third); diamond.closeSubpath()
+            context.fill(diamond, with: .color(.green.opacity(0.12)))
+            context.stroke(diamond, with: .color(.primary.opacity(0.22)), lineWidth: 1)
+
+            // Foul lines run straight from home plate to the fence.
+            var foul = Path()
+            foul.move(to: home); foul.addLine(to: g.point(g.polar(-45, g.fence)))
+            foul.move(to: home); foul.addLine(to: g.point(g.polar(45, g.fence)))
+            context.stroke(foul, with: .color(.primary.opacity(0.4)), lineWidth: 1.5)
+
+            var fence = Path()
+            fence.addArc(center: home, radius: g.fence * g.scale, startAngle: .degrees(-135), endAngle: .degrees(-45), clockwise: false)
+            context.stroke(fence, with: .color(.primary.opacity(0.3)), lineWidth: 1.5)
+
+            for base in [first, second, third, home] {
+                context.fill(Path(CGRect(x: base.x - 3, y: base.y - 3, width: 6, height: 6)), with: .color(.primary.opacity(0.55)))
+            }
+            let mound = g.point((0, g.mound))
+            context.fill(Path(ellipseIn: CGRect(x: mound.x - 6, y: mound.y - 6, width: 12, height: 12)), with: .color(.brown.opacity(0.35)))
         }
-        let leftFoul = extend(through: third, toX: rect.width * 0.01)
-        let rightFoul = extend(through: first, toX: rect.width * 0.99)
-        path.move(to: third); path.addLine(to: leftFoul)
-        path.move(to: first); path.addLine(to: rightFoul)
-        // Outfield fence: a quad curve whose top sits just above center field.
-        let apexY = rect.height * 0.0
-        let control = CGPoint(x: rect.midX, y: 2 * apexY - (leftFoul.y + rightFoul.y) / 2)
-        path.move(to: leftFoul)
-        path.addQuadCurve(to: rightFoul, control: control)
-        return path
     }
 }
 
