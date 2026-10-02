@@ -9,6 +9,7 @@ import LineupKit
 ///   -PMFakeAI YES        use a scripted local "AI" instead of OpenRouter
 ///   -PMAutoGenerate YES  make the batting order as soon as a game opens
 ///   -PMAutoPositions YES then set positions automatically
+///   -PMOpenPicker YES    open the position picker on the third batter, inning 1
 ///   -PMScrollToChecks YES scroll to the game plan and checks once a lineup exists
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }

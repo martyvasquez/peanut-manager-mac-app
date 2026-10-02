@@ -64,6 +64,14 @@ struct LineupGridView: View {
         .focusEffectDisabled()
         .focused($focused)
         .onKeyPress(phases: .down, action: handleKey)
+        #if DEBUG
+        .task(id: model.hasGrid) {
+            if UserDefaults.standard.bool(forKey: "PMOpenPicker"), model.hasGrid, rows.count > 1 {
+                try? await Task.sleep(for: .milliseconds(400))
+                editing = CellKey(inning: 1, player: rows[2].id)
+            }
+        }
+        #endif
         .onTapGesture { focused = true }
     }
 
@@ -289,35 +297,69 @@ struct PositionPicker: View {
 
     var body: some View {
         let assignment = model.lineup.innings[safe: inning - 1] ?? InningAssignment()
-        VStack(spacing: 8) {
+        let current = assignment.slot(of: player.id)
+        VStack(spacing: 10) {
             Text("\(player.name) · Inning \(inning)").font(.headline)
             Grid(horizontalSpacing: 6, verticalSpacing: 6) {
-                GridRow { button(.lf, assignment); button(.cf, assignment); button(.rf, assignment) }
-                GridRow { button(.third, assignment); button(.ss, assignment); button(.second, assignment) }
-                GridRow { button(.p, assignment); button(.first, assignment); button(.c, assignment) }
+                GridRow { tile(.lf, assignment, current); tile(.cf, assignment, current); tile(.rf, assignment, current) }
+                GridRow { tile(.third, assignment, current); tile(.ss, assignment, current); tile(.second, assignment, current) }
+                GridRow { tile(.p, assignment, current); tile(.first, assignment, current); tile(.c, assignment, current) }
             }
             Button { onPick(.bench) } label: {
-                Text("Sit").frame(maxWidth: .infinity)
+                Text("Sit")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 34)
+                    .foregroundStyle(current == .bench ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
+                    .background(current == .bench ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary), in: RoundedRectangle(cornerRadius: 8))
+                    .contentShape(Rectangle())
             }
-            .controlSize(.large)
+            .buttonStyle(.plain)
         }
         .padding(14)
         .frame(width: 290)
     }
 
-    private func button(_ position: Position, _ assignment: InningAssignment) -> some View {
-        let holder = assignment.positions[position]
+    /// Open = bright. Taken = greyed with who has it (click to swap). Theirs now = orange. Can't = struck out.
+    private func tile(_ position: Position, _ assignment: InningAssignment, _ current: Slot?) -> some View {
+        let holder = assignment.positions[position].flatMap { $0 == player.id ? nil : $0 }
         let fit = player.profile[position]
+        let mine = current == .field(position)
+        let taken = holder != nil
+        let holderName = holder.map { model.context.name($0).components(separatedBy: " ").first ?? "" }
+
         return Button { onPick(.field(position)) } label: {
-            VStack(spacing: 1) {
-                Text(position.label).font(.headline.monospaced())
-                Text(holder.map { model.context.name($0).components(separatedBy: " ").first ?? "" } ?? "open")
-                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            VStack(spacing: 2) {
+                HStack(spacing: 2) {
+                    if fit >= .good { Image(systemName: "star.fill").font(.system(size: 8)) }
+                    Text(position.label).strikethrough(!fit.isEligible)
+                }
+                .font(.headline)
+                if let holderName {
+                    Text(holderName).font(.caption2).lineLimit(1)
+                }
             }
-            .frame(width: 78, height: 38)
+            .frame(width: 80, height: 44)
+            .foregroundStyle(
+                mine ? AnyShapeStyle(Color.white)
+                : !fit.isEligible ? AnyShapeStyle(.quaternary)
+                : taken ? AnyShapeStyle(.tertiary)
+                : AnyShapeStyle(.primary)
+            )
+            .background(
+                mine ? AnyShapeStyle(Color.accentColor)
+                : !fit.isEligible ? AnyShapeStyle(Color.clear)
+                : taken ? AnyShapeStyle(Color.primary.opacity(0.04))
+                : AnyShapeStyle(Color.primary.opacity(0.16)),
+                in: RoundedRectangle(cornerRadius: 8)
+            )
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(!fit.isEligible ? Color.secondary.opacity(0.2) : .clear, style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
+            .contentShape(Rectangle())
         }
-        .disabled(!fit.isEligible)
-        .help(fit.isEligible ? "\(player.name): \(fit.label)" : "\(player.name) is marked Can't for \(position.label)")
+        .buttonStyle(.plain)
+        .disabled(!fit.isEligible || mine)
+        .help(!fit.isEligible ? "\(player.name) doesn't play \(position.label)"
+              : mine ? "\(player.name) is at \(position.label)"
+              : holderName.map { "Swap with \($0)" } ?? "Put \(player.name) at \(position.label)")
     }
 }
 
