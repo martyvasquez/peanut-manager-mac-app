@@ -24,5 +24,15 @@
 	<string>public.app-category.sports</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>AI lineups for youth baseball and softball.</string>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/martyvasquez/peanut-manager-mac-app/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>bKl1Ub2LkYTfePB3kMC3ouay0Ff4LU5wqp4pQqT8A0E=</string>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 </dict>
 </plist>

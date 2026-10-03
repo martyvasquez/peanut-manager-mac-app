@@ -7,6 +7,7 @@ struct PeanutManagerApp: App {
 
     init() {
         container = Self.makeContainer()
+        AppUpdater.shared.start()
     }
 
     var body: some Scene {
@@ -18,6 +19,10 @@ struct PeanutManagerApp: App {
         .modelContainer(container)
         .commands {
             SidebarCommands()
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { AppUpdater.shared.checkForUpdates() }
+                    .disabled(!AppUpdater.shared.canCheck)
+            }
         }
 
         Settings {

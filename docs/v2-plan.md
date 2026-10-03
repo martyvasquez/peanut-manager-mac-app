@@ -45,13 +45,12 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 
 ### Still to do (priority order)
 
-1. **Sparkle auto-update + release workflow** (M0 remainder). Follow `baseball-situational-simulator/docs/mac-auto-update-playbook.md`:
-   - Add Sparkle via SPM; `AppUpdater`; "Check for Updates…".
-   - `generate_keys --account com.martyvasquez.PeanutManager`; `SPARKLE_PRIVATE_KEY` secret.
-   - `.github/workflows/release-mac.yml`.
-   - Feed URL `https://github.com/martyvasquez/peanut-manager-mac-app/releases/latest/download/appcast.xml`.
-   - Local 127.0.0.1 update test and tamper test.
-   - **Needs Marty's OK** (adds a workflow and a secret). The bundle ID is now fixed forever.
+1. **Sparkle auto-update + release workflow** (M0 remainder). Follows `baseball-situational-simulator/docs/mac-auto-update-playbook.md`.
+   - Done: Sparkle 2.10.0 (pinned in `project.yml`), `AppUpdater` (off in Debug), "Check for Updates…", Info.plist keys, feed URL `https://github.com/martyvasquez/peanut-manager-mac-app/releases/latest/download/appcast.xml`.
+   - Done: EdDSA key in Marty's login keychain (`--account com.martyvasquez.PeanutManager`). Losing it means installed copies can never update.
+   - Done: local 127.0.0.1 update test (build 5 → 6 in ~2 s) and tamper test (rejected, stayed on 6).
+   - Left, for Marty: set the `SPARKLE_PRIVATE_KEY` secret; add `.github/workflows/release-mac.yml` (zip asset `PeanutManager.zip`, tags `build-N`, N = run number + 100; CI must `brew install xcodegen` since the project isn't committed); first real two-release test.
+   - The bundle ID, feed URL, public key, asset name and tag format are now fixed forever.
 2. **AI player & team assessments (§5, M3).** Not started. Needs:
    - Scout task and cached `PlayerAssessment` / `TeamAssessment` models.
    - Fact sheets with citation IDs; Insights screens (player tab or section; team page).
