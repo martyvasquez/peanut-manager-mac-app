@@ -40,7 +40,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
   - Settings carry over from the last game.
   - Feasibility alert offers "Use GameChanger History" / "Open Roster."
 - **Stats:** full-width sortable table; import sheet with match review.
-- **Settings:** OpenRouter key in keychain + test; Models tab with OpenRouter's live catalog (search, prices, pin); default `anthropic/claude-sonnet-5.5`; Muse Spark 1.3 Contributor included.
+- **Settings:** Sign in with ChatGPT (account, Manage Usage, Sign Out); Model (Default = newest Sol, or a picked model); Thinking (Default = Medium).
 - **App:** icon and accent color; local SwiftData store in its own folder; debug launch flags (README).
 
 ### Still to do (priority order)
@@ -54,12 +54,12 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Done: first real releases. Build 101 (downloaded like a user) updated itself to 102 in ~4 s.
    - **Pushing app changes to `main` now ships them to every installed copy.**
    - The bundle ID, feed URL, public key, asset name and tag format are now fixed forever.
-2. **Sign in with ChatGPT (replaces the OpenRouter key as the default).** Planned; next to build. Marty: "a huge, huge win."
+2. **Sign in with ChatGPT.** Done and shipped (builds 105–106); it is the only AI. Marty: "a huge, huge win." Left: the quality check (step 5) and a stable signing certificate (item 10).
    - What: OpenAI's [Sign in with ChatGPT](https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt). The coach signs in with their ChatGPT account and AI calls run on their Plus/Pro plan: no key, no credits, no bill to us. Eligible: "open-source projects, personal projects that run locally" (we're both). Free ChatGPT accounts can't use it.
-   - **Decided (Oct 3):** ChatGPT is the default provider for new installs right away; installs that already have an OpenRouter key keep OpenRouter. The OpenRouter key stays as "Use an API key instead" (free ChatGPT users; Claude, Gemini, Muse). Marty tests on a **Plus** account.
+   - **Decided (Oct 3): default thinking is Medium** (falls back to the model's own default where there's no Medium).
    - **Decided (Oct 3): the default model is the newest Sol** the account offers (`ChatGPTClient.preferredModel`), not a fixed slug. Coaches on Default move up when OpenAI ships a new Sol; a picked model stays until OpenAI retires it, then it falls back to Default. The model list loads at launch.
    - **Decided (Oct 3, later): ChatGPT only. OpenRouter is removed** (key, model library, Models tab, client). Marty: no consumer will make an OpenRouter account, add money, pull a key and pick a model; sign in with ChatGPT solves it. Also, with a key saved the app kept running Muse. Consequence: the Jev plan (item 7 below, §8.4) assumed the OpenRouter key and needs a new route.
-   - **Decided (Oct 3, after the test):** default model `gpt-5.6-sol` (Astra is far more than lineups need). Keep a ChatGPT model picker so Marty can experiment. Keep OpenRouter available for now. Marty is open to ChatGPT-only later (price no longer matters when the plan pays); revisit after real-team comparisons.
+   - **Decided (Oct 3, after the test):** Astra is far more than lineups need; keep a ChatGPT model picker so Marty can experiment. (Earlier calls to keep OpenRouter as an option were reversed the same day; see above.)
    - Spec: the full protocol is in `https://developers.openai.com/siwc/llms-full.txt` (section "Registration and sign-in" onward). Don't copy the DevKit (Node/React, noncommercial license); write it in Swift from the docs.
    - Protocol summary:
      - Install ID: generate `urn:uuid:<UUIDv4>` once per install and keep it forever (`ext_agent_host_id`; opaque, not a credential).
@@ -78,22 +78,22 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
         - Sample 12-player, 6-inning game, v1 prompts unchanged: GPT-6-Astra and GPT-5.6-Terra were both **valid on the first try** (0 revisions, 0 findings, no safety-net cells). Astra: 28 s batting + 72 s defense. Terra: 16 s + 65 s. Hello-world on Luna: 2.7 s.
         - The Responses stream had no `x-request-id` header; look for the request ID in the response body when building error reports. The ID token carries `email`, `name`, `sub`, `auth_time` (use email as the account label in Settings).
      2. **`LineupAI`: done (Oct 3).** 25 tests (`LineupAITests`), plus a live check against OpenAI: real ID-token signature verified against OpenAI's JWKS, expired session refreshed, streamed `gpt-5.6-sol` reply, model list. Built: `ChatGPTAuth` (PKCE, loopback listener via Network.framework, code exchange, JWKS check, refresh actor, revoke) and `ChatGPTClient: LLMClient` (Responses SSE via `URLSession.bytes`), with error mapping. Tests with stubbed `URLProtocol`.
-     3. **App:** credential record in the keychain; `AIProvider` setting; one client factory replacing the three `OpenRouterClient(apiKey:)` sites (`GameModel`, `ScoutRunner`, `SettingsView`); model choice stored per provider; Settings card (account, Sign Out, Manage usage), OpenRouter key under "Use an API key instead"; onboarding leads with Continue with ChatGPT.
-     4. **Polish:** welcome message, "Using ChatGPT plan" label, usage-limit alert, hide cost for plan usage.
-     5. **Check quality:** same games on Marty's team, Sonnet vs. the best ChatGPT model; feeds the evals work (item 4).
+     3. **App: done (build 105).** `AIService` owns the sign-in (keychain), the account's model list and the model and thinking choices; one client factory for `GameModel` and `ScoutRunner`; Settings card (account, Sign Out, Manage Usage). Signed out, the AI actions become Sign In with ChatGPT and a sheet after the first team offers it (Continue / Later).
+     4. **Polish: done.** One-time "You're using your ChatGPT plan" message, "Using ChatGPT plan · Manage Usage" in the model menu, usage-limit alert with Manage Usage.
+     5. **Check quality (left):** same games on Marty's team across Sol / Terra / Astra and thinking levels; feeds the evals work (item 4).
    - Risks: new program; terms and access can change. Re-read OpenAI's terms before shipping it via Sparkle.
    - Supersedes the earlier "drive the `codex` CLI" idea. Using a Claude subscription through the `claude` CLI is still only an idea (item 8).
 3. **AI player & team assessments (§5, M3).** First slice built.
    - Done: `FactSheet` (stats, ratings, positions, notes as citable fact IDs; team rates from counts), `Scout` (v1's analysis prompts ported, with ratings/notes/positions as inputs and fact-ID citations; one retry when a citation doesn't exist, then it's dropped), cached `PlayerAssessment` / `TeamAssessment` on `Player` / `Team`, stale when the player's facts change.
    - Done: player page tabs (Stats · Scouting Report · Coach's Evaluation; the last tab is remembered); Stats & Insights section replacing Stats and Insights (Team Summary · Players · Stats); Insights content (team summary, strengths/work on with evidence chips, leadoff / middle / defensive core, practice plan, every player in a line). "Assess Team" re-assesses only changed players, three at a time, then the team.
-   - Resilient runs: each player is saved the moment it's done, so a quit or failure resumes where it stopped; timeouts, rate limits and server errors retry up to 3 times (10 s, 30 s); a bad key or no credits stops the run at once. Each player shows Waiting / Assessing · m:ss / Trying again / failed with reason. The team summary is written only after every player is done, and shows "Out of date" when it doesn't cover the current assessments.
+   - Resilient runs: each player is saved the moment it's done, so a quit or failure resumes where it stopped; timeouts, rate limits and server errors retry up to 3 times (10 s, 30 s); a sign-in problem or a used-up plan limit stops the run at once. Each player shows Waiting / Assessing · m:ss / Trying again / failed with reason. The team summary is written only after every player is done, and shows "Out of date" when it doesn't cover the current assessments.
    - Run once on Marty's real team with Muse Spark (a reasoning model, 2–3 min per player); that exposed the 3-minute timeout, now 10 minutes.
    - Left: feed assessments into the Strategist prompt (a prompt change, so gate it on evals, item 4); coach pushback ("Disagree"); re-assess on import; history and trends; season ledger facts (needs item 9); printable practice sheet; Jev claim checks; a separate Scout model setting (uses the lineup model today).
 4. **Evals (§10).** Not started. Needs:
    - A golden set: fixture teams as JSON, Marty's real rules/rosters, expected rule templates, assessment fixtures.
-   - Harness: `swift test --filter Evals`, or a small CLI hitting OpenRouter.
+   - Harness: `swift test --filter Evals`, or a small CLI on the ChatGPT sign-in.
    - Metrics: valid-first-try, revisions, safety-net use, cost, latency, Marty-graded quality.
-   - Use the results to compare models (Sonnet vs. Muse, etc.) and gate prompt changes against v1.
+   - Use the results to compare ChatGPT models and thinking levels, and gate prompt changes against v1.
 5. **Printing & sharing (§6.6).**
    - A lineup card prints via `NSPrintOperation` but has **never been tested on paper**.
    - Needs a real print check, layout polish (jersey numbers, position key, big type), PDF export, "Copy as text" for team chats, and an optional per-inning dugout card.
@@ -111,7 +111,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
      - **Structure:** rulebooks as tabs on one full-width page; *or* one team rulebook plus per-game tweaks; *or* rules living inside each game.
      - **Checks:** recognize common rules from plain English locally (number becomes an editable token in the sentence); *or* pick from a library; *or* AI interprets every rule.
      - **Adding:** type with suggestions; *or* a starter-library sheet; *or* a bare text line.
-   - **Decided: Jev is the rule engine** (Decisions API, same OpenRouter key; see §8.4):
+   - **Decided: Jev is the rule engine** (Decisions API; see §8.4). **Open:** Jev was reached through the OpenRouter key, which is gone, so it needs a new route (or a substitute) before this is built:
      - **Interpreter:** every rule's text → Jev *Choice* over the `RuleCheck` catalog (plus "judgment only"). The number comes from candidates found in the sentence ("select, don't generate"). Above a confidence threshold, the check is attached automatically and the number becomes an editable token; below it, the app shows "AI judgment" or asks the coach (Q8).
      - **Evaluator for judgment rules:** after positions are filled, one Jev *Noul* per judgment-only rule against a compact text rendering of the lineup. It is shown as a probability ("Jev: 92% likely followed") and labeled as a second opinion, not a guarantee.
      - **Not for countable rules:** Jev doesn't count reliably (TypeSafe's own docs); the `Validator` stays the source of truth for anything with a number.
@@ -126,7 +126,8 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Game-day mode with mid-game re-plan.
    - Game status/score entry: `ourScore` / `theirScore` exist in the model with no UI.
 10. **Smaller gaps:**
-   - Show AI cost: tracked per lineup in `LineupDocument.cost`, not displayed anywhere since the design pass.
+   - **Stable code signing.** Builds are ad-hoc signed, so macOS treats each build as a new app and asks for the keychain password after every update ("Always Allow" only lasts one build). Fix: sign local and release builds with one certificate (Developer ID if Marty has a paid Apple Developer account, which also allows notarization; otherwise a self-signed one).
+   - AI cost: moot on the ChatGPT plan (no per-call price); `LineupDocument.cost` stays nil.
    - JSON backup/export of the library (§7.2).
    - Edit a game's date after creation (only the opponent is editable inline).
    - Per-task model picker: only the lineup task exists today; Scout/Interpreter will need their own.
@@ -190,7 +191,7 @@ v2 keeps what made v1 good (plain-language rules, coach control, GameChanger dat
    - **A last-resort minimal repair** that is always disclosed to the coach.
 
    Compliance is computed by code, never self-reported by the model.
-2. **Local-first, no accounts, free.** A native SwiftUI Mac app stores data on disk. There is no Supabase, auth, Stripe or marketing site. Users bring their own **OpenRouter** key and can pick a model per task. Sparkle handles updates from GitHub Releases.
+2. **Local-first, no accounts, free.** A native SwiftUI Mac app stores data on disk. There is no Supabase, auth, Stripe or marketing site. The AI runs on the coach's own ChatGPT plan via Sign in with ChatGPT (no API key); OpenRouter BYOK was the original design and was removed on Oct 3. Sparkle handles updates from GitHub Releases.
 3. **Season-aware, game-day-ready.** Playing-time and pitching history carry across games. Lineups persist with full edit history. Game-day mode handles mid-game changes. Lineup cards print properly.
 
 The web app will be retired. It has no active users, and v1 data is not carried over. The Mac app starts fresh and fully local.
@@ -550,7 +551,7 @@ AIRun           id, task, model, promptHash, tokensIn/Out, cost, latency, ok/err
 
 ## 8. AI layer
 
-### 8.1 Bring-your-own-key via OpenRouter
+### 8.1 Bring-your-own-key via OpenRouter (superseded Oct 3: the app uses Sign in with ChatGPT only; see Build status item 2)
 - On first run, onboarding asks for an OpenRouter API key. It's stored in **Keychain** and never written to disk elsewhere. "Test key" calls `GET /api/v1/models`.
 - **Without a key** the coach can still manage the roster, import stats, build and edit lineups by hand (with live validation), track playing time, and print. Lineup generation, which is the heart of the app, needs a key, so onboarding treats adding one as step 1.
 - One HTTP client for `POST /api/v1/chat/completions`, using `response_format: json_schema` (structured outputs) wherever the chosen model supports it.
