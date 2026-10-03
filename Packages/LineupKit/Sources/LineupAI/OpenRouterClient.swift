@@ -56,7 +56,7 @@ public struct OpenRouterClient: LLMClient {
 
         var urlRequest = URLRequest(url: baseURL.appending(path: "chat/completions"))
         urlRequest.httpMethod = "POST"
-        urlRequest.timeoutInterval = 180
+        urlRequest.timeoutInterval = 600 // reasoning models can think for minutes before the first byte
         urlRequest.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.setValue("https://peanutmgr.com", forHTTPHeaderField: "HTTP-Referer")

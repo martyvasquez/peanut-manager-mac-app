@@ -17,7 +17,7 @@ public enum ScoutPrompts {
 
     ANALYSIS PRINCIPLES:
     1. Be constructive - this is for youth development, not criticism
-    2. Back up every claim with facts: list the fact IDs in "evidence". Don't write statistics in your text; the app shows the cited values next to your words.
+    2. Back up every claim with facts: list the 1-3 fact IDs that best support it in "evidence". Don't write statistics in your text; the app shows the cited values next to your words.
     3. Consider the context of youth baseball (e.g., .300 AVG is solid, high strikeouts are common)
     4. Identify 2-4 strengths and 1-3 areas for improvement per player
     5. Provide actionable insights when possible
@@ -85,7 +85,7 @@ public enum ScoutPrompts {
     ANALYSIS PRINCIPLES:
     1. Focus on actionable insights for coaches
     2. Be constructive - this is for youth development
-    3. Back up claims with facts: list the fact IDs in "evidence". Don't write statistics in your text; the app shows the cited values next to your words.
+    3. Back up claims with facts: list the 1-3 fact IDs that best support it in "evidence". Don't write statistics in your text; the app shows the cited values next to your words.
     4. Consider youth baseball context
     5. Provide specific practice drill recommendations
 

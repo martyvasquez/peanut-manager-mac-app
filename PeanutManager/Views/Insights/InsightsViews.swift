@@ -70,7 +70,7 @@ struct ScoutingReport: View {
                                 Text(fit.fit.label)
                                     .foregroundStyle(fit.fit == .strong ? AnyShapeStyle(.tint) : fit.fit == .notRecommended ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(fit.reason).foregroundStyle(.secondary)
+                                    Text(fit.reason).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                                     EvidenceChips(ids: fit.evidence, facts: a.facts)
                                 }
                             }
@@ -121,8 +121,8 @@ struct ClaimList: View {
             Caption(title)
             ForEach(Array(claims.enumerated()), id: \.offset) { _, claim in
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(claim.title).fontWeight(.semibold)
-                    Text(claim.detail).foregroundStyle(.secondary)
+                    Text(claim.title).fontWeight(.semibold).fixedSize(horizontal: false, vertical: true)
+                    Text(claim.detail).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     EvidenceChips(ids: claim.evidence, facts: facts)
                 }
             }
@@ -135,9 +135,11 @@ struct ClaimList: View {
 struct EvidenceChips: View {
     let ids: [String]
     let facts: FactSheet
+    var limit = 3
 
     var body: some View {
-        let shown = ids.compactMap { facts[$0] }
+        let all = ids.compactMap { facts[$0] }
+        let shown = all.prefix(limit)
         if !shown.isEmpty {
             FlowLayout(spacing: 6) {
                 ForEach(shown, id: \.id) { fact in
@@ -147,6 +149,13 @@ struct EvidenceChips: View {
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
                         .background(Color.primary.opacity(0.06), in: Capsule())
+                }
+                if all.count > limit {
+                    Text("+\(all.count - limit)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                        .padding(.vertical, 3)
+                        .help(all.dropFirst(limit).map(\.display).joined(separator: "\n"))
                 }
             }
         }
@@ -167,7 +176,8 @@ struct FlowLayout: Layout {
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let rows = arrange(subviews, width: proposal.width ?? .infinity)
-        return CGSize(width: rows.map(\.width).max() ?? 0, height: rows.map(\.height).reduce(0, +) + spacing * CGFloat(max(rows.count - 1, 0)))
+        let widest = rows.map(\.width).max() ?? 0
+        return CGSize(width: proposal.width.map { min($0, widest) } ?? widest, height: rows.map(\.height).reduce(0, +) + spacing * CGFloat(max(rows.count - 1, 0)))
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
