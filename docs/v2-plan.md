@@ -66,16 +66,11 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 4. **Printing & sharing (§6.6).**
    - A lineup card prints via `NSPrintOperation` but has **never been tested on paper**.
    - Needs a real print check, layout polish (jersey numbers, position key, big type), PDF export, "Copy as text" for team chats, and an optional per-inning dugout card.
-5. **Season & game day (§6.2–6.5, M4).**
-   - Playing-time ledger across games, fed to the AI as facts.
-   - Pitching tracker with rest-day presets.
-   - Game-day mode with mid-game re-plan.
-   - Game status/score entry: `ourScore` / `theirScore` exist in the model with no UI.
-6. **Rules intelligence (§4.3, §8.4, M5).**
+5. **Rules intelligence (§4.3, §8.4, M5).**
    - AI Rule Interpreter that fills "Understood as…" checks automatically (today the coach attaches checks by hand).
    - Jev (Decisions API) cascade.
    - Learn-from-edits suggestions (§6.9).
-7. **Rules UI/UX redesign.** Marty doesn't like how rules are presented, created or edited today. Direction **not yet decided**; revisit with him before building.
+6. **Rules UI/UX redesign.** Marty doesn't like how rules are presented, created or edited today. Direction **not yet decided**; revisit with him before building.
    - Problems seen so far:
      - Rules live far from where they're used: a separate sidebar section, plus a "rule sets" middle column.
      - A rule's code check is hidden and separate from its words. The text can say 3 while the check says 2.
@@ -90,13 +85,18 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
      - **Evaluator for judgment rules:** after positions are filled, one Jev *Noul* per judgment-only rule against a compact text rendering of the lineup. It is shown as a probability ("Jev: 92% likely followed") and labeled as a second opinion, not a guarantee.
      - **Not for countable rules:** Jev doesn't count reliably (TypeSafe's own docs); the `Validator` stays the source of truth for anything with a number.
      - Needs: a Decisions API client in `LineupAI` (alpha endpoint, behind a protocol); an eval set of real rules with expected interpretations; threshold tuning.
-8. **Use a Claude or ChatGPT subscription instead of an OpenRouter key.** Not started; idea only.
+7. **Use a Claude or ChatGPT subscription instead of an OpenRouter key.** Not started; idea only.
    - Add `ClaudeCodeClient` and `CodexClient` that implement `LLMClient` by running the user's installed CLI headless: `claude -p … --output-format json`, tools off, one turn; `codex exec --json -s read-only`. Check the flags against current versions before building.
    - Possible only because the App Sandbox is off; a Mac App Store build couldn't do this.
    - Settings: an "AI provider" choice. Show a subscription option only when its CLI is found and logged in. Dock-launched apps don't get the shell PATH, so look in the usual install folders or ask `zsh -lc 'command -v claude'`.
    - Downsides: a few seconds of CLI startup per call, which adds up across the two generation steps and revisions; no live model catalog; no cost data.
    - Run evals through each client before calling it equivalent to OpenRouter.
    - **Check Anthropic's and OpenAI's terms first.** Using a consumer subscription from a third-party app is a gray area. OpenRouter stays the default.
+8. **Season & game day (§6.2–6.5, M4).**
+   - Playing-time ledger across games, fed to the AI as facts.
+   - Pitching tracker with rest-day presets.
+   - Game-day mode with mid-game re-plan.
+   - Game status/score entry: `ourScore` / `theirScore` exist in the model with no UI.
 9. **Smaller gaps:**
    - Show AI cost: tracked per lineup in `LineupDocument.cost`, not displayed anywhere since the design pass.
    - JSON backup/export of the library (§7.2).
