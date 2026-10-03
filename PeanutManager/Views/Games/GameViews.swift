@@ -178,6 +178,8 @@ struct GameDetailView: View {
             } else {
                 if model.usageLimitReached {
                     Link("Manage Usage", destination: ChatGPTAuth.manageUsageURL)
+                } else if !AIService.shared.isReady {
+                    Button("Sign In with ChatGPT") { AIService.shared.signIn() }
                 } else if model.errorMessage?.contains("Settings") == true {
                     SettingsLink { Text("Open Settings") }
                 }
@@ -309,7 +311,21 @@ struct GameDetailView: View {
 
     // MARK: Steps
 
+    @ViewBuilder
     private var startButton: some View {
+        if !AIService.shared.isReady {
+            VStack(spacing: 10) {
+                SignInButton(prominent: true)
+                Text("Lineups run on your ChatGPT plan.").font(.callout).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 40)
+        } else {
+            makeButton
+        }
+    }
+
+    private var makeButton: some View {
         Button {
             model.makeBattingOrder(undoManager: undoManager)
         } label: {

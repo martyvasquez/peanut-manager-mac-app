@@ -36,6 +36,7 @@ struct ContentView: View {
     @State private var showingNewTeam = false
     @State private var editingTeam: Team?
     @State private var deletingTeam: Team?
+    @State private var showingSignIn = false
     @Environment(\.openSettings) private var openSettings
 
     private var team: Team? {
@@ -62,7 +63,10 @@ struct ContentView: View {
                     }
                 }
             } else {
-                WelcomeView { created in selectedTeamID = created.uid.uuidString }
+                WelcomeView { created in
+                    selectedTeamID = created.uid.uuidString
+                    if !AIService.shared.isReady { showingSignIn = true }
+                }
             }
         }
         .onChange(of: navigator.playerToOpen) { _, player in
@@ -79,6 +83,7 @@ struct ContentView: View {
                 selectedGame = team?.games.sorted { $0.date < $1.date }.last
             }
             if UserDefaults.standard.bool(forKey: "PMOpenSettings") { openSettings() }
+            if DebugSupport.showSignIn { showingSignIn = true }
             if let open = UserDefaults.standard.string(forKey: "PMSection"),
                let target = SidebarSection(rawValue: ["stats": "team", "insights": "team"][open] ?? open) {
                 navigator.section = target
@@ -87,6 +92,7 @@ struct ContentView: View {
             }
             #endif
         }
+        .sheet(isPresented: $showingSignIn) { SignInSheet() }
         .sheet(item: $editingTeam) { team in
             TeamSheet(team: team)
         }

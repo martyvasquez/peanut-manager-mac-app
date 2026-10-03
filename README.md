@@ -84,6 +84,8 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMAssessTeam YES` | Assess the team when Stats & Insights opens (use with `-PMSection team`) |
 | `-teamTab summary\|players\|stats` / `-playerTab stats\|scouting\|evaluation` | Open that tab |
 | `-PMFlakyScout YES` | With `-PMFakeAI`: Player03 times out once, Player05 always fails (tests retries and resume) |
+| `-PMSignedOut YES` | Act signed out of ChatGPT; your real sign-in stays in the keychain |
+| `-PMShowSignIn YES` | Show the Sign in with ChatGPT sheet that follows creating the first team |
 
 ## How generation works
 

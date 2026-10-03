@@ -9,7 +9,9 @@ struct ScoutingReport: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             status
-            if let error = runner.errors[player.uid] {
+            if !AIService.shared.isReady {
+                // Signed out: the sign-in button stands in for the actions; earlier errors don't matter.
+            } else if let error = runner.errors[player.uid] {
                 Text(error).foregroundStyle(.red).font(.callout)
             } else if case .failed(let message) = runner.jobs[player.uid] {
                 Text(message).foregroundStyle(.red).font(.callout)
@@ -33,12 +35,18 @@ struct ScoutingReport: View {
                 Label("AI · \(model) · \(runner.isStale(player) ? "changed since \(date)" : date)", systemImage: "sparkles")
                     .foregroundStyle(.secondary)
                     .help("Written by AI from this player's stats and your evaluation")
-                Button(runner.isStale(player) ? "Refresh" : "Reassess") { runner.assess(player) }
-                    .buttonStyle(.link)
+                if AIService.shared.isReady {
+                    Button(runner.isStale(player) ? "Refresh" : "Reassess") { runner.assess(player) }
+                        .buttonStyle(.link)
+                }
             }
             .font(.callout)
         } else if player.isAssessable {
-            Button("Write Scouting Report", systemImage: "sparkles") { runner.assess(player) }
+            if AIService.shared.isReady {
+                Button("Write Scouting Report", systemImage: "sparkles") { runner.assess(player) }
+            } else {
+                SignInButton()
+            }
         }
     }
 
@@ -242,7 +250,7 @@ struct StatsInsightsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .toolbar(removing: .title)
         .toolbar {
-            if tab != .stats {
+            if tab != .stats && AIService.shared.isReady {
                 Button(actionTitle, systemImage: "sparkles") { runner.assessTeam(team) }
                     .disabled(runner.teamRuns[team.uid] != nil || !team.activePlayers.contains(where: \.isAssessable) || runner.isTeamCurrent(team))
                     .help(runner.isTeamCurrent(team) ? "Everyone is assessed and the team summary is up to date"
@@ -257,7 +265,9 @@ struct StatsInsightsView: View {
     private func page(@ViewBuilder _ content: () -> some View) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
-                if let error = runner.errors[team.uid], runner.teamRuns[team.uid] == nil {
+                if !AIService.shared.isReady {
+                    SignInButton()
+                } else if let error = runner.errors[team.uid], runner.teamRuns[team.uid] == nil {
                     HStack(spacing: 12) {
                         Text(error).foregroundStyle(.red)
                         Button("Try Again") { runner.assessTeam(team) }.buttonStyle(.link)

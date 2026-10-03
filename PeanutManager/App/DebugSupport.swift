@@ -14,6 +14,8 @@ import LineupKit
 ///   -PMScrollToChecks YES scroll to the game plan and checks once a lineup exists
 ///   -PMAssessTeam YES    assess the team as soon as Insights opens
 ///   -PMFlakyScout YES    fake Scout: Player03 times out once, Player05 always times out
+///   -PMSignedOut YES     act signed out of ChatGPT (the real sign-in stays in the keychain)
+///   -PMShowSignIn YES    show the after-first-team Sign in with ChatGPT sheet
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }
     static var fakeAI: Bool { UserDefaults.standard.bool(forKey: "PMFakeAI") }
@@ -21,6 +23,8 @@ enum DebugSupport {
     static var autoPositions: Bool { UserDefaults.standard.bool(forKey: "PMAutoPositions") }
     static var scrollToChecks: Bool { UserDefaults.standard.bool(forKey: "PMScrollToChecks") }
     static var assessTeam: Bool { UserDefaults.standard.bool(forKey: "PMAssessTeam") }
+    static var signedOut: Bool { UserDefaults.standard.bool(forKey: "PMSignedOut") }
+    static var showSignIn: Bool { UserDefaults.standard.bool(forKey: "PMShowSignIn") }
     nonisolated static var flakyScout: Bool { UserDefaults.standard.bool(forKey: "PMFlakyScout") }
 
     @MainActor

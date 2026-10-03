@@ -54,6 +54,9 @@ final class AIService {
         let defaults = UserDefaults.standard
         chatGPTModelID = defaults.string(forKey: Keys.model) ?? ChatGPTClient.defaultModel
         reasoningEffort = defaults.string(forKey: Keys.effort)
+        #if DEBUG
+        if DebugSupport.signedOut { return }
+        #endif
         if let record = Self.loadRecord() {
             account = record.account
             if let tokens = record.tokens { adopt(record.account, tokens) }
@@ -72,6 +75,14 @@ final class AIService {
     }
 
     var currentModelID: String { chatGPTModelID }
+
+    /// Whether AI actions can run; while not, the app shows Sign in with ChatGPT in their place.
+    var isReady: Bool {
+        #if DEBUG
+        if DebugSupport.fakeAI { return true }
+        #endif
+        return isSignedIn
+    }
 
     var currentModelName: String { displayName(for: currentModelID) }
 
