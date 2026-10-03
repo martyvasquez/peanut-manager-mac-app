@@ -54,14 +54,27 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Done: first real releases. Build 101 (downloaded like a user) updated itself to 102 in ~4 s.
    - **Pushing app changes to `main` now ships them to every installed copy.**
    - The bundle ID, feed URL, public key, asset name and tag format are now fixed forever.
-2. **Sign in with ChatGPT (replaces the OpenRouter key as the default).** Planning. Marty: "a huge, huge win."
-   - What: OpenAI's [Sign in with ChatGPT](https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt). The coach signs in with their ChatGPT account and AI calls run on their Plus/Pro plan: no key, no credits, no bill to us.
-   - Eligible: "open-source projects, personal projects that run locally" (we're both). Plus and Pro users only; free ChatGPT accounts can't use it, so the OpenRouter key stays as a fallback.
-   - Protocol: OAuth + PKCE with dynamic client registration (`client_id=dynamic_agent_client`, no secret), system browser, loopback callback on `127.0.0.1`. Scopes: identity, `offline_access`, `resource.invoke` with `chatgpt.tokens.use.direct`. Calls go to the public Responses API (`api.openai.com/v1`) with the user's access token; models come from the connection's model list.
-   - No Swift SDK. The DevKit (github.com/openai/sign-in-with-chatgpt-devkit) is Node/React under a **noncommercial license**: implement the protocol in Swift from the docs (developers.openai.com/siwc); don't copy DevKit code.
-   - Required by OpenAI: a "Manage usage" action linking to ChatGPT settings, and clear handling when a request hits the plan's usage limit.
-   - Shape: a `ChatGPTClient` implementing `LLMClient` (Responses API); tokens and host ID in the keychain; Settings "AI provider": ChatGPT (default) · OpenRouter key (keeps Claude, Gemini, Muse). Model picker lists the connection's models.
-   - Gate: v1 prompts unchanged; run evals (item 4) on the OpenAI models before making it the default.
+2. **Sign in with ChatGPT (replaces the OpenRouter key as the default).** Planned; next to build. Marty: "a huge, huge win."
+   - What: OpenAI's [Sign in with ChatGPT](https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt). The coach signs in with their ChatGPT account and AI calls run on their Plus/Pro plan: no key, no credits, no bill to us. Eligible: "open-source projects, personal projects that run locally" (we're both). Free ChatGPT accounts can't use it.
+   - **Decided (Oct 3):** ChatGPT is the default provider for new installs right away; installs that already have an OpenRouter key keep OpenRouter. The OpenRouter key stays as "Use an API key instead" (free ChatGPT users; Claude, Gemini, Muse). Marty tests on a **Plus** account.
+   - Spec: the full protocol is in `https://developers.openai.com/siwc/llms-full.txt` (section "Registration and sign-in" onward). Don't copy the DevKit (Node/React, noncommercial license); write it in Swift from the docs.
+   - Protocol summary:
+     - Install ID: generate `urn:uuid:<UUIDv4>` once per install and keep it forever (`ext_agent_host_id`; opaque, not a credential).
+     - Authorize: system browser → `https://auth.openai.com/api/accounts/authorize` with `client_id=dynamic_agent_client` (first time) or the saved issued `oaiapp_…` ID, `agent_name_hint=Peanut Manager` (first time only), `ext_agent_host_id`, `response_type=code`, `redirect_uri=http://127.0.0.1:<port>/auth/callback` (1455 first; only the port may vary; never `localhost`), `scope=openid profile email offline_access resource.invoke chatgpt.tokens.use.direct`, `resource=https://api.openai.com/v1`, fresh `state`/`nonce`, PKCE S256. Returning sign-in adds `id_token_hint` / `login_hint`.
+     - Callback returns `code`, `state`, issued `client_id` (new registration). Exchange at `https://auth.openai.com/api/accounts/oauth/token` (form-encoded, no secret, same `redirect_uri` and `resource`).
+     - Validate the ID token (JWKS signature, issuer, audience = issued client ID, expiry, nonce). Plan use is on only if granted scopes include `chatgpt.tokens.use.direct`.
+     - Tokens: access 1 h; refresh 30 days, rotating on each refresh. Refresh with `grant_type=refresh_token`, the issued client ID, `resource`; serialize refreshes. Sign out: revoke the refresh token (`revocation_endpoint` from `/.well-known/openid-configuration`), clear tokens, keep client ID + install ID.
+     - Inference: `POST https://api.openai.com/v1/responses`, `stream: true`, `store: false`, system prompt as `instructions`, history in `input`. Not allowed: `max_output_tokens`, `temperature`, `top_p`, `previous_response_id`, `metadata`, `user`, system-role items. Success only on `response.completed`; handle `response.failed` / `response.incomplete` / dropped streams.
+     - Models: `GET https://api.openai.com/v1/models` → `models[]` with `slug`, `display_name`, `visibility` (show `"list"` only, server order).
+     - Errors: `subscription_sharing_usage_limit_exceeded` (429: stop, show Manage usage), `…_user_not_eligible` (403: explain, don't retry), `…_usage_unavailable` / `…_user_unavailable` / direct-admission 503 (retry with backoff), `…_unsupported_capability` (400: fix the body), 401 (sign in again). Admission errors may be `{"detail": "..."}` instead of `error`.
+   - Required UI (OpenAI's guidelines): **Continue with ChatGPT** button with approved branding; one-time "You're using your ChatGPT plan" · Got it; **Using ChatGPT plan · Manage usage** near the model picker; usage-limit message with Manage usage (https://chatgpt.com/settings/usage) as the primary action.
+   - Plus has a 5-hour usage cap shared across all apps; a full team assessment with a reasoning model may hit it mid-run. Runs already resume per player; surface the limit clearly.
+   - Steps:
+     1. **Test:** a throwaway CLI (scratch, not committed) that signs in, lists models, and runs one real lineup prompt. Needs Marty to click through sign-in once.
+     2. **`LineupAI`:** `ChatGPTAuth` (PKCE, loopback listener via Network.framework, code exchange, JWKS check, refresh actor, revoke) and `ChatGPTClient: LLMClient` (Responses SSE via `URLSession.bytes`), with error mapping. Tests with stubbed `URLProtocol`.
+     3. **App:** credential record in the keychain; `AIProvider` setting; one client factory replacing the three `OpenRouterClient(apiKey:)` sites (`GameModel`, `ScoutRunner`, `SettingsView`); model choice stored per provider; Settings card (account, Sign Out, Manage usage), OpenRouter key under "Use an API key instead"; onboarding leads with Continue with ChatGPT.
+     4. **Polish:** welcome message, "Using ChatGPT plan" label, usage-limit alert, hide cost for plan usage.
+     5. **Check quality:** same games on Marty's team, Sonnet vs. the best ChatGPT model; feeds the evals work (item 4).
    - Risks: new program; terms and access can change. Re-read OpenAI's terms before shipping it via Sparkle.
    - Supersedes the earlier "drive the `codex` CLI" idea. Using a Claude subscription through the `claude` CLI is still only an idea (item 8).
 3. **AI player & team assessments (§5, M3).** First slice built.
