@@ -21,15 +21,21 @@ Free, local-first, bring your own [OpenRouter](https://openrouter.ai) key. No ac
 
 ## What's next (short version)
 
-1. Sparkle auto-updates and the release workflow.
-2. AI **player and team assessments** (Insights screens).
-3. **Evals**: golden lineup, assessment and rule sets to compare models and prompts.
-4. **Printing and sharing** that's actually tested (lineup card, PDF, copy as text).
-5. Season playing-time ledger, pitching tracker, game-day mode.
-6. AI rule interpreter (automatic "Understood as…"), Jev, learning from edits.
-7. **Rules UI/UX redesign** (how rules are presented, created and edited; direction not decided yet).
+1. AI **player and team assessments** (Insights screens).
+2. **Evals**: golden lineup, assessment and rule sets to compare models and prompts.
+3. **Printing and sharing** that's actually tested (lineup card, PDF, copy as text).
+4. AI rule interpreter (automatic "Understood as…"), Jev, learning from edits.
+5. **Rules UI/UX redesign** (how rules are presented, created and edited; direction not decided yet).
+6. Use a Claude or ChatGPT subscription instead of an OpenRouter key.
+7. Season playing-time ledger, pitching tracker, game-day mode.
 
 Full list with details: [`docs/v2-plan.md` → Build status](docs/v2-plan.md#build-status-oct-2-2026).
+
+## Install and updates
+
+Download `PeanutManager.zip` from [the latest release](https://github.com/martyvasquez/peanut-manager-mac-app/releases/latest), unzip, drag to Applications. The first open shows "Apple could not verify…": **System Settings → Privacy & Security → Open Anyway**.
+
+After that the app updates itself on launch. Every push to `main` that changes the app is built, signed and released by `.github/workflows/release-mac.yml` (Sparkle; see `docs/v2-plan.md` item 1).
 
 ## Layout
 

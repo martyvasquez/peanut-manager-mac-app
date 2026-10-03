@@ -51,7 +51,8 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Done: local 127.0.0.1 update test (build 5 → 6 in ~2 s) and tamper test (rejected, stayed on 6).
    - Done: `.github/workflows/release-mac.yml` (zip asset `PeanutManager.zip`, tags `build-N`, N = run number + 100; CI must `brew install xcodegen` since the project isn't committed).
    - Done: `SPARKLE_PRIVATE_KEY` repo secret.
-   - Left: first push; real two-release test.
+   - Done: first real releases. Build 101 (downloaded like a user) updated itself to 102 in ~4 s.
+   - **Pushing app changes to `main` now ships them to every installed copy.**
    - The bundle ID, feed URL, public key, asset name and tag format are now fixed forever.
 2. **AI player & team assessments (§5, M3).** Not started. Needs:
    - Scout task and cached `PlayerAssessment` / `TeamAssessment` models.
