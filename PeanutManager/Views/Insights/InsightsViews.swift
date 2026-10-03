@@ -8,11 +8,7 @@ struct ScoutingReport: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                SectionTitle("Scouting Report")
-                Spacer()
-                status
-            }
+            status
             if let error = runner.errors[player.uid] {
                 Text(error).foregroundStyle(.red).font(.callout)
             } else if case .failed(let message) = runner.jobs[player.uid] {
@@ -20,9 +16,8 @@ struct ScoutingReport: View {
             }
             if let a = player.assessment {
                 report(a)
-            } else if !runner.isBusy(player) {
-                Text(player.isAssessable ? "Not assessed yet." : "Add ratings, notes or stats first.")
-                    .foregroundStyle(.secondary)
+            } else if !runner.isBusy(player), !player.isAssessable {
+                Text("Add ratings, notes or stats first.").foregroundStyle(.secondary)
             }
         }
     }
@@ -33,15 +28,17 @@ struct ScoutingReport: View {
             JobStatus(job: job).font(.callout)
         } else if let a = player.assessment {
             HStack(spacing: 10) {
-                Text(runner.isStale(player) ? "Changed since \(a.assessedAt.formatted(date: .abbreviated, time: .omitted))"
-                                            : a.assessedAt.formatted(date: .abbreviated, time: .omitted))
+                let model = ModelLibrary.shared.models.first { $0.id == a.model }?.name ?? a.model
+                let date = a.assessedAt.formatted(date: .abbreviated, time: .omitted)
+                Label("AI · \(model) · \(runner.isStale(player) ? "changed since \(date)" : date)", systemImage: "sparkles")
                     .foregroundStyle(.secondary)
+                    .help("Written by AI from this player's stats and your evaluation")
                 Button(runner.isStale(player) ? "Refresh" : "Reassess") { runner.assess(player) }
                     .buttonStyle(.link)
             }
             .font(.callout)
         } else if player.isAssessable {
-            Button("Assess") { runner.assess(player) }
+            Button("Write Scouting Report", systemImage: "sparkles") { runner.assess(player) }
         }
     }
 
@@ -212,57 +209,112 @@ struct FlowLayout: Layout {
 // MARK: - Team
 
 /// Full-width team insights: the Scout's read on the team, lineup ideas, the practice plan, and every player in a line.
-struct InsightsView: View {
+enum TeamTab: String, CaseIterable {
+    case summary, players, stats
+
+    var title: String {
+        switch self {
+        case .summary: "Team Summary"
+        case .players: "Players"
+        case .stats: "Stats"
+        }
+    }
+}
+
+/// Stats & Insights: the AI's team summary, every player's one-line take, and the season stats table.
+struct StatsInsightsView: View {
     let team: Team
     @State private var runner = ScoutRunner.shared
+    @AppStorage("teamTab") private var tab: TeamTab = .summary
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 36) {
-                header
-                if let error = runner.errors[team.uid], runner.teamRuns[team.uid] == nil {
-                    HStack(spacing: 12) {
-                        Text(error).foregroundStyle(.red)
-                        Button("Try Again") { runner.assessTeam(team) }.buttonStyle(.link)
-                    }
-                }
-                if let a = team.assessment {
-                    teamReport(a)
-                }
-                players
+        VStack(alignment: .leading, spacing: 0) {
+            header
+                .padding(.horizontal, 36)
+                .padding(.top, 28)
+                .padding(.bottom, 16)
+            switch tab {
+            case .summary: page { summary }
+            case .players: page { players }
+            case .stats: StatsView(team: team)
             }
-            .padding(.horizontal, 36)
-            .padding(.vertical, 28)
-            .frame(maxWidth: 980, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .toolbar(removing: .title)
         .toolbar {
-            Button(actionTitle, systemImage: "sparkles") { runner.assessTeam(team) }
-                .disabled(runner.teamRuns[team.uid] != nil || !team.activePlayers.contains(where: \.isAssessable) || runner.isTeamCurrent(team))
-                .help(runner.isTeamCurrent(team) ? "Everyone is assessed and the team summary is up to date"
-                                                 : "Assess players who are new or changed, then write the team summary")
+            if tab != .stats {
+                Button(actionTitle, systemImage: "sparkles") { runner.assessTeam(team) }
+                    .disabled(runner.teamRuns[team.uid] != nil || !team.activePlayers.contains(where: \.isAssessable) || runner.isTeamCurrent(team))
+                    .help(runner.isTeamCurrent(team) ? "Everyone is assessed and the team summary is up to date"
+                                                     : "Assess players who are new or changed, then write the team summary")
+            }
         }
         #if DEBUG
         .task { if DebugSupport.assessTeam, team.assessment == nil { runner.assessTeam(team) } }
         #endif
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Insights").font(.largeTitle.weight(.bold))
-            if let run = runner.teamRuns[team.uid] {
-                HStack(spacing: 6) {
-                    ProgressView().controlSize(.small)
-                    Text(run.writingSummary ? "Writing the team summary…" : "Assessing players · \(run.total - pending) of \(run.total) done")
+    private func page(@ViewBuilder _ content: () -> some View) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 32) {
+                if let error = runner.errors[team.uid], runner.teamRuns[team.uid] == nil {
+                    HStack(spacing: 12) {
+                        Text(error).foregroundStyle(.red)
+                        Button("Try Again") { runner.assessTeam(team) }.buttonStyle(.link)
+                    }
                 }
-                .foregroundStyle(.secondary)
-            } else if let a = team.assessment {
-                let made = "\(ModelLibrary.shared.models.first { $0.id == a.model }?.name ?? a.model) · \(a.assessedAt.formatted(date: .abbreviated, time: .omitted))"
-                Text(runner.isTeamCurrent(team) ? made : made + " · Out of date")
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Not assessed yet").foregroundStyle(.secondary)
+                content()
             }
+            .padding(.horizontal, 36)
+            .padding(.top, 8)
+            .padding(.bottom, 28)
+            .frame(maxWidth: 980, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Stats & Insights").font(.largeTitle.weight(.bold))
+            HStack(spacing: 16) {
+                Picker("", selection: $tab) {
+                    ForEach(TeamTab.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                .id(tab)
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                status
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var status: some View {
+        if tab == .stats {
+            if let imported = team.statsImportedAt {
+                Text("GameChanger · imported \(imported.formatted(date: .abbreviated, time: .omitted))").foregroundStyle(.secondary)
+            }
+        } else if let run = runner.teamRuns[team.uid] {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text(run.writingSummary ? "Writing the team summary…" : "Assessing players · \(run.total - pending) of \(run.total) done")
+            }
+            .foregroundStyle(.secondary)
+        } else if let a = team.assessment {
+            let made = "\(ModelLibrary.shared.models.first { $0.id == a.model }?.name ?? a.model) · \(a.assessedAt.formatted(date: .abbreviated, time: .omitted))"
+            Text(runner.isTeamCurrent(team) ? made : made + " · Out of date")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var summary: some View {
+        if let a = team.assessment {
+            teamReport(a)
+        } else if runner.teamRuns[team.uid] == nil {
+            Text("No team summary yet. It's written after every player is assessed.")
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -334,7 +386,6 @@ struct InsightsView: View {
 
     private var players: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Caption("Players").padding(.bottom, 10)
             ForEach(team.activePlayers) { player in
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(player.jersey.isEmpty ? "–" : player.jersey)
@@ -359,8 +410,14 @@ struct InsightsView: View {
                         Text(player.isAssessable ? "Not assessed" : "No ratings, notes or stats").foregroundStyle(.tertiary)
                     }
                     Spacer(minLength: 0)
+                    if player.assessment != nil {
+                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                    }
                 }
                 .padding(.vertical, 9)
+                .contentShape(Rectangle())
+                .onTapGesture { if player.assessment != nil { Navigator.shared.openScoutingReport(player) } }
+                .help(player.assessment != nil ? "Open \(player.name)'s scouting report" : "")
                 Divider()
             }
         }

@@ -14,9 +14,9 @@ Free, local-first, bring your own [OpenRouter](https://openrouter.ai) key. No ac
 | **Lineups** | Two steps. **1. Batting order:** the AI proposes; you drag to reorder or "Remake…" with feedback. **2. Positions:** lock any spots on an empty grid, then **Fill the Rest**. Validated, revised by the AI if needed, and disclosed when the app adjusts anything. Undo, versions, clear. |
 | **Checks** | Code-verified: 9 positions every inning, no duplicates, everyone accounted for, eligibility, locks, pitcher re-entry, everyone bats, plus 8 checkable rule types. Rules without a check are labeled "AI judgment." |
 | **Games** | Attendance (late arrival / early departure), rules, innings, Win↔Develop, stats↔ratings trust, model chip, notes for the AI, and an opponent scouting report that carries over to the next game against that team. |
-| **Roster** | Positions on a field diagram (doesn't play / plays / best), notes, 14 optional star ratings, season stat tiles. |
+| **Roster** | Each player has three tabs: **Stats**, the AI **Scouting Report**, and the **Coach's Evaluation** (positions on a field diagram, 14 optional star ratings, notes). |
 | **Rules** | Plain-language rule sets per team; attach a code check to any rule. |
-| **Insights** | AI scouting report per player and for the team. Every claim cites facts the app computed and shows their real values. Re-assesses only players whose inputs changed. |
+| **Stats & Insights** | Tabs for the AI team summary, every player's one-line take (opens their report), and the season stats table. AI scouting report per player and for the team. Every claim cites facts the app computed and shows their real values. Re-assesses only players whose inputs changed. |
 | **Stats** | GameChanger CSV import (section-aware parsing, exact matching, pitching and catching), sortable season table. |
 | **Settings** | OpenRouter key (keychain); Models tab with OpenRouter's live catalog; pin any model. |
 
@@ -79,10 +79,11 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMAutoPositions YES` | Then fill positions |
 | `-PMOpenPositions YES` | Go to the Positions step and lock one spot |
 | `-PMOpenPicker YES` | Open the position picker |
-| `-PMSection roster\|insights\|rules\|stats` | Open that section |
+| `-PMSection roster\|team\|rules` | Open that section |
 | `-PMOpenSettings YES` / `-settingsTab models` | Open Settings / a tab |
 | `-PMScrollToChecks YES` | Scroll to the summary once filled |
-| `-PMAssessTeam YES` | Assess the team when Insights opens (use with `-PMSection insights`) |
+| `-PMAssessTeam YES` | Assess the team when Stats & Insights opens (use with `-PMSection team`) |
+| `-teamTab summary\|players\|stats` / `-playerTab stats\|scouting\|evaluation` | Open that tab |
 | `-PMFlakyScout YES` | With `-PMFakeAI`: Player03 times out once, Player05 always fails (tests retries and resume) |
 
 ## How generation works

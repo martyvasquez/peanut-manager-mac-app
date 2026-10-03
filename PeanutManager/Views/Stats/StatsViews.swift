@@ -49,17 +49,6 @@ struct StatsView: View {
         let rows = team.activePlayers.filter { $0.stats != nil }.map(StatRow.init).sorted(using: sortOrder)
 
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Stats").font(.largeTitle.weight(.bold))
-                if let imported = team.statsImportedAt {
-                    Text("GameChanger · imported \(imported.formatted(date: .abbreviated, time: .omitted))")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 36)
-            .padding(.top, 28)
-            .padding(.bottom, 16)
-
             if rows.isEmpty {
                 ContentUnavailableView {
                     Label("No Stats", systemImage: "chart.bar.xaxis")
@@ -97,7 +86,6 @@ struct StatsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .toolbar(removing: .title)
         .toolbar {
             Button("Import", systemImage: "square.and.arrow.down") { importing = true }
                 .help("Import a GameChanger season export (CSV)")

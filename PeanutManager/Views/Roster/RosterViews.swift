@@ -90,41 +90,27 @@ struct PlayerEditorView: View {
     @Environment(\.modelContext) private var context
     @Bindable var player: Player
     @State private var confirmDelete = false
+    @AppStorage("playerTab") private var tab: PlayerTab = .evaluation
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 36) {
                 header
 
-                ScoutingReport(player: player)
-
-                HStack(alignment: .top, spacing: 40) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        SectionTitle("Positions")
-                        FieldPositions(profile: Binding(get: { player.profile }, set: { player.profile = $0 }))
-                    }
-                    VStack(alignment: .leading, spacing: 12) {
-                        SectionTitle("Notes")
-                        TextField("What the stats don't show", text: $player.notes, axis: .vertical)
-                            .textFieldStyle(.plain)
-                            .lineLimit(5...12)
-                            .padding(12)
-                            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
-                            .help("The AI reads these when it makes the lineup.")
-                    }
-                    .frame(maxWidth: 360)
-                }
-
-                if let stats = player.stats {
-                    VStack(alignment: .leading, spacing: 12) {
-                        SectionTitle("Season")
-                        StatTiles(stats: stats)
+                Picker("", selection: $tab) {
+                    ForEach(PlayerTab.allCases, id: \.self) { tab in
+                        Text(tab.title).tag(tab)
                     }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                .padding(.top, -16)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    SectionTitle("Ratings")
-                    RatingsGrid(player: player)
+                switch tab {
+                case .stats: statsTab
+                case .scouting: ScoutingReport(player: player)
+                case .evaluation: evaluationTab
                 }
             }
             .padding(.horizontal, 36)
@@ -146,6 +132,41 @@ struct PlayerEditorView: View {
         }
     }
 
+    @ViewBuilder
+    private var statsTab: some View {
+        if let stats = player.stats {
+            StatTiles(stats: stats)
+        } else {
+            Text("No stats yet. Import a GameChanger export in Stats & Insights.").foregroundStyle(.secondary)
+        }
+    }
+
+    /// The coach's own read: where the player plays, how they rate, and what the numbers don't show.
+    private var evaluationTab: some View {
+        VStack(alignment: .leading, spacing: 36) {
+            HStack(alignment: .top, spacing: 40) {
+                VStack(alignment: .leading, spacing: 12) {
+                    SectionTitle("Positions")
+                    FieldPositions(profile: Binding(get: { player.profile }, set: { player.profile = $0 }))
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    SectionTitle("Notes")
+                    TextField("What the stats don't show", text: $player.notes, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .lineLimit(5...12)
+                        .padding(12)
+                        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+                        .help("The AI reads these when it makes the lineup and the scouting report.")
+                }
+                .frame(maxWidth: 360)
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle("Ratings")
+                RatingsGrid(player: player)
+            }
+        }
+    }
+
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             TextField("#", text: $player.jersey)
@@ -163,6 +184,18 @@ struct PlayerEditorView: View {
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(.quaternary, in: Capsule())
             }
+        }
+    }
+}
+
+enum PlayerTab: String, CaseIterable {
+    case stats, scouting, evaluation
+
+    var title: String {
+        switch self {
+        case .stats: "Stats"
+        case .scouting: "Scouting Report"
+        case .evaluation: "Coach's Evaluation"
         }
     }
 }

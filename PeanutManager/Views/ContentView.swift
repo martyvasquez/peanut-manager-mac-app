@@ -2,16 +2,15 @@ import SwiftUI
 import SwiftData
 
 enum SidebarSection: String, CaseIterable, Identifiable {
-    case games, roster, insights, rules, stats
+    case games, roster, team, rules
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .games: "Games"
         case .roster: "Roster"
-        case .insights: "Insights"
+        case .team: "Stats & Insights"
         case .rules: "Rules"
-        case .stats: "Stats"
         }
     }
 
@@ -19,9 +18,8 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         switch self {
         case .games: "calendar"
         case .roster: "person.3"
-        case .insights: "sparkles"
+        case .team: "chart.bar.xaxis"
         case .rules: "list.bullet.clipboard"
-        case .stats: "chart.bar.xaxis"
         }
     }
 }
@@ -47,12 +45,12 @@ struct ContentView: View {
     var body: some View {
         Group {
             if let team {
-                if section == .stats || section == .insights {
-                    // Stats and Insights are full-width pages, not a list + detail.
+                if section == .team {
+                    // Stats & Insights is one full-width page, not a list + detail.
                     NavigationSplitView {
                         sidebar(team)
                     } detail: {
-                        if section == .stats { StatsView(team: team) } else { InsightsView(team: team) }
+                        StatsInsightsView(team: team)
                     }
                 } else {
                     NavigationSplitView {
@@ -67,6 +65,11 @@ struct ContentView: View {
                 WelcomeView { created in selectedTeamID = created.uid.uuidString }
             }
         }
+        .onChange(of: navigator.playerToOpen) { _, player in
+            guard let player else { return }
+            selectedPlayer = player
+            navigator.playerToOpen = nil
+        }
         .task {
             #if DEBUG
             if let seeded = DebugSupport.seedIfRequested(teams: teams, context: context) {
@@ -76,7 +79,8 @@ struct ContentView: View {
                 selectedGame = team?.games.sorted { $0.date < $1.date }.last
             }
             if UserDefaults.standard.bool(forKey: "PMOpenSettings") { openSettings() }
-            if let open = UserDefaults.standard.string(forKey: "PMSection"), let target = SidebarSection(rawValue: open) {
+            if let open = UserDefaults.standard.string(forKey: "PMSection"),
+               let target = SidebarSection(rawValue: ["stats": "team", "insights": "team"][open] ?? open) {
                 navigator.section = target
                 selectedPlayer = team?.activePlayers.dropFirst(7).first
                 selectedRuleSet = team?.sortedRuleSets.first
@@ -159,7 +163,7 @@ struct ContentView: View {
         case .games: GamesListView(team: team, selection: $selectedGame)
         case .roster: RosterListView(team: team, selection: $selectedPlayer)
         case .rules: RuleSetsListView(team: team, selection: $selectedRuleSet)
-        case .stats, .insights: EmptyView()
+        case .team: EmptyView()
         }
     }
 
@@ -184,7 +188,7 @@ struct ContentView: View {
             } else {
                 ContentUnavailableView("No Rules Selected", systemImage: "list.bullet.clipboard")
             }
-        case .stats, .insights:
+        case .team:
             EmptyView()
         }
     }
