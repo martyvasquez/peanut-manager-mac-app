@@ -7,7 +7,7 @@ Native SwiftUI + SwiftData macOS app (macOS 26+, Swift 6, XcodeGen) that makes y
 - **AI decides, code guarantees.** The AI assesses players and decides the batting order and positions. Code supplies facts, validates, sends violations back for the AI to revise, and only as a disclosed last resort repairs. Never add a deterministic lineup generator.
 - **AI assessments (player/team insights) are the second core pillar** (plan §5). First slice built (`Scout`, Insights page, Scouting Report); claims cite fact IDs, and the UI shows values from the fact sheet, never numbers the AI wrote.
 - **Port the AI, don't reinvent it.** v1's prompts (in `Prompts.swift`) are the proven baseline. Change prompts only when evals show a change beats v1.
-- **Local-first and free.** No accounts, no server, BYOK OpenRouter key in the keychain.
+- **Local-first and free.** No server and no accounts of our own. The AI runs on the coach's ChatGPT plan via Sign in with ChatGPT; the sign-in lives in the keychain. OpenRouter was removed on Oct 3 (coaches won't set up keys); don't bring it back.
 - **Design bar: Apple / Cultured Code (Things 3).** Intuitive, minimal, no explanatory paragraphs, color only when it means something, the complicated made to feel simple. The owner reviews screenshots closely; show real screenshots, not descriptions.
 - Night-before flow is the hero path: batting order → lock spots → Fill the Rest → print.
 
@@ -20,7 +20,7 @@ Native SwiftUI + SwiftData macOS app (macOS 26+, Swift 6, XcodeGen) that makes y
   - `AIResponses` (tolerant decoding, short IDs ↔ UUIDs, names in prose)
   - `GameChangerImport` (section-aware CSV)
   - `FactSheet` (citable facts with stable IDs), `Scout` + `ScoutPrompts` (player/team assessments; v1 analysis port)
-- `Packages/LineupKit/Sources/LineupAI/OpenRouterClient.swift`: chat completions, key check, live model catalog.
+- `Packages/LineupKit/Sources/LineupAI/ChatGPT`: Sign in with ChatGPT and the ChatGPT plan client. `PeanutManager/Model/AIService.swift` owns the sign-in and the model choice.
 - `PeanutManager/Model/Store.swift`: SwiftData models. Structured values are JSON blobs of LineupKit types. `LineupDocument` holds the working lineup, locks, provenance and reasons.
 - `PeanutManager/Model/ScoutRunner.swift`: runs the Scout and saves assessments; app-wide so work survives navigation.
 - `PeanutManager/Views/Games/GameModel.swift`: the game screen's state and actions (two-step generation, undoable edits, memoized context and findings).

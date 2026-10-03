@@ -57,7 +57,7 @@ public struct LLMResponse: Sendable {
     }
 }
 
-/// Anything that can answer a chat request (OpenRouter in the app, scripted fakes in tests).
+/// Anything that can answer a chat request (ChatGPT in the app, scripted fakes in tests).
 public protocol LLMClient: Sendable {
     func complete(_ request: LLMRequest) async throws -> LLMResponse
 }

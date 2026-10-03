@@ -5,7 +5,7 @@ AI lineups for youth baseball and softball. The AI reads your stats, ratings, no
 - **Plan and rationale:** [`docs/v2-plan.md`](docs/v2-plan.md). The *Build status* section lists what's done and what's left.
 - **For coding agents:** [`CLAUDE.md`](CLAUDE.md).
 
-Free, local-first, bring your own [OpenRouter](https://openrouter.ai) key. No accounts, no server.
+Free and local-first. The AI runs on your ChatGPT plan: sign in with ChatGPT, no API key. No server.
 
 ## What works today
 
@@ -18,7 +18,7 @@ Free, local-first, bring your own [OpenRouter](https://openrouter.ai) key. No ac
 | **Rules** | Plain-language rule sets per team; attach a code check to any rule. |
 | **Stats & Insights** | Tabs for the AI team summary, every player's one-line take (opens their report), and the season stats table. AI scouting report per player and for the team. Every claim cites facts the app computed and shows their real values. Re-assesses only players whose inputs changed. |
 | **Stats** | GameChanger CSV import (section-aware parsing, exact matching, pitching and catching), sortable season table. |
-| **Settings** | OpenRouter key (keychain); Models tab with OpenRouter's live catalog; pin any model. |
+| **Settings** | Sign in with ChatGPT (keychain), the ChatGPT model and thinking level, Manage Usage. |
 
 ## What's next (short version)
 
@@ -27,8 +27,7 @@ Free, local-first, bring your own [OpenRouter](https://openrouter.ai) key. No ac
 3. **Printing and sharing** that's actually tested (lineup card, PDF, copy as text).
 4. AI rule interpreter (automatic "Understood as…"), Jev, learning from edits.
 5. **Rules UI/UX redesign** (how rules are presented, created and edited; direction not decided yet).
-6. Use a Claude or ChatGPT subscription instead of an OpenRouter key.
-7. Season playing-time ledger, pitching tracker, game-day mode.
+6. Season playing-time ledger, pitching tracker, game-day mode.
 
 Full list with details: [`docs/v2-plan.md` → Build status](docs/v2-plan.md#build-status-oct-2-2026).
 
@@ -43,7 +42,7 @@ After that the app updates itself on launch. Every push to `main` that changes t
 | Path | What |
 |---|---|
 | `Packages/LineupKit` | Pure Swift core: models, validator, feasibility, safety-net repair, v1 prompts, lineup engine, GameChanger import. `swift test` runs in seconds. |
-| `Packages/LineupKit/Sources/LineupAI` | OpenRouter client (chat + model catalog). |
+| `Packages/LineupKit/Sources/LineupAI` | Sign in with ChatGPT and the ChatGPT plan client. |
 | `PeanutManager/` | SwiftUI + SwiftData Mac app. Library stored at `~/Library/Application Support/Peanut Manager/Library.store`. |
 | `Design/` | App icon source art. |
 | `project.yml` | XcodeGen spec. The `.xcodeproj` is generated and not committed. |
@@ -59,7 +58,7 @@ xcodebuild -project PeanutManager.xcodeproj -scheme PeanutManager -derivedDataPa
 open "build/Build/Products/Debug/Peanut Manager.app"
 ```
 
-Add your OpenRouter key under **Peanut Manager → Settings** (⌘,).
+Sign in with ChatGPT under **Peanut Manager → Settings** (⌘,).
 
 ### Debug launch flags (Debug builds only)
 

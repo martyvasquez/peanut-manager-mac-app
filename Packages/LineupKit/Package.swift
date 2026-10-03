@@ -11,7 +11,7 @@ let package = Package(
     targets: [
         // Pure domain logic: models, validator, repair, prompts, GameChanger parser. No UI, no network.
         .target(name: "LineupKit"),
-        // OpenRouter and ChatGPT clients. Depend on LineupKit for the LLMClient protocol.
+        // The ChatGPT client. Depend on LineupKit for the LLMClient protocol.
         .target(name: "LineupAI", dependencies: ["LineupKit"]),
         .testTarget(
             name: "LineupKitTests",

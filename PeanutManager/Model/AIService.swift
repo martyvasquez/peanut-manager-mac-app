@@ -3,17 +3,6 @@ import Foundation
 import LineupKit
 import LineupAI
 
-enum AIProvider: String, CaseIterable, Identifiable {
-    case chatGPT, openRouter
-    var id: String { rawValue }
-    var label: String {
-        switch self {
-        case .chatGPT: "ChatGPT"
-        case .openRouter: "OpenRouter Key"
-        }
-    }
-}
-
 enum AIServiceError: Error, LocalizedError {
     case signInNeeded
 
@@ -24,15 +13,11 @@ enum AIServiceError: Error, LocalizedError {
     }
 }
 
-/// Which AI makes lineups and assessments: the coach's ChatGPT plan (Sign in with ChatGPT) or an OpenRouter key.
-/// Owns the ChatGPT sign-in, its models, and the model choice. App-wide.
+/// The AI that makes lineups and assessments: the coach's ChatGPT plan, through Sign in with ChatGPT.
+/// Owns the sign-in, the account's models, and the model choice. App-wide.
 @Observable
 final class AIService {
     static let shared = AIService()
-
-    var provider: AIProvider {
-        didSet { UserDefaults.standard.set(provider.rawValue, forKey: Keys.provider) }
-    }
 
     // MARK: ChatGPT state
     private(set) var account: ChatGPTAccount?
@@ -58,7 +43,6 @@ final class AIService {
     private let auth = ChatGPTAuth()
 
     nonisolated private enum Keys {
-        static let provider = "aiProvider"
         static let model = "chatGPTModel"
         static let effort = "chatGPTEffort"
         static let welcomed = "chatGPTWelcomed"
@@ -68,8 +52,6 @@ final class AIService {
 
     private init() {
         let defaults = UserDefaults.standard
-        // Installs that already have an OpenRouter key keep it; everyone else starts on ChatGPT.
-        provider = defaults.string(forKey: Keys.provider).flatMap(AIProvider.init) ?? (Keychain.apiKey.isEmpty ? .chatGPT : .openRouter)
         chatGPTModelID = defaults.string(forKey: Keys.model) ?? ChatGPTClient.defaultModel
         reasoningEffort = defaults.string(forKey: Keys.effort)
         if let record = Self.loadRecord() {
@@ -83,26 +65,19 @@ final class AIService {
     /// The client and model for the next request. Never fails here: a missing sign-in surfaces when the request runs.
     func client() -> (client: any LLMClient, model: String) {
         #if DEBUG
-        if DebugSupport.fakeAI { return (FakeLLMClient(), currentModelID) }
+        if DebugSupport.fakeAI { return (FakeLLMClient(), chatGPTModelID) }
         #endif
-        switch provider {
-        case .chatGPT:
-            guard let session else { return (UnavailableClient(), chatGPTModelID) }
-            return (ChatGPTClient(session: session, reasoningEffort: reasoningEffort), chatGPTModelID)
-        case .openRouter:
-            return (OpenRouterClient(apiKey: Keychain.apiKey), ModelLibrary.shared.selectedID)
-        }
+        guard let session else { return (UnavailableClient(), chatGPTModelID) }
+        return (ChatGPTClient(session: session, reasoningEffort: reasoningEffort), chatGPTModelID)
     }
 
-    var currentModelID: String { provider == .chatGPT ? chatGPTModelID : ModelLibrary.shared.selectedID }
+    var currentModelID: String { chatGPTModelID }
 
     var currentModelName: String { displayName(for: currentModelID) }
 
-    /// "GPT-5.6-Sol", "Claude Sonnet 5.5"; falls back to the ID.
+    /// "GPT-5.6-Sol"; falls back to a name made from the ID.
     func displayName(for id: String) -> String {
-        chatGPTModels.first { $0.id == id }?.name
-            ?? ModelLibrary.shared.models.first { $0.id == id }?.name
-            ?? Self.fallbackName(id)
+        chatGPTModels.first { $0.id == id }?.name ?? Self.fallbackName(id)
     }
 
     static func fallbackName(_ id: String) -> String {
@@ -132,7 +107,6 @@ final class AIService {
                 }
                 Self.saveRecord(Record(account: account, tokens: tokens))
                 adopt(account, tokens)
-                provider = .chatGPT
                 NSApp.activate()
                 if tokens.planUsageGranted && !UserDefaults.standard.bool(forKey: Keys.welcomed) {
                     UserDefaults.standard.set(true, forKey: Keys.welcomed)
@@ -242,23 +216,13 @@ final class AIService {
     static func isFatal(_ error: Error) -> Bool {
         if error is AIServiceError { return true }
         if let error = error as? ChatGPTAuth.AuthError { return error == .signInAgain }
-        if let error = error as? ChatGPTClient.ClientError { return error.isFatal }
-        switch error as? OpenRouterClient.ClientError {
-        case .missingKey, .invalidKey, .outOfCredits: return true
-        case .server(let status, _): return (400..<500).contains(status) && status != 408
-        default: return false
-        }
+        return (error as? ChatGPTClient.ClientError)?.isFatal ?? false
     }
 
     /// Problems that usually clear up on their own: timeouts, dropped connections, rate limits, server errors.
     static func isTransient(_ error: Error) -> Bool {
         if error is URLError { return true }
-        if let error = error as? ChatGPTClient.ClientError { return error.isTransient }
-        switch error as? OpenRouterClient.ClientError {
-        case .rateLimited, .emptyReply: return true
-        case .server(let status, _): return status >= 500 || status == 408
-        default: return false
-        }
+        return (error as? ChatGPTClient.ClientError)?.isTransient ?? false
     }
 
     static func isUsageLimit(_ error: Error) -> Bool {
