@@ -16,12 +16,13 @@ Free, local-first, bring your own [OpenRouter](https://openrouter.ai) key. No ac
 | **Games** | Attendance (late arrival / early departure), rules, innings, Win↔Develop, stats↔ratings trust, model chip, notes for the AI, and an opponent scouting report that carries over to the next game against that team. |
 | **Roster** | Positions on a field diagram (doesn't play / plays / best), notes, 14 optional star ratings, season stat tiles. |
 | **Rules** | Plain-language rule sets per team; attach a code check to any rule. |
+| **Insights** | AI scouting report per player and for the team. Every claim cites facts the app computed and shows their real values. Re-assesses only players whose inputs changed. |
 | **Stats** | GameChanger CSV import (section-aware parsing, exact matching, pitching and catching), sortable season table. |
 | **Settings** | OpenRouter key (keychain); Models tab with OpenRouter's live catalog; pin any model. |
 
 ## What's next (short version)
 
-1. AI **player and team assessments** (Insights screens).
+1. Assessments, part two: feed them into lineups (after evals), coach pushback, history.
 2. **Evals**: golden lineup, assessment and rule sets to compare models and prompts.
 3. **Printing and sharing** that's actually tested (lineup card, PDF, copy as text).
 4. AI rule interpreter (automatic "Understood as…"), Jev, learning from edits.
@@ -78,9 +79,10 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMAutoPositions YES` | Then fill positions |
 | `-PMOpenPositions YES` | Go to the Positions step and lock one spot |
 | `-PMOpenPicker YES` | Open the position picker |
-| `-PMSection roster\|rules\|stats` | Open that section |
+| `-PMSection roster\|insights\|rules\|stats` | Open that section |
 | `-PMOpenSettings YES` / `-settingsTab models` | Open Settings / a tab |
 | `-PMScrollToChecks YES` | Scroll to the summary once filled |
+| `-PMAssessTeam YES` | Assess the team when Insights opens (use with `-PMSection insights`) |
 
 ## How generation works
 

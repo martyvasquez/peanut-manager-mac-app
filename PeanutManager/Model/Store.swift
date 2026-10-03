@@ -13,6 +13,7 @@ final class Team {
     var defaultInnings: Int
     var createdAt: Date
     var statsImportedAt: Date?
+    var assessmentData: Data?
 
     @Relationship(deleteRule: .cascade, inverse: \Player.team) var players: [Player] = []
     @Relationship(deleteRule: .cascade, inverse: \RuleSet.team) var ruleSets: [RuleSet] = []
@@ -29,6 +30,11 @@ final class Team {
     var activePlayers: [Player] { players.filter(\.active).sorted { $0.sortIndex < $1.sortIndex } }
     var sortedPlayers: [Player] { players.sorted { ($0.active ? 0 : 1, $0.sortIndex) < ($1.active ? 0 : 1, $1.sortIndex) } }
     var sortedRuleSets: [RuleSet] { ruleSets.sorted { $0.createdAt < $1.createdAt } }
+
+    var assessment: TeamAssessment? {
+        get { assessmentData.flatMap { try? JSONDecoder().decode(TeamAssessment.self, from: $0) } }
+        set { assessmentData = newValue.flatMap { try? JSONEncoder().encode($0) } }
+    }
 }
 
 @Model
@@ -42,6 +48,7 @@ final class Player {
     var profileData: Data
     var ratingsData: Data
     var statsData: Data?
+    var assessmentData: Data?
     var team: Team?
 
     init(name: String, jersey: String = "", sortIndex: Int = 0) {
@@ -86,6 +93,14 @@ final class Player {
         profile = p
         return true
     }
+
+    var assessment: PlayerAssessment? {
+        get { assessmentData.flatMap { try? JSONDecoder().decode(PlayerAssessment.self, from: $0) } }
+        set { assessmentData = newValue.flatMap { try? JSONEncoder().encode($0) } }
+    }
+
+    /// Something the Scout can work from: stats, ratings or notes.
+    var isAssessable: Bool { stats != nil || !ratings.isEmpty || !notes.isEmpty }
 
     var snapshot: PlayerSnapshot {
         PlayerSnapshot(id: uid, name: name, jersey: jersey.isEmpty ? nil : jersey, notes: notes, profile: profile, ratings: ratings, stats: stats)

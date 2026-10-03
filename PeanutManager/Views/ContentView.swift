@@ -2,13 +2,14 @@ import SwiftUI
 import SwiftData
 
 enum SidebarSection: String, CaseIterable, Identifiable {
-    case games, roster, rules, stats
+    case games, roster, insights, rules, stats
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .games: "Games"
         case .roster: "Roster"
+        case .insights: "Insights"
         case .rules: "Rules"
         case .stats: "Stats"
         }
@@ -18,6 +19,7 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         switch self {
         case .games: "calendar"
         case .roster: "person.3"
+        case .insights: "sparkles"
         case .rules: "list.bullet.clipboard"
         case .stats: "chart.bar.xaxis"
         }
@@ -45,12 +47,12 @@ struct ContentView: View {
     var body: some View {
         Group {
             if let team {
-                if section == .stats {
-                    // Stats is one full-width page, not a list + detail.
+                if section == .stats || section == .insights {
+                    // Stats and Insights are full-width pages, not a list + detail.
                     NavigationSplitView {
                         sidebar(team)
                     } detail: {
-                        StatsView(team: team)
+                        if section == .stats { StatsView(team: team) } else { InsightsView(team: team) }
                     }
                 } else {
                     NavigationSplitView {
@@ -157,7 +159,7 @@ struct ContentView: View {
         case .games: GamesListView(team: team, selection: $selectedGame)
         case .roster: RosterListView(team: team, selection: $selectedPlayer)
         case .rules: RuleSetsListView(team: team, selection: $selectedRuleSet)
-        case .stats: EmptyView()
+        case .stats, .insights: EmptyView()
         }
     }
 
@@ -182,7 +184,7 @@ struct ContentView: View {
             } else {
                 ContentUnavailableView("No Rules Selected", systemImage: "list.bullet.clipboard")
             }
-        case .stats:
+        case .stats, .insights:
             EmptyView()
         }
     }

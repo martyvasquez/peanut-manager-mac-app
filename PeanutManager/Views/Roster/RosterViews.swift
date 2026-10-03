@@ -96,6 +96,8 @@ struct PlayerEditorView: View {
             VStack(alignment: .leading, spacing: 36) {
                 header
 
+                ScoutingReport(player: player)
+
                 HStack(alignment: .top, spacing: 40) {
                     VStack(alignment: .leading, spacing: 12) {
                         SectionTitle("Positions")

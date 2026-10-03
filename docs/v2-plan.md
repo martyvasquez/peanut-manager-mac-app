@@ -54,12 +54,11 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Done: first real releases. Build 101 (downloaded like a user) updated itself to 102 in ~4 s.
    - **Pushing app changes to `main` now ships them to every installed copy.**
    - The bundle ID, feed URL, public key, asset name and tag format are now fixed forever.
-2. **AI player & team assessments (§5, M3).** Not started. Needs:
-   - Scout task and cached `PlayerAssessment` / `TeamAssessment` models.
-   - Fact sheets with citation IDs; Insights screens (player tab or section; team page).
-   - Coach pushback; re-assess on import.
-   - Feed assessments into the Strategist prompt.
-   - Port v1's stats-analysis prompts as the baseline, with coach ratings back in.
+2. **AI player & team assessments (§5, M3).** First slice built.
+   - Done: `FactSheet` (stats, ratings, positions, notes as citable fact IDs; team rates from counts), `Scout` (v1's analysis prompts ported, with ratings/notes/positions as inputs and fact-ID citations; one retry when a citation doesn't exist, then it's dropped), cached `PlayerAssessment` / `TeamAssessment` on `Player` / `Team`, stale when the player's facts change.
+   - Done: Scouting Report at the top of each player's page; Insights page (team summary, strengths/work on with evidence chips, leadoff / middle / defensive core, practice plan, every player in a line). "Assess Team" re-assesses only changed players, three at a time, then the team.
+   - Verified with the fake AI only. **Not yet run against a real model.**
+   - Left: feed assessments into the Strategist prompt (a prompt change, so gate it on evals, item 3); coach pushback ("Disagree"); re-assess on import; history and trends; season ledger facts (needs item 8); printable practice sheet; Jev claim checks; a separate Scout model setting (uses the lineup model today).
 3. **Evals (§10).** Not started. Needs:
    - A golden set: fixture teams as JSON, Marty's real rules/rosters, expected rule templates, assessment fixtures.
    - Harness: `swift test --filter Evals`, or a small CLI hitting OpenRouter.
