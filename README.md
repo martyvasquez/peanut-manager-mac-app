@@ -22,12 +22,13 @@ Free and local-first. The AI runs on your ChatGPT plan: sign in with ChatGPT, no
 
 ## What's next (short version)
 
-1. Assessments, part two: feed them into lineups (after evals), coach pushback, history.
-2. **Evals**: golden lineup, assessment and rule sets to compare models and prompts.
-3. **Printing and sharing** that's actually tested (lineup card, PDF, copy as text).
-4. AI rule interpreter (automatic "Understood as…"), Jev, learning from edits.
-5. **Rules UI/UX redesign** (how rules are presented, created and edited; direction not decided yet).
-6. Season playing-time ledger, pitching tracker, game-day mode.
+1. **Stable code signing**, so updates stop asking for the keychain password.
+2. Assessments, part two: feed them into lineups (after evals), coach pushback, history.
+3. **Evals**: golden lineup, assessment and rule sets to compare models and prompts.
+4. **Printing and sharing** that's actually tested (lineup card, PDF, copy as text).
+5. AI rule interpreter (automatic "Understood as…"), Jev, learning from edits.
+6. **Rules UI/UX redesign** (how rules are presented, created and edited; direction not decided yet).
+7. Season playing-time ledger, pitching tracker, game-day mode.
 
 Full list with details: [`docs/v2-plan.md` → Build status](docs/v2-plan.md#build-status-oct-2-2026).
 
