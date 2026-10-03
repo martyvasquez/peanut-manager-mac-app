@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import LineupKit
+import LineupAI
 
 struct GamesListView: View {
     @Environment(\.modelContext) private var context
@@ -175,7 +176,9 @@ struct GameDetailView: View {
                 Button("Open Roster") { Navigator.shared.section = .roster }
                 Button("Cancel", role: .cancel) {}
             } else {
-                if model.errorMessage?.contains("Settings") == true {
+                if model.usageLimitReached {
+                    Link("Manage Usage", destination: ChatGPTAuth.manageUsageURL)
+                } else if model.errorMessage?.contains("Settings") == true {
                     SettingsLink { Text("Open Settings") }
                 }
                 Button("OK") {}
@@ -413,23 +416,41 @@ struct GameDetailView: View {
     }
 }
 
-/// Which AI makes the lineup. Lists the models pinned in Settings → Models.
+/// Which AI makes the lineup: the account's ChatGPT models, or the models pinned in Settings → OpenRouter Models.
 struct ModelMenu: View {
+    @State private var ai = AIService.shared
     @State private var library = ModelLibrary.shared
 
     var body: some View {
         Menu {
-            Picker("Model", selection: $library.selectedID) {
-                ForEach(library.models) { Text($0.name).tag($0.id) }
+            if ai.provider == .chatGPT {
+                if ai.isSignedIn {
+                    Picker("Model", selection: $ai.chatGPTModelID) {
+                        if ai.chatGPTModels.isEmpty { Text(ai.currentModelName).tag(ai.chatGPTModelID) }
+                        ForEach(ai.chatGPTModels) { Text($0.name).tag($0.id) }
+                    }
+                    .pickerStyle(.inline)
+                    Divider()
+                    Section("Using ChatGPT plan") {
+                        Link("Manage Usage…", destination: ChatGPTAuth.manageUsageURL)
+                    }
+                } else {
+                    SettingsLink { Text("Sign In with ChatGPT…") }
+                }
+            } else {
+                Picker("Model", selection: $library.selectedID) {
+                    ForEach(library.models) { Text($0.name).tag($0.id) }
+                }
+                .pickerStyle(.inline)
+                Divider()
+                SettingsLink { Text("More Models…") }
             }
-            .pickerStyle(.inline)
-            Divider()
-            SettingsLink { Text("More Models…") }
         } label: {
-            Chip(library.selected.name, symbol: "sparkles")
+            Chip(ai.currentModelName, symbol: "sparkles")
         }
         .menuStyle(.button).buttonStyle(.plain).fixedSize()
-        .help("The AI that makes this lineup")
+        .help(ai.provider == .chatGPT ? "The AI that makes this lineup · Using ChatGPT plan" : "The AI that makes this lineup")
+        .task { if ai.provider == .chatGPT && ai.isSignedIn && ai.chatGPTModels.isEmpty { await ai.loadModels() } }
     }
 }
 

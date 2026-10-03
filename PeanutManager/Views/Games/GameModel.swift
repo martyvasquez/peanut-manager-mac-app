@@ -11,6 +11,8 @@ final class GameModel {
     private(set) var document: LineupDocument
     var status: String?
     var errorMessage: String?
+    /// The last failure was the ChatGPT plan's usage limit (offer Manage Usage).
+    var usageLimitReached = false
     /// True when the lineup is blocked because nobody can play some position (fixable in the roster).
     var blockedByPositions = false
     var isGenerating: Bool { task != nil }
@@ -232,7 +234,7 @@ final class GameModel {
 
     // MARK: - Generation
 
-    var lineupModel: String { ModelLibrary.shared.selectedID }
+    var lineupModel: String { AIService.shared.currentModelID }
 
     enum Step { case battingOrder, positions }
 
@@ -292,11 +294,8 @@ final class GameModel {
             return
         }
         blockedByPositions = false
-        var client: any LLMClient = OpenRouterClient(apiKey: Keychain.apiKey)
-        #if DEBUG
-        if DebugSupport.fakeAI { client = FakeLLMClient() }
-        #endif
-        let engine = LineupEngine(client: client, model: lineupModel)
+        let ai = AIService.shared.client()
+        let engine = LineupEngine(client: ai.client, model: ai.model)
         if hasBattingOrder || hasDefense { snapshot("Before Remake") }
         generating = step
 
@@ -310,6 +309,7 @@ final class GameModel {
                 try await work(engine, report)
             } catch is CancellationError {
             } catch {
+                usageLimitReached = AIService.isUsageLimit(error)
                 errorMessage = error.localizedDescription
             }
         }

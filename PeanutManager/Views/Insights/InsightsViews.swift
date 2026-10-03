@@ -28,7 +28,7 @@ struct ScoutingReport: View {
             JobStatus(job: job).font(.callout)
         } else if let a = player.assessment {
             HStack(spacing: 10) {
-                let model = ModelLibrary.shared.models.first { $0.id == a.model }?.name ?? a.model
+                let model = AIService.shared.displayName(for: a.model)
                 let date = a.assessedAt.formatted(date: .abbreviated, time: .omitted)
                 Label("AI · \(model) · \(runner.isStale(player) ? "changed since \(date)" : date)", systemImage: "sparkles")
                     .foregroundStyle(.secondary)
@@ -302,7 +302,7 @@ struct StatsInsightsView: View {
             }
             .foregroundStyle(.secondary)
         } else if let a = team.assessment {
-            let made = "\(ModelLibrary.shared.models.first { $0.id == a.model }?.name ?? a.model) · \(a.assessedAt.formatted(date: .abbreviated, time: .omitted))"
+            let made = "\(AIService.shared.displayName(for: a.model)) · \(a.assessedAt.formatted(date: .abbreviated, time: .omitted))"
             Text(runner.isTeamCurrent(team) ? made : made + " · Out of date")
                 .foregroundStyle(.secondary)
         }

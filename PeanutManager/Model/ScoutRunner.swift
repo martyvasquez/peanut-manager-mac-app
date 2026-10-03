@@ -33,11 +33,8 @@ final class ScoutRunner {
     private static let concurrent = 3
 
     private var scout: Scout {
-        var client: any LLMClient = OpenRouterClient(apiKey: Keychain.apiKey)
-        #if DEBUG
-        if DebugSupport.fakeAI { client = FakeLLMClient() }
-        #endif
-        return Scout(client: client, model: ModelLibrary.shared.selectedID)
+        let ai = AIService.shared.client()
+        return Scout(client: ai.client, model: ai.model)
     }
 
     // MARK: - Status
@@ -186,23 +183,10 @@ final class ScoutRunner {
     // MARK: - Errors
 
     /// Problems that won't go away by trying again.
-    static func isFatal(_ error: Error) -> Bool {
-        switch error as? OpenRouterClient.ClientError {
-        case .missingKey, .invalidKey, .outOfCredits: true
-        case .server(let status, _): (400..<500).contains(status) && status != 408
-        default: false
-        }
-    }
+    static func isFatal(_ error: Error) -> Bool { AIService.isFatal(error) }
 
     /// Problems that usually clear up on their own: timeouts, dropped connections, rate limits, server errors.
-    static func isTransient(_ error: Error) -> Bool {
-        if error is URLError { return true }
-        switch error as? OpenRouterClient.ClientError {
-        case .rateLimited, .emptyReply: return true
-        case .server(let status, _): return status >= 500 || status == 408
-        default: return false
-        }
-    }
+    static func isTransient(_ error: Error) -> Bool { AIService.isTransient(error) }
 
     static func message(_ error: Error) -> String {
         if let error = error as? URLError {

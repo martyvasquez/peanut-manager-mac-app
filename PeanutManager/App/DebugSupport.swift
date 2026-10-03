@@ -7,7 +7,7 @@ import LineupKit
 /// Debug-only launch flags for exercising the app without clicking or an API key:
 ///   -PMStore Name        use a separate library file (keeps your real library untouched)
 ///   -PMSeedSample YES    create the sample team on launch if there are no teams, and open its game
-///   -PMFakeAI YES        use a scripted local "AI" instead of OpenRouter
+///   -PMFakeAI YES        use a scripted local "AI" instead of ChatGPT or OpenRouter
 ///   -PMAutoGenerate YES  make the batting order as soon as a game opens
 ///   -PMAutoPositions YES then set positions automatically
 ///   -PMOpenPicker YES    open the position picker on the third batter, inning 1

@@ -120,7 +120,8 @@ public struct ChatGPTAuth: Sendable {
     public static func newHostID() -> String { "urn:uuid:" + UUID().uuidString.lowercased() }
 
     /// `idTokenHint`/`loginHint` only for a returning account that hasn't signed out.
-    public func authorizeURL(_ attempt: Attempt, hostID: String, idTokenHint: String? = nil, loginHint: String? = nil) -> URL {
+    /// `askConsent` re-shows the permission screen, e.g. to turn plan use on after declining it.
+    public func authorizeURL(_ attempt: Attempt, hostID: String, idTokenHint: String? = nil, loginHint: String? = nil, askConsent: Bool = false) -> URL {
         var items: [URLQueryItem] = [
             .init(name: "client_id", value: attempt.clientID),
             .init(name: "ext_agent_host_id", value: hostID),
@@ -139,6 +140,7 @@ public struct ChatGPTAuth: Sendable {
             if let idTokenHint { items.append(.init(name: "id_token_hint", value: idTokenHint)) }
             if let loginHint { items.append(.init(name: "login_hint", value: loginHint)) }
         }
+        if askConsent { items.append(.init(name: "prompt", value: "consent")) }
         var components = URLComponents(url: issuerURL.appending(path: "api/accounts/authorize"), resolvingAgainstBaseURL: false)!
         components.percentEncodedQuery = Self.formEncode(items)
         return components.url!
@@ -148,11 +150,11 @@ public struct ChatGPTAuth: Sendable {
 
     /// Runs the whole browser sign-in. `open` shows the authorization page (the app opens the default browser).
     /// Cancel the calling task to abandon a sign-in the coach never finished.
-    public func signIn(hostID: String, account: ChatGPTAccount?, idTokenHint: String?, open: @Sendable (URL) async -> Void) async throws -> (ChatGPTAccount, ChatGPTTokens) {
+    public func signIn(hostID: String, account: ChatGPTAccount?, idTokenHint: String?, askConsent: Bool = false, open: @Sendable (URL) async -> Void) async throws -> (ChatGPTAccount, ChatGPTTokens) {
         let server = try await LoopbackServer.start(preferredPort: Self.preferredPort)
         defer { server.stop() }
         let attempt = Attempt(clientID: account?.clientID ?? Self.registrationClientID, port: server.port)
-        await open(authorizeURL(attempt, hostID: hostID, idTokenHint: idTokenHint, loginHint: account?.email))
+        await open(authorizeURL(attempt, hostID: hostID, idTokenHint: idTokenHint, loginHint: account?.email, askConsent: askConsent))
         let callback = try await server.callback()
         let clientID = try Self.validateCallback(callback, attempt: attempt)
         let response = try await exchange(code: callback["code"] ?? "", clientID: clientID, attempt: attempt)

@@ -3,38 +3,163 @@ import LineupAI
 
 struct SettingsView: View {
     @AppStorage("settingsTab") private var tab = "general"
+    @State private var ai = AIService.shared
 
     var body: some View {
         TabView(selection: $tab) {
-            Tab("General", systemImage: "gearshape", value: "general") { GeneralSettings() }
-            Tab("Models", systemImage: "cpu", value: "models") { ModelSettings() }
+            Tab("AI", systemImage: "sparkles", value: "general") { AISettings() }
+            if ai.provider == .openRouter {
+                Tab("OpenRouter Models", systemImage: "cpu", value: "models") { ModelSettings() }
+            }
         }
         .scenePadding()
         .frame(width: 640, height: 640)
+        .alert("You're using your ChatGPT plan", isPresented: $ai.showWelcome) {
+            Button("Got It") {}
+            Link("Manage Usage", destination: ChatGPTAuth.manageUsageURL)
+        } message: {
+            Text("Lineups and scouting reports in Peanut Manager use your ChatGPT plan. You can review and limit usage in ChatGPT settings.")
+        }
     }
 }
 
-struct GeneralSettings: View {
+struct AISettings: View {
+    @State private var ai = AIService.shared
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("Run AI With", selection: $ai.provider) {
+                    ForEach(AIProvider.allCases) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                .frame(maxWidth: .infinity)
+            }
+            switch ai.provider {
+            case .chatGPT: ChatGPTSettings()
+            case .openRouter: OpenRouterKeySettings()
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+/// Sign in with ChatGPT, the account, and which ChatGPT model runs.
+struct ChatGPTSettings: View {
+    @State private var ai = AIService.shared
+
+    var body: some View {
+        if ai.isSignedIn {
+            Section {
+                LabeledContent("Account", value: ai.account?.email ?? ai.account?.name ?? "ChatGPT")
+                if ai.planUsageGranted {
+                    LabeledContent("Billing", value: "Your ChatGPT plan")
+                } else {
+                    LabeledContent("Billing") {
+                        HStack {
+                            Text("Plan use is off").foregroundStyle(.secondary)
+                            Button("Turn On") { ai.signIn(askConsent: true) }
+                        }
+                    }
+                }
+                HStack {
+                    Link("Manage Usage", destination: ChatGPTAuth.manageUsageURL)
+                    Spacer()
+                    Button("Sign Out") { ai.signOut() }
+                }
+            }
+            Section {
+                Picker("Model", selection: $ai.chatGPTModelID) {
+                    if ai.chatGPTModels.isEmpty { Text(ai.displayName(for: ai.chatGPTModelID)).tag(ai.chatGPTModelID) }
+                    ForEach(ai.chatGPTModels) { Text($0.name).tag($0.id) }
+                }
+                Picker("Thinking", selection: $ai.reasoningEffort) {
+                    Text("Default\(ai.currentModel?.defaultEffort.map { " (\($0.capitalized))" } ?? "")").tag(String?.none)
+                    Divider()
+                    ForEach(ai.effortChoices, id: \.self) { Text($0.capitalized).tag(Optional($0)) }
+                }
+            } footer: {
+                if let error = ai.modelsError {
+                    Text(error).foregroundStyle(.secondary)
+                } else if let summary = ai.currentModel?.summary {
+                    Text(summary).foregroundStyle(.secondary)
+                }
+            }
+            .task { if ai.chatGPTModels.isEmpty { await ai.loadModels() } }
+            if let error = ai.signInError {
+                Section { Text(error).foregroundStyle(.secondary) }
+            }
+        } else {
+            Section {
+                VStack(spacing: 12) {
+                    Text("Use Your ChatGPT Plan").font(.title3.weight(.semibold))
+                    Text("Lineups and scouting reports run on your ChatGPT Plus or Pro plan. No API key needed.")
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    if ai.isSigningIn {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("Finish signing in in your browser…").foregroundStyle(.secondary)
+                            Button("Cancel") { ai.cancelSignIn() }
+                        }
+                        .frame(height: 32)
+                    } else {
+                        ContinueWithChatGPTButton { ai.signIn() }
+                    }
+                    if let error = ai.signInError {
+                        Text(error).font(.callout).foregroundStyle(.red).multilineTextAlignment(.center)
+                    }
+                    if ai.account != nil && !ai.isSigningIn {
+                        Button("Use a Different Account") { ai.useDifferentAccount() }
+                            .buttonStyle(.link)
+                            .font(.callout)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+            }
+        }
+    }
+}
+
+/// OpenAI's sign-in button style: black, rounded, "Continue with ChatGPT".
+struct ContinueWithChatGPTButton: View {
+    let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Button(action: action) {
+            Text("Continue with ChatGPT")
+                .font(.body.weight(.medium))
+                .padding(.horizontal, 22)
+                .frame(height: 36)
+                .foregroundStyle(colorScheme == .dark ? Color.black : Color.white)
+                .background(colorScheme == .dark ? Color.white : Color.black, in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct OpenRouterKeySettings: View {
     @State private var apiKey = Keychain.apiKey
     @State private var testResult: String?
     @State private var testing = false
 
     var body: some View {
-        Form {
-            Section {
-                SecureField("OpenRouter Key", text: $apiKey, prompt: Text("sk-or-…"))
-                    .onSubmit(save)
-                HStack {
-                    Button("Save") { save() }
-                    Button("Test") { test() }.disabled(apiKey.isEmpty || testing)
-                    if testing { ProgressView().controlSize(.small) }
-                    if let testResult { Text(testResult).foregroundStyle(.secondary) }
-                    Spacer()
-                    Link("Get a key", destination: URL(string: "https://openrouter.ai/settings/keys")!)
-                }
+        Section {
+            SecureField("OpenRouter Key", text: $apiKey, prompt: Text("sk-or-…"))
+                .onSubmit(save)
+            HStack {
+                Button("Save") { save() }
+                Button("Test") { test() }.disabled(apiKey.isEmpty || testing)
+                if testing { ProgressView().controlSize(.small) }
+                if let testResult { Text(testResult).foregroundStyle(.secondary) }
+                Spacer()
+                Link("Get a key", destination: URL(string: "https://openrouter.ai/settings/keys")!)
             }
         }
-        .formStyle(.grouped)
     }
 
     private func save() {
