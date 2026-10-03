@@ -44,9 +44,11 @@ struct ChatGPTSettings: View {
                 }
             }
             Section {
-                Picker("Model", selection: $ai.chatGPTModelID) {
-                    if ai.chatGPTModels.isEmpty { Text(ai.displayName(for: ai.chatGPTModelID)).tag(ai.chatGPTModelID) }
-                    ForEach(ai.chatGPTModels) { Text($0.name).tag($0.id) }
+                Picker("Model", selection: $ai.chosenModelID) {
+                    Text("Default (\(ai.displayName(for: ai.defaultModelID)))").tag(String?.none)
+                    Divider()
+                    if ai.chatGPTModels.isEmpty, let chosen = ai.chosenModelID { Text(ai.displayName(for: chosen)).tag(Optional(chosen)) }
+                    ForEach(ai.chatGPTModels) { Text($0.name).tag(Optional($0.id)) }
                 }
                 Picker("Thinking", selection: $ai.reasoningEffort) {
                     Text("Default\(ai.currentModel?.defaultEffort.map { " (\($0.capitalized))" } ?? "")").tag(String?.none)

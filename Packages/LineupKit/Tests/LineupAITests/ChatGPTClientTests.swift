@@ -83,6 +83,17 @@ struct ChatGPTErrorTests {
         #expect(models[0].efforts == ["low", "high"])
         #expect(models[1].summary == "Workhorse")
     }
+
+    @Test func preferredModelIsNewestSol() {
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.5"]) == "gpt-5.6-sol")
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-5.6-sol", "gpt-6.6-sol", "gpt-6.10-sol"]) == "gpt-6.10-sol")
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-7-sol", "gpt-6.6-sol"]) == "gpt-7-sol")
+        // No Sol: the old default if offered, else the first in the list.
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-5.6-luna"]) == "gpt-6-astra")
+        // Variants like previews don't count as Sol.
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-5.5", "gpt-6.6-sol-preview", "gpt-5.6-sol"]) == "gpt-5.6-sol")
+        #expect(ChatGPTClient.preferredModel(in: []) == nil)
+    }
 }
 
 // MARK: - Network-backed tests

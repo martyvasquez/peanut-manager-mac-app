@@ -439,7 +439,8 @@ struct ModelMenu: View {
     var body: some View {
         Menu {
             if ai.isSignedIn {
-                Picker("Model", selection: $ai.chatGPTModelID) {
+                // Picking the default model follows the default (Settings can pin it).
+                Picker("Model", selection: Binding(get: { ai.chatGPTModelID }, set: { ai.chosenModelID = $0 == ai.defaultModelID ? nil : $0 })) {
                     if ai.chatGPTModels.isEmpty { Text(ai.currentModelName).tag(ai.chatGPTModelID) }
                     ForEach(ai.chatGPTModels) { Text($0.name).tag($0.id) }
                 }

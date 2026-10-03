@@ -4,7 +4,20 @@ import LineupKit
 /// Runs requests on the coach's ChatGPT plan through the public Responses API (Sign in with ChatGPT).
 /// The route requires `stream: true` and `store: false` and rejects `max_output_tokens` and `temperature`.
 public struct ChatGPTClient: LLMClient {
+    /// The default until the account's model list loads; after that, `preferredModel(in:)` decides.
     public static let defaultModel = "gpt-5.6-sol"
+
+    /// The default model: the newest Sol (OpenAI's workhorse tier) the account offers, so the app
+    /// moves up as OpenAI ships new ones. Falls back to `defaultModel`, then the first in the list.
+    public static func preferredModel(in ids: [String]) -> String? {
+        func solVersion(_ id: String) -> [Int]? {
+            guard let match = id.wholeMatch(of: /gpt-(\d+(?:\.\d+)*)-sol/) else { return nil }
+            return match.1.split(separator: ".").compactMap { Int($0) }
+        }
+        let sols = ids.compactMap { id in solVersion(id).map { (id, $0) } }
+        if let newest = sols.max(by: { $0.1.lexicographicallyPrecedes($1.1) }) { return newest.0 }
+        return ids.contains(defaultModel) ? defaultModel : ids.first
+    }
 
     public var session: ChatGPTSession
     /// `low`…`max`; nil uses the model's default.

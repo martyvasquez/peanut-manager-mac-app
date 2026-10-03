@@ -30,8 +30,18 @@ final class AIService {
     /// The one-time "You're using your ChatGPT plan" message.
     var showWelcome = false
 
+    /// The model the coach picked; nil follows the default.
+    var chosenModelID: String? {
+        didSet { UserDefaults.standard.set(chosenModelID, forKey: Keys.choice) }
+    }
+    /// The newest Sol the account offers, remembered so the app starts on it before the list loads.
+    private(set) var defaultModelID: String {
+        didSet { UserDefaults.standard.set(defaultModelID, forKey: Keys.defaultModel) }
+    }
+    /// The model requests use. Setting it pins that model.
     var chatGPTModelID: String {
-        didSet { UserDefaults.standard.set(chatGPTModelID, forKey: Keys.model) }
+        get { chosenModelID ?? defaultModelID }
+        set { chosenModelID = newValue }
     }
     /// nil uses the model's default.
     var reasoningEffort: String? {
@@ -43,7 +53,9 @@ final class AIService {
     private let auth = ChatGPTAuth()
 
     nonisolated private enum Keys {
-        static let model = "chatGPTModel"
+        static let choice = "chatGPTModelChoice"
+        static let defaultModel = "chatGPTDefaultModel"
+        static let legacyModel = "chatGPTModel"
         static let effort = "chatGPTEffort"
         static let welcomed = "chatGPTWelcomed"
         static let vault = "chatgpt-session"
@@ -52,7 +64,13 @@ final class AIService {
 
     private init() {
         let defaults = UserDefaults.standard
-        chatGPTModelID = defaults.string(forKey: Keys.model) ?? ChatGPTClient.defaultModel
+        defaultModelID = defaults.string(forKey: Keys.defaultModel) ?? ChatGPTClient.defaultModel
+        // Builds before the newest-Sol default stored every model as a choice; only a non-default one was picked on purpose.
+        if let legacy = defaults.string(forKey: Keys.legacyModel) {
+            defaults.removeObject(forKey: Keys.legacyModel)
+            if legacy != ChatGPTClient.defaultModel { defaults.set(legacy, forKey: Keys.choice) }
+        }
+        chosenModelID = defaults.string(forKey: Keys.choice)
         reasoningEffort = defaults.string(forKey: Keys.effort)
         #if DEBUG
         if DebugSupport.signedOut { return }
@@ -61,6 +79,8 @@ final class AIService {
             account = record.account
             if let tokens = record.tokens { adopt(record.account, tokens) }
         }
+        // Pick up new or retired models before anything runs.
+        if isSignedIn { Task { await loadModels() } }
     }
 
     // MARK: - Clients
@@ -168,9 +188,9 @@ final class AIService {
             let models = try await ChatGPTClient(session: session).models()
             chatGPTModels = models
             modelsError = nil
-            if !models.isEmpty && !models.contains(where: { $0.id == chatGPTModelID }) {
-                chatGPTModelID = models.first { $0.id == ChatGPTClient.defaultModel }?.id ?? models[0].id
-            }
+            if let preferred = ChatGPTClient.preferredModel(in: models.map(\.id)) { defaultModelID = preferred }
+            // A picked model OpenAI retired: back to the default.
+            if let chosen = chosenModelID, !models.isEmpty, !models.contains(where: { $0.id == chosen }) { chosenModelID = nil }
             if let effort = reasoningEffort, !effortChoices.contains(effort) { reasoningEffort = nil }
         } catch {
             modelsError = error.localizedDescription
