@@ -177,7 +177,7 @@ public struct Scout: Sendable {
     public func assess(_ player: PlayerSnapshot, ageGroup: String? = nil) async throws -> PlayerAssessment {
         let facts = FactSheet.player(player)
         let prompt = ScoutPrompts.player(player, facts: facts, ageGroup: ageGroup)
-        let (raw, cost) = try await ask(PlayerAssessmentResponse.self, system: ScoutPrompts.playerSystem, prompt: prompt, maxTokens: 4000) { raw in
+        let (raw, cost) = try await ask(PlayerAssessmentResponse.self, system: ScoutPrompts.playerSystem, prompt: prompt, maxTokens: 16000) { raw in
             let mapped = Self.map(raw, facts: facts)
             return Grounding.problems(mapped.strengths + mapped.weaknesses, defense: mapped.defense, facts: facts)
         }
@@ -195,7 +195,7 @@ public struct Scout: Sendable {
         let teamFacts = FactSheet.team(players)
         let facts = Self.citable(players, teamFacts: teamFacts, ids: ids)
         let prompt = ScoutPrompts.team(players, assessments: assessments, teamFacts: teamFacts, ids: ids, ageGroup: ageGroup)
-        let (raw, cost) = try await ask(TeamAssessmentResponse.self, system: ScoutPrompts.teamSystem, prompt: prompt, maxTokens: 4000) { raw in
+        let (raw, cost) = try await ask(TeamAssessmentResponse.self, system: ScoutPrompts.teamSystem, prompt: prompt, maxTokens: 16000) { raw in
             Grounding.problems(((raw.team_strengths ?? []) + (raw.team_weaknesses ?? [])).map(\.claim), facts: facts)
         }
         func resolve(_ refs: [PlayerRef]?) -> [PlayerID] {

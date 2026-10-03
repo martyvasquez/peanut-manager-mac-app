@@ -61,27 +61,45 @@ final class ScoutRunner {
                 teamProgress[team.uid] = nil
                 assessing.subtract(toAssess.map(\.uid))
             }
-            do {
-                try await withThrowingTaskGroup(of: (Int, PlayerAssessment).self) { group in
-                    var next = 0
-                    func start() {
-                        guard next < snapshots.count else { return }
-                        let index = next, snapshot = snapshots[index]
-                        group.addTask { (index, try await scout.assess(snapshot, ageGroup: ageGroup)) }
-                        next += 1
+            var failures: [String] = []
+            await withTaskGroup(of: (Int, Result<PlayerAssessment, Error>).self) { group in
+                var next = 0
+                func start() {
+                    guard next < snapshots.count else { return }
+                    let index = next, snapshot = snapshots[index]
+                    group.addTask {
+                        do { return (index, .success(try await scout.assess(snapshot, ageGroup: ageGroup))) }
+                        catch { return (index, .failure(error)) }
                     }
-                    for _ in 0..<3 { start() } // a few at a time, to stay under rate limits
-                    while let (index, assessment) = try await group.next() {
-                        toAssess[index].assessment = assessment
-                        assessing.remove(toAssess[index].uid)
-                        teamProgress[team.uid]?.done += 1
-                        start()
-                    }
+                    next += 1
                 }
+                for _ in 0..<3 { start() } // a few at a time, to stay under rate limits
+                while let (index, result) = await group.next() {
+                    let player = toAssess[index]
+                    switch result {
+                    case .success(let assessment): player.assessment = assessment
+                    case .failure(let error):
+                        errors[player.uid] = error.localizedDescription
+                        failures.append(error.localizedDescription)
+                    }
+                    assessing.remove(player.uid)
+                    teamProgress[team.uid]?.done += 1
+                    start()
+                }
+            }
+            // Every player failed: say why once, and don't spend on a team assessment with nothing new.
+            if !failures.isEmpty, failures.count == snapshots.count {
+                errors[team.uid] = failures[0]
+                return
+            }
+            do {
                 let assessed = players.filter { $0.assessment != nil }
                 var latest: [PlayerID: PlayerAssessment] = [:]
                 for player in assessed { latest[player.uid] = player.assessment }
                 team.assessment = try await scout.assessTeam(assessed.map(\.snapshot), assessments: latest, ageGroup: ageGroup)
+                if !failures.isEmpty {
+                    errors[team.uid] = "\(failures.count) player\(failures.count == 1 ? "" : "s") couldn't be assessed: \(failures[0])"
+                }
             } catch {
                 errors[team.uid] = error.localizedDescription
             }

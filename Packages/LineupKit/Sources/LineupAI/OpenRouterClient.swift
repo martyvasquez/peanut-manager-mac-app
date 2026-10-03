@@ -20,7 +20,7 @@ public struct OpenRouterClient: LLMClient {
         case outOfCredits
         case rateLimited
         case server(status: Int, message: String)
-        case emptyReply
+        case emptyReply(finishReason: String?, reasoningTokens: Int?)
 
         public var errorDescription: String? {
             switch self {
@@ -29,7 +29,12 @@ public struct OpenRouterClient: LLMClient {
             case .outOfCredits: "Your OpenRouter account is out of credits."
             case .rateLimited: "OpenRouter is rate limiting requests. Try again in a moment."
             case .server(let status, let message): "OpenRouter error \(status): \(message)"
-            case .emptyReply: "The model returned an empty reply."
+            case .emptyReply(let finish, let reasoning):
+                if finish == "length" {
+                    "The model ran out of room before answering\(reasoning.map { " (it spent \($0) tokens thinking)" } ?? ""). Try again, or pick a model that thinks less."
+                } else {
+                    "The model returned an empty reply\(finish.map { " (\($0))" } ?? ""). Try again or pick another model."
+                }
             }
         }
     }
@@ -66,14 +71,18 @@ public struct OpenRouterClient: LLMClient {
             struct Choice: Decodable {
                 struct Message: Decodable { var content: String? }
                 var message: Message
+                var finish_reason: String?
             }
-            struct Usage: Decodable { var prompt_tokens: Int?; var completion_tokens: Int?; var cost: Double? }
+            struct Details: Decodable { var reasoning_tokens: Int? }
+            struct Usage: Decodable { var prompt_tokens: Int?; var completion_tokens: Int?; var cost: Double?; var completion_tokens_details: Details? }
             var model: String?
             var choices: [Choice]
             var usage: Usage?
         }
         let reply = try JSONDecoder().decode(Reply.self, from: data)
-        guard let text = reply.choices.first?.message.content, !text.isEmpty else { throw ClientError.emptyReply }
+        guard let text = reply.choices.first?.message.content, !text.isEmpty else {
+            throw ClientError.emptyReply(finishReason: reply.choices.first?.finish_reason, reasoningTokens: reply.usage?.completion_tokens_details?.reasoning_tokens)
+        }
         let usage = LLMUsage(promptTokens: reply.usage?.prompt_tokens ?? 0, completionTokens: reply.usage?.completion_tokens ?? 0, cost: reply.usage?.cost)
         return LLMResponse(text: text, model: reply.model, usage: usage)
     }
