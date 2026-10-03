@@ -57,6 +57,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 2. **Sign in with ChatGPT (replaces the OpenRouter key as the default).** Planned; next to build. Marty: "a huge, huge win."
    - What: OpenAI's [Sign in with ChatGPT](https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt). The coach signs in with their ChatGPT account and AI calls run on their Plus/Pro plan: no key, no credits, no bill to us. Eligible: "open-source projects, personal projects that run locally" (we're both). Free ChatGPT accounts can't use it.
    - **Decided (Oct 3):** ChatGPT is the default provider for new installs right away; installs that already have an OpenRouter key keep OpenRouter. The OpenRouter key stays as "Use an API key instead" (free ChatGPT users; Claude, Gemini, Muse). Marty tests on a **Plus** account.
+   - **Decided (Oct 3, after the test):** default model `gpt-5.6-sol` (Astra is far more than lineups need). Keep a ChatGPT model picker so Marty can experiment. Keep OpenRouter available for now. Marty is open to ChatGPT-only later (price no longer matters when the plan pays); revisit after real-team comparisons.
    - Spec: the full protocol is in `https://developers.openai.com/siwc/llms-full.txt` (section "Registration and sign-in" onward). Don't copy the DevKit (Node/React, noncommercial license); write it in Swift from the docs.
    - Protocol summary:
      - Install ID: generate `urn:uuid:<UUIDv4>` once per install and keep it forever (`ext_agent_host_id`; opaque, not a credential).
