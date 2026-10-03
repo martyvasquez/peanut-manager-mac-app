@@ -51,7 +51,7 @@ struct ChatGPTSettings: View {
                     ForEach(ai.chatGPTModels) { Text($0.name).tag(Optional($0.id)) }
                 }
                 Picker("Thinking", selection: $ai.reasoningEffort) {
-                    Text("Default\(ai.currentModel?.defaultEffort.map { " (\($0.capitalized))" } ?? "")").tag(String?.none)
+                    Text("Default\(ai.defaultEffortName.map { " (\($0))" } ?? "")").tag(String?.none)
                     Divider()
                     ForEach(ai.effortChoices, id: \.self) { Text($0.capitalized).tag(Optional($0)) }
                 }

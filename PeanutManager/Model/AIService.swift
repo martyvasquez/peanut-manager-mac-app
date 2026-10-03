@@ -43,7 +43,7 @@ final class AIService {
         get { chosenModelID ?? defaultModelID }
         set { chosenModelID = newValue }
     }
-    /// nil uses the model's default.
+    /// The thinking level the coach picked; nil uses the app's default.
     var reasoningEffort: String? {
         didSet { UserDefaults.standard.set(reasoningEffort, forKey: Keys.effort) }
     }
@@ -91,7 +91,7 @@ final class AIService {
         if DebugSupport.fakeAI { return (FakeLLMClient(), chatGPTModelID) }
         #endif
         guard let session else { return (UnavailableClient(), chatGPTModelID) }
-        return (ChatGPTClient(session: session, reasoningEffort: reasoningEffort), chatGPTModelID)
+        return (ChatGPTClient(session: session, reasoningEffort: effectiveEffort), chatGPTModelID)
     }
 
     var currentModelID: String { chatGPTModelID }
@@ -120,6 +120,19 @@ final class AIService {
 
     /// Reasoning levels for the selected ChatGPT model, cheapest first.
     var effortChoices: [String] { currentModel?.efforts ?? ["low", "medium", "high"] }
+
+    /// The app's default thinking level, where the model offers it.
+    static let defaultEffort = "medium"
+
+    /// What requests use: the coach's pick, else Medium, else the model's own default.
+    var effectiveEffort: String? {
+        reasoningEffort ?? (effortChoices.contains(Self.defaultEffort) ? Self.defaultEffort : nil)
+    }
+
+    /// "Medium", or the model's own default when it has no Medium.
+    var defaultEffortName: String? {
+        (effortChoices.contains(Self.defaultEffort) ? Self.defaultEffort : currentModel?.defaultEffort)?.capitalized
+    }
 
     // MARK: - Sign in / out
 
