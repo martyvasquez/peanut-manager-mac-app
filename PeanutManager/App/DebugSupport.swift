@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import Synchronization
 import SwiftData
 import LineupKit
 
@@ -12,6 +13,7 @@ import LineupKit
 ///   -PMOpenPicker YES    open the position picker on the third batter, inning 1
 ///   -PMScrollToChecks YES scroll to the game plan and checks once a lineup exists
 ///   -PMAssessTeam YES    assess the team as soon as Insights opens
+///   -PMFlakyScout YES    fake Scout: Player03 times out once, Player05 always times out
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }
     static var fakeAI: Bool { UserDefaults.standard.bool(forKey: "PMFakeAI") }
@@ -19,6 +21,7 @@ enum DebugSupport {
     static var autoPositions: Bool { UserDefaults.standard.bool(forKey: "PMAutoPositions") }
     static var scrollToChecks: Bool { UserDefaults.standard.bool(forKey: "PMScrollToChecks") }
     static var assessTeam: Bool { UserDefaults.standard.bool(forKey: "PMAssessTeam") }
+    nonisolated static var flakyScout: Bool { UserDefaults.standard.bool(forKey: "PMFlakyScout") }
 
     @MainActor
     static func seedIfRequested(teams: [Team], context: ModelContext) -> Team? {
@@ -33,7 +36,16 @@ struct FakeLLMClient: LLMClient {
     func complete(_ request: LLMRequest) async throws -> LLMResponse {
         try await Task.sleep(for: .milliseconds(900))
         let prompt = request.messages.first?.content ?? ""
-        if request.system.contains("player analyst") { return Self.scoutPlayer(prompt) }
+        if request.system.contains("player analyst") {
+            if DebugSupport.flakyScout {
+                // Player03 times out once, then answers; Player05 always times out.
+                let name = prompt.firstMatch(of: /PLAYER: ([^\n]+)/).map { String($0.1) } ?? ""
+                try await Task.sleep(for: .seconds(3))
+                let attempt = Self.attempts.withLock { counts in counts[name, default: 0] += 1; return counts[name]! }
+                if name.contains("Player05") || (name.contains("Player03") && attempt == 1) { throw URLError(.timedOut) }
+            }
+            return Self.scoutPlayer(prompt)
+        }
         if request.system.contains("team analyst") { return Self.scoutTeam(prompt) }
         let ids = Self.ids(in: prompt)
         let isRevision = request.messages.count > 1
@@ -66,6 +78,8 @@ struct FakeLLMClient: LLMClient {
         let text = "{\"defense\": [\(rows.joined(separator: ","))], \"rules_check\": [{\"rule\": \"All players must be included in the batting order.\", \"satisfied\": true, \"details\": \"Everyone bats.\"}], \"warnings\": [], \"rationale\": \"Strong defense up the middle early, pitchers limited to two innings, and every player gets infield time by the 4th.\"}"
         return LLMResponse(text: text, usage: LLMUsage(promptTokens: 3000, completionTokens: 1200, cost: 0.02))
     }
+
+    static let attempts = Mutex<[String: Int]>([:])
 
     /// A plausible player assessment built from whatever facts the prompt lists.
     static func scoutPlayer(_ prompt: String) -> LLMResponse {

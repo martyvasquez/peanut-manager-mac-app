@@ -1,18 +1,36 @@
 import Foundation
+import SwiftData
 import LineupKit
 import LineupAI
 
-/// Runs the Scout for players and teams and saves what comes back. App-wide, so an assessment
+/// Where one player's assessment is, so the coach can see progress and problems as they happen.
+enum ScoutJob: Equatable {
+    case waiting
+    case running(since: Date)
+    case retrying(attempt: Int, reason: String)
+    case failed(String)
+
+    var isActive: Bool {
+        if case .failed = self { false } else { true }
+    }
+}
+
+/// Runs the Scout for players and teams and saves each result as soon as it arrives, so an
+/// interrupted run loses nothing and the next one picks up where it stopped. App-wide, so work
 /// keeps going when the coach moves to another screen.
 @Observable
 final class ScoutRunner {
     static let shared = ScoutRunner()
 
-    /// Players being assessed right now.
-    private(set) var assessing: Set<UUID> = []
-    /// Teams being assessed, with how many of their players are done.
-    private(set) var teamProgress: [UUID: (done: Int, total: Int)] = [:]
+    /// Players queued, running, retrying, or failed in this session. Done players are removed.
+    private(set) var jobs: [UUID: ScoutJob] = [:]
+    /// Teams with a run in progress; `writingSummary` once every player is done.
+    private(set) var teamRuns: [UUID: (total: Int, writingSummary: Bool)] = [:]
+    /// Run-level problems, by team (or player, for a one-off assessment).
     var errors: [UUID: String] = [:]
+
+    private static let attempts = 3
+    private static let concurrent = 3
 
     private var scout: Scout {
         var client: any LLMClient = OpenRouterClient(apiKey: Keychain.apiKey)
@@ -22,87 +40,178 @@ final class ScoutRunner {
         return Scout(client: client, model: ModelLibrary.shared.selectedID)
     }
 
+    // MARK: - Status
+
     func isStale(_ player: Player) -> Bool {
         guard let assessment = player.assessment else { return false }
         return assessment.facts.fingerprint != FactSheet.player(player.snapshot).fingerprint
     }
 
+    func isBusy(_ player: Player) -> Bool { jobs[player.uid]?.isActive ?? false }
+
+    /// Assessable players with no assessment, or one made from inputs that have since changed.
+    func needingAssessment(_ team: Team) -> [Player] {
+        team.activePlayers.filter { $0.isAssessable && ($0.assessment == nil || isStale($0)) }
+    }
+
+    /// Whether the team summary reflects every assessable player as they're assessed now.
+    func isTeamCurrent(_ team: Team) -> Bool {
+        guard let summary = team.assessment else { return false }
+        let players = team.activePlayers.filter(\.isAssessable)
+        guard needingAssessment(team).isEmpty, Set(summary.players ?? []) == Set(players.map(\.uid)) else { return false }
+        return players.allSatisfy { ($0.assessment?.assessedAt ?? .distantFuture) <= summary.assessedAt }
+    }
+
+    // MARK: - Running
+
     func assess(_ player: Player) {
-        guard !assessing.contains(player.uid) else { return }
+        guard !isBusy(player) else { return }
         let snapshot = player.snapshot
         let ageGroup = player.team?.ageGroup
         let scout = scout
-        assessing.insert(player.uid)
+        jobs[player.uid] = .waiting
         errors[player.uid] = nil
         Task {
-            defer { assessing.remove(player.uid) }
             do {
-                player.assessment = try await scout.assess(snapshot, ageGroup: ageGroup)
+                try await run(player, snapshot: snapshot, scout: scout, ageGroup: ageGroup)
             } catch {
-                errors[player.uid] = error.localizedDescription
+                errors[player.uid] = Self.message(error)
             }
         }
     }
 
-    /// Re-assesses players whose inputs changed (or who were never assessed), then the team.
+    /// Assesses every player who needs it, then writes the team summary once all of them are done.
+    /// Retries timeouts and rate limits by itself; stops at once on problems a retry can't fix.
     func assessTeam(_ team: Team) {
-        guard teamProgress[team.uid] == nil else { return }
-        let players = team.activePlayers
-        let toAssess = players.filter { $0.isAssessable && ($0.assessment == nil || isStale($0)) }
-        let snapshots = toAssess.map(\.snapshot)
+        guard teamRuns[team.uid] == nil else { return }
+        let queue = needingAssessment(team)
+        let snapshots = queue.map(\.snapshot)
         let ageGroup = team.ageGroup
         let scout = scout
-        teamProgress[team.uid] = (0, toAssess.count)
+        for player in queue { jobs[player.uid] = .waiting }
+        teamRuns[team.uid] = (queue.count, false)
         errors[team.uid] = nil
-        assessing.formUnion(toAssess.map(\.uid))
 
         Task {
-            defer {
-                teamProgress[team.uid] = nil
-                assessing.subtract(toAssess.map(\.uid))
-            }
-            var failures: [String] = []
-            await withTaskGroup(of: (Int, Result<PlayerAssessment, Error>).self) { group in
-                var next = 0
-                func start() {
-                    guard next < snapshots.count else { return }
-                    let index = next, snapshot = snapshots[index]
-                    group.addTask {
-                        do { return (index, .success(try await scout.assess(snapshot, ageGroup: ageGroup))) }
-                        catch { return (index, .failure(error)) }
+            defer { teamRuns[team.uid] = nil }
+            // A few workers take players from one queue; each request still runs off the main thread.
+            let work = WorkQueue(queue.indices.map { (queue[$0], snapshots[$0]) })
+            let workers = (0..<Self.concurrent).map { _ in
+                Task {
+                    while work.fatal == nil, let (player, snapshot) = work.next() {
+                        do {
+                            try await self.run(player, snapshot: snapshot, scout: scout, ageGroup: ageGroup)
+                        } catch where Self.isFatal(error) {
+                            work.fatal = error
+                        } catch {
+                            // Recorded on the player; the others carry on.
+                        }
                     }
-                    next += 1
-                }
-                for _ in 0..<3 { start() } // a few at a time, to stay under rate limits
-                while let (index, result) = await group.next() {
-                    let player = toAssess[index]
-                    switch result {
-                    case .success(let assessment): player.assessment = assessment
-                    case .failure(let error):
-                        errors[player.uid] = error.localizedDescription
-                        failures.append(error.localizedDescription)
-                    }
-                    assessing.remove(player.uid)
-                    teamProgress[team.uid]?.done += 1
-                    start()
                 }
             }
-            // Every player failed: say why once, and don't spend on a team assessment with nothing new.
-            if !failures.isEmpty, failures.count == snapshots.count {
-                errors[team.uid] = failures[0]
+            for worker in workers { await worker.value }
+            if let fatal = work.fatal {
+                // A bad key or no credits: nothing else will work either.
+                for player in queue where jobs[player.uid]?.isActive == true { jobs[player.uid] = nil }
+                errors[team.uid] = Self.message(fatal)
                 return
             }
+
+            let failed = queue.filter { if case .failed = jobs[$0.uid] { true } else { false } }
+            guard failed.isEmpty else {
+                errors[team.uid] = "\(failed.count) of \(queue.count) players couldn't be assessed. The team summary waits until everyone is done."
+                return
+            }
+
+            teamRuns[team.uid]?.writingSummary = true
+            let players = team.activePlayers.filter { $0.assessment != nil }
+            var latest: [PlayerID: PlayerAssessment] = [:]
+            for player in players { latest[player.uid] = player.assessment }
             do {
-                let assessed = players.filter { $0.assessment != nil }
-                var latest: [PlayerID: PlayerAssessment] = [:]
-                for player in assessed { latest[player.uid] = player.assessment }
-                team.assessment = try await scout.assessTeam(assessed.map(\.snapshot), assessments: latest, ageGroup: ageGroup)
-                if !failures.isEmpty {
-                    errors[team.uid] = "\(failures.count) player\(failures.count == 1 ? "" : "s") couldn't be assessed: \(failures[0])"
-                }
+                let summary = try await withRetries { try await scout.assessTeam(players.map(\.snapshot), assessments: latest, ageGroup: ageGroup) }
+                team.assessment = summary
+                try? team.modelContext?.save()
             } catch {
-                errors[team.uid] = error.localizedDescription
+                errors[team.uid] = "The team summary couldn't be written: \(Self.message(error))"
             }
         }
+    }
+
+    /// One player, with retries. Saves the result the moment it arrives.
+    private func run(_ player: Player, snapshot: PlayerSnapshot, scout: Scout, ageGroup: String?) async throws {
+        do {
+            let assessment = try await withRetries(onRetry: { attempt, error in
+                self.jobs[player.uid] = .retrying(attempt: attempt, reason: Self.message(error))
+            }, onStart: {
+                self.jobs[player.uid] = .running(since: .now)
+            }) {
+                try await scout.assess(snapshot, ageGroup: ageGroup)
+            }
+            player.assessment = assessment
+            try? player.modelContext?.save()
+            jobs[player.uid] = nil
+        } catch {
+            jobs[player.uid] = Self.isFatal(error) ? nil : .failed(Self.isTransient(error) ? "Tried \(Self.attempts) times. \(Self.message(error))" : Self.message(error))
+            throw error
+        }
+    }
+
+    /// Tries up to `attempts` times, waiting longer each time, unless the error can't be fixed by trying again.
+    private func withRetries<T>(
+        onRetry: (Int, Error) -> Void = { _, _ in },
+        onStart: () -> Void = {},
+        _ body: () async throws -> T
+    ) async throws -> T {
+        var attempt = 1
+        while true {
+            onStart()
+            do {
+                return try await body()
+            } catch {
+                guard attempt < Self.attempts, !Self.isFatal(error), !(error is CancellationError) else { throw error }
+                onRetry(attempt + 1, error)
+                try await Task.sleep(for: .seconds(attempt == 1 ? 10 : 30))
+                attempt += 1
+            }
+        }
+    }
+
+    private final class WorkQueue {
+        private var items: [(Player, PlayerSnapshot)]
+        var fatal: Error?
+        init(_ items: [(Player, PlayerSnapshot)]) { self.items = items }
+        func next() -> (Player, PlayerSnapshot)? { items.isEmpty ? nil : items.removeFirst() }
+    }
+
+    // MARK: - Errors
+
+    /// Problems that won't go away by trying again.
+    static func isFatal(_ error: Error) -> Bool {
+        switch error as? OpenRouterClient.ClientError {
+        case .missingKey, .invalidKey, .outOfCredits: true
+        case .server(let status, _): (400..<500).contains(status) && status != 408
+        default: false
+        }
+    }
+
+    /// Problems that usually clear up on their own: timeouts, dropped connections, rate limits, server errors.
+    static func isTransient(_ error: Error) -> Bool {
+        if error is URLError { return true }
+        switch error as? OpenRouterClient.ClientError {
+        case .rateLimited, .emptyReply: return true
+        case .server(let status, _): return status >= 500 || status == 408
+        default: return false
+        }
+    }
+
+    static func message(_ error: Error) -> String {
+        if let error = error as? URLError {
+            switch error.code {
+            case .timedOut: return "The model took too long to answer."
+            case .notConnectedToInternet, .networkConnectionLost: return "The connection dropped."
+            default: break
+            }
+        }
+        return error.localizedDescription
     }
 }

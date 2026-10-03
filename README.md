@@ -83,6 +83,7 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMOpenSettings YES` / `-settingsTab models` | Open Settings / a tab |
 | `-PMScrollToChecks YES` | Scroll to the summary once filled |
 | `-PMAssessTeam YES` | Assess the team when Insights opens (use with `-PMSection insights`) |
+| `-PMFlakyScout YES` | With `-PMFakeAI`: Player03 times out once, Player05 always fails (tests retries and resume) |
 
 ## How generation works
 

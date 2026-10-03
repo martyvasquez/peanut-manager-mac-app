@@ -89,6 +89,8 @@ public struct TeamAssessment: Codable, Sendable, Hashable {
     public var defensiveCore: [PlayerID]
     public var defensiveConcerns: [String]
     public var practice: [PracticeItem]
+    /// The players it was built from (nil in assessments made before this was recorded).
+    public var players: [PlayerID]?
 
     /// Team facts plus every player's, keyed "P3.obp"-style as the prompt showed them.
     public var facts: FactSheet

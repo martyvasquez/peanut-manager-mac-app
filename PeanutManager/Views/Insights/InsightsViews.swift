@@ -15,10 +15,12 @@ struct ScoutingReport: View {
             }
             if let error = runner.errors[player.uid] {
                 Text(error).foregroundStyle(.red).font(.callout)
+            } else if case .failed(let message) = runner.jobs[player.uid] {
+                Text(message).foregroundStyle(.red).font(.callout)
             }
             if let a = player.assessment {
                 report(a)
-            } else if !runner.assessing.contains(player.uid) {
+            } else if !runner.isBusy(player) {
                 Text(player.isAssessable ? "Not assessed yet." : "Add ratings, notes or stats first.")
                     .foregroundStyle(.secondary)
             }
@@ -27,11 +29,8 @@ struct ScoutingReport: View {
 
     @ViewBuilder
     private var status: some View {
-        if runner.assessing.contains(player.uid) {
-            HStack(spacing: 6) {
-                ProgressView().controlSize(.small)
-                Text("Assessing…").foregroundStyle(.secondary)
-            }
+        if let job = runner.jobs[player.uid], job.isActive {
+            JobStatus(job: job).font(.callout)
         } else if let a = player.assessment {
             HStack(spacing: 10) {
                 Text(runner.isStale(player) ? "Changed since \(a.assessedAt.formatted(date: .abbreviated, time: .omitted))"
@@ -221,8 +220,11 @@ struct InsightsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 36) {
                 header
-                if let error = runner.errors[team.uid] {
-                    Text(error).foregroundStyle(.red)
+                if let error = runner.errors[team.uid], runner.teamRuns[team.uid] == nil {
+                    HStack(spacing: 12) {
+                        Text(error).foregroundStyle(.red)
+                        Button("Try Again") { runner.assessTeam(team) }.buttonStyle(.link)
+                    }
                 }
                 if let a = team.assessment {
                     teamReport(a)
@@ -235,9 +237,10 @@ struct InsightsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .toolbar {
-            Button(team.assessment == nil ? "Assess Team" : "Refresh", systemImage: "sparkles") { runner.assessTeam(team) }
-                .disabled(runner.teamProgress[team.uid] != nil || !team.activePlayers.contains(where: \.isAssessable))
-                .help("Assess players whose stats, ratings or notes changed, then the team")
+            Button(actionTitle, systemImage: "sparkles") { runner.assessTeam(team) }
+                .disabled(runner.teamRuns[team.uid] != nil || !team.activePlayers.contains(where: \.isAssessable) || runner.isTeamCurrent(team))
+                .help(runner.isTeamCurrent(team) ? "Everyone is assessed and the team summary is up to date"
+                                                 : "Assess players who are new or changed, then write the team summary")
         }
         #if DEBUG
         .task { if DebugSupport.assessTeam, team.assessment == nil { runner.assessTeam(team) } }
@@ -247,19 +250,31 @@ struct InsightsView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Insights").font(.largeTitle.weight(.bold))
-            if let progress = runner.teamProgress[team.uid] {
+            if let run = runner.teamRuns[team.uid] {
                 HStack(spacing: 6) {
                     ProgressView().controlSize(.small)
-                    Text(progress.done < progress.total ? "Assessing players · \(progress.done) of \(progress.total)" : "Assessing the team…")
+                    Text(run.writingSummary ? "Writing the team summary…" : "Assessing players · \(run.total - pending) of \(run.total) done")
                 }
                 .foregroundStyle(.secondary)
             } else if let a = team.assessment {
-                Text("\(ModelLibrary.shared.models.first { $0.id == a.model }?.name ?? a.model) · \(a.assessedAt.formatted(date: .abbreviated, time: .omitted))")
+                let made = "\(ModelLibrary.shared.models.first { $0.id == a.model }?.name ?? a.model) · \(a.assessedAt.formatted(date: .abbreviated, time: .omitted))"
+                Text(runner.isTeamCurrent(team) ? made : made + " · Out of date")
                     .foregroundStyle(.secondary)
             } else {
                 Text("Not assessed yet").foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// Players in this run not yet done (waiting, running or retrying).
+    private var pending: Int { team.activePlayers.filter { runner.jobs[$0.uid]?.isActive == true }.count }
+
+    private var actionTitle: String {
+        let count = runner.needingAssessment(team).count
+        if count > 0, team.assessment != nil || count < team.activePlayers.filter(\.isAssessable).count {
+            return "Assess \(count) Player\(count == 1 ? "" : "s")"
+        }
+        return team.assessment == nil ? "Assess Team" : "Update Summary"
     }
 
     private func teamReport(_ a: TeamAssessment) -> some View {
@@ -327,12 +342,18 @@ struct InsightsView: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 26, alignment: .trailing)
                     Text(player.name).fontWeight(.medium).frame(width: 150, alignment: .leading)
-                    if runner.assessing.contains(player.uid) {
-                        ProgressView().controlSize(.small)
+                    if let job = runner.jobs[player.uid] {
+                        if case .failed(let message) = job {
+                            Text(message).foregroundStyle(.red).lineLimit(2)
+                            Button("Try Again") { runner.assessTeam(team) }.buttonStyle(.link)
+                                .disabled(runner.teamRuns[team.uid] != nil)
+                        } else {
+                            JobStatus(job: job)
+                        }
                     } else if let a = player.assessment {
                         Text(a.snapshot).foregroundStyle(.secondary).lineLimit(2)
                         Spacer(minLength: 12)
-                        Text(a.battingZone.map { "\($0.rawValue.capitalized) of order" } ?? "")
+                        Text(runner.isStale(player) ? "Changed" : a.battingZone.map { "\($0.rawValue.capitalized) of order" } ?? "")
                             .font(.callout).foregroundStyle(.tertiary).fixedSize()
                     } else {
                         Text(player.isAssessable ? "Not assessed" : "No ratings, notes or stats").foregroundStyle(.tertiary)
@@ -342,6 +363,35 @@ struct InsightsView: View {
                 .padding(.vertical, 9)
                 Divider()
             }
+        }
+    }
+}
+
+/// "Waiting", "Assessing · 1:42", or "Trying again (2 of 3): the model took too long to answer."
+struct JobStatus: View {
+    let job: ScoutJob
+
+    var body: some View {
+        switch job {
+        case .waiting:
+            Text("Waiting").foregroundStyle(.tertiary)
+        case .running(let since):
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                TimelineView(.periodic(from: since, by: 1)) { context in
+                    let seconds = max(0, Int(context.date.timeIntervalSince(since)))
+                    Text("Assessing · \(seconds / 60):\(String(format: "%02d", seconds % 60))")
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+        case .retrying(let attempt, let reason):
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text("Trying again (\(attempt) of 3). \(reason)").foregroundStyle(.secondary).lineLimit(1)
+            }
+        case .failed(let message):
+            Text(message).foregroundStyle(.red)
         }
     }
 }

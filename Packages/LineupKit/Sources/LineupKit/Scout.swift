@@ -218,6 +218,7 @@ public struct Scout: Sendable {
                 guard let focus = item.focus_area, !focus.isEmpty else { return nil }
                 return PracticeItem(focus: focus, drills: prose(item.drill_suggestions ?? ""), priority: PracticeItem.Priority(rawValue: item.priority?.lowercased() ?? "") ?? .medium)
             },
+            players: players.map(\.id),
             facts: facts, model: model, cost: cost, assessedAt: .now
         )
     }

@@ -57,7 +57,8 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 2. **AI player & team assessments (§5, M3).** First slice built.
    - Done: `FactSheet` (stats, ratings, positions, notes as citable fact IDs; team rates from counts), `Scout` (v1's analysis prompts ported, with ratings/notes/positions as inputs and fact-ID citations; one retry when a citation doesn't exist, then it's dropped), cached `PlayerAssessment` / `TeamAssessment` on `Player` / `Team`, stale when the player's facts change.
    - Done: Scouting Report at the top of each player's page; Insights page (team summary, strengths/work on with evidence chips, leadoff / middle / defensive core, practice plan, every player in a line). "Assess Team" re-assesses only changed players, three at a time, then the team.
-   - Verified with the fake AI only. **Not yet run against a real model.**
+   - Resilient runs: each player is saved the moment it's done, so a quit or failure resumes where it stopped; timeouts, rate limits and server errors retry up to 3 times (10 s, 30 s); a bad key or no credits stops the run at once. Each player shows Waiting / Assessing · m:ss / Trying again / failed with reason. The team summary is written only after every player is done, and shows "Out of date" when it doesn't cover the current assessments.
+   - Run once on Marty's real team with Muse Spark (a reasoning model, 2–3 min per player); that exposed the 3-minute timeout, now 10 minutes.
    - Left: feed assessments into the Strategist prompt (a prompt change, so gate it on evals, item 3); coach pushback ("Disagree"); re-assess on import; history and trends; season ledger facts (needs item 8); printable practice sheet; Jev claim checks; a separate Scout model setting (uses the lineup model today).
 3. **Evals (§10).** Not started. Needs:
    - A golden set: fixture teams as JSON, Marty's real rules/rosters, expected rule templates, assessment fixtures.
