@@ -7,7 +7,7 @@
 
 ---
 
-## Build status (Oct 2, 2026)
+## Build status (Oct 3, 2026)
 
 Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID `com.martyvasquez.PeanutManager`, macOS 26+. Marty is using it with a real team (SMV Trojans, LL Majors).
 
@@ -54,25 +54,35 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Done: first real releases. Build 101 (downloaded like a user) updated itself to 102 in ~4 s.
    - **Pushing app changes to `main` now ships them to every installed copy.**
    - The bundle ID, feed URL, public key, asset name and tag format are now fixed forever.
-2. **AI player & team assessments (§5, M3).** First slice built.
+2. **Sign in with ChatGPT (replaces the OpenRouter key as the default).** Planning. Marty: "a huge, huge win."
+   - What: OpenAI's [Sign in with ChatGPT](https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt). The coach signs in with their ChatGPT account and AI calls run on their Plus/Pro plan: no key, no credits, no bill to us.
+   - Eligible: "open-source projects, personal projects that run locally" (we're both). Plus and Pro users only; free ChatGPT accounts can't use it, so the OpenRouter key stays as a fallback.
+   - Protocol: OAuth + PKCE with dynamic client registration (`client_id=dynamic_agent_client`, no secret), system browser, loopback callback on `127.0.0.1`. Scopes: identity, `offline_access`, `resource.invoke` with `chatgpt.tokens.use.direct`. Calls go to the public Responses API (`api.openai.com/v1`) with the user's access token; models come from the connection's model list.
+   - No Swift SDK. The DevKit (github.com/openai/sign-in-with-chatgpt-devkit) is Node/React under a **noncommercial license**: implement the protocol in Swift from the docs (developers.openai.com/siwc); don't copy DevKit code.
+   - Required by OpenAI: a "Manage usage" action linking to ChatGPT settings, and clear handling when a request hits the plan's usage limit.
+   - Shape: a `ChatGPTClient` implementing `LLMClient` (Responses API); tokens and host ID in the keychain; Settings "AI provider": ChatGPT (default) · OpenRouter key (keeps Claude, Gemini, Muse). Model picker lists the connection's models.
+   - Gate: v1 prompts unchanged; run evals (item 4) on the OpenAI models before making it the default.
+   - Risks: new program; terms and access can change. Re-read OpenAI's terms before shipping it via Sparkle.
+   - Supersedes the earlier "drive the `codex` CLI" idea. Using a Claude subscription through the `claude` CLI is still only an idea (item 8).
+3. **AI player & team assessments (§5, M3).** First slice built.
    - Done: `FactSheet` (stats, ratings, positions, notes as citable fact IDs; team rates from counts), `Scout` (v1's analysis prompts ported, with ratings/notes/positions as inputs and fact-ID citations; one retry when a citation doesn't exist, then it's dropped), cached `PlayerAssessment` / `TeamAssessment` on `Player` / `Team`, stale when the player's facts change.
    - Done: player page tabs (Stats · Scouting Report · Coach's Evaluation; the last tab is remembered); Stats & Insights section replacing Stats and Insights (Team Summary · Players · Stats); Insights content (team summary, strengths/work on with evidence chips, leadoff / middle / defensive core, practice plan, every player in a line). "Assess Team" re-assesses only changed players, three at a time, then the team.
    - Resilient runs: each player is saved the moment it's done, so a quit or failure resumes where it stopped; timeouts, rate limits and server errors retry up to 3 times (10 s, 30 s); a bad key or no credits stops the run at once. Each player shows Waiting / Assessing · m:ss / Trying again / failed with reason. The team summary is written only after every player is done, and shows "Out of date" when it doesn't cover the current assessments.
    - Run once on Marty's real team with Muse Spark (a reasoning model, 2–3 min per player); that exposed the 3-minute timeout, now 10 minutes.
-   - Left: feed assessments into the Strategist prompt (a prompt change, so gate it on evals, item 3); coach pushback ("Disagree"); re-assess on import; history and trends; season ledger facts (needs item 8); printable practice sheet; Jev claim checks; a separate Scout model setting (uses the lineup model today).
-3. **Evals (§10).** Not started. Needs:
+   - Left: feed assessments into the Strategist prompt (a prompt change, so gate it on evals, item 4); coach pushback ("Disagree"); re-assess on import; history and trends; season ledger facts (needs item 9); printable practice sheet; Jev claim checks; a separate Scout model setting (uses the lineup model today).
+4. **Evals (§10).** Not started. Needs:
    - A golden set: fixture teams as JSON, Marty's real rules/rosters, expected rule templates, assessment fixtures.
    - Harness: `swift test --filter Evals`, or a small CLI hitting OpenRouter.
    - Metrics: valid-first-try, revisions, safety-net use, cost, latency, Marty-graded quality.
    - Use the results to compare models (Sonnet vs. Muse, etc.) and gate prompt changes against v1.
-4. **Printing & sharing (§6.6).**
+5. **Printing & sharing (§6.6).**
    - A lineup card prints via `NSPrintOperation` but has **never been tested on paper**.
    - Needs a real print check, layout polish (jersey numbers, position key, big type), PDF export, "Copy as text" for team chats, and an optional per-inning dugout card.
-5. **Rules intelligence (§4.3, §8.4, M5).**
+6. **Rules intelligence (§4.3, §8.4, M5).**
    - AI Rule Interpreter that fills "Understood as…" checks automatically (today the coach attaches checks by hand).
    - Jev (Decisions API) cascade.
    - Learn-from-edits suggestions (§6.9).
-6. **Rules UI/UX redesign.** Marty doesn't like how rules are presented, created or edited today. Direction **not yet decided**; revisit with him before building.
+7. **Rules UI/UX redesign.** Marty doesn't like how rules are presented, created or edited today. Direction **not yet decided**; revisit with him before building.
    - Problems seen so far:
      - Rules live far from where they're used: a separate sidebar section, plus a "rule sets" middle column.
      - A rule's code check is hidden and separate from its words. The text can say 3 while the check says 2.
@@ -87,19 +97,16 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
      - **Evaluator for judgment rules:** after positions are filled, one Jev *Noul* per judgment-only rule against a compact text rendering of the lineup. It is shown as a probability ("Jev: 92% likely followed") and labeled as a second opinion, not a guarantee.
      - **Not for countable rules:** Jev doesn't count reliably (TypeSafe's own docs); the `Validator` stays the source of truth for anything with a number.
      - Needs: a Decisions API client in `LineupAI` (alpha endpoint, behind a protocol); an eval set of real rules with expected interpretations; threshold tuning.
-7. **Use a Claude or ChatGPT subscription instead of an OpenRouter key.** Not started; idea only.
-   - Add `ClaudeCodeClient` and `CodexClient` that implement `LLMClient` by running the user's installed CLI headless: `claude -p … --output-format json`, tools off, one turn; `codex exec --json -s read-only`. Check the flags against current versions before building.
-   - Possible only because the App Sandbox is off; a Mac App Store build couldn't do this.
-   - Settings: an "AI provider" choice. Show a subscription option only when its CLI is found and logged in. Dock-launched apps don't get the shell PATH, so look in the usual install folders or ask `zsh -lc 'command -v claude'`.
-   - Downsides: a few seconds of CLI startup per call, which adds up across the two generation steps and revisions; no live model catalog; no cost data.
-   - Run evals through each client before calling it equivalent to OpenRouter.
-   - **Check Anthropic's and OpenAI's terms first.** Using a consumer subscription from a third-party app is a gray area. OpenRouter stays the default.
-8. **Season & game day (§6.2–6.5, M4).**
+8. **Use a Claude subscription instead of an API key.** Idea only.
+   - A `ClaudeCodeClient` implementing `LLMClient` by running the user's installed CLI headless (`claude -p … --output-format json`, tools off, one turn). Check flags against the current version first.
+   - Possible only because the App Sandbox is off. Dock-launched apps don't get the shell PATH: look in the usual install folders or ask `zsh -lc 'command -v claude'`.
+   - Downsides: CLI startup per call, no model catalog, no cost data. **Check Anthropic's terms first**; using a consumer subscription from a third-party app is a gray area.
+9. **Season & game day (§6.2–6.5, M4).**
    - Playing-time ledger across games, fed to the AI as facts.
    - Pitching tracker with rest-day presets.
    - Game-day mode with mid-game re-plan.
    - Game status/score entry: `ourScore` / `theirScore` exist in the model with no UI.
-9. **Smaller gaps:**
+10. **Smaller gaps:**
    - Show AI cost: tracked per lineup in `LineupDocument.cost`, not displayed anywhere since the design pass.
    - JSON backup/export of the library (§7.2).
    - Edit a game's date after creation (only the opponent is editable inline).
@@ -107,7 +114,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Structured outputs (`response_format: json_schema`) and prompt caching (§8.3).
    - Softball / 10-fielder formats (Q4).
    - No app-target UI tests; only `LineupKit` is tested.
-10. **Unverified by the builder (needs Marty's hands):**
+11. **Unverified by the builder (needs Marty's hands):**
    - Drag-to-reorder in the grid and list (code path exercised programmatically after the crash fix).
    - A real model filling around locks.
    - Printing.
