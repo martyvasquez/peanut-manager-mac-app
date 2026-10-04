@@ -8,6 +8,9 @@ struct PeanutManagerApp: App {
     init() {
         container = Self.makeContainer()
         AppUpdater.shared.start()
+        #if DEBUG
+        if EvalRunner.requested { Task { [container] in await EvalRunner.run(container: container) } }
+        #endif
     }
 
     var body: some Scene {

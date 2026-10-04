@@ -16,6 +16,7 @@ import LineupKit
 ///   -PMFlakyScout YES    fake Scout: Player03 times out once, Player05 always times out
 ///   -PMSignedOut YES     act signed out of ChatGPT (the real sign-in stays in the keychain)
 ///   -PMShowSignIn YES    show the after-first-team Sign in with ChatGPT sheet
+///   -PMRunEval YES       run the model eval on this (copied) library; see EvalRunner
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }
     static var fakeAI: Bool { UserDefaults.standard.bool(forKey: "PMFakeAI") }

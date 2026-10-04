@@ -94,6 +94,15 @@ final class AIService {
         return (ChatGPTClient(session: session, reasoningEffort: effectiveEffort), chatGPTModelID)
     }
 
+    #if DEBUG
+    /// A client at a fixed thinking level, whatever the coach picked. For the model eval.
+    func client(effort: String?) -> any LLMClient {
+        if DebugSupport.fakeAI { return FakeLLMClient() }
+        guard let session else { return UnavailableClient() }
+        return ChatGPTClient(session: session, reasoningEffort: effort)
+    }
+    #endif
+
     var currentModelID: String { chatGPTModelID }
 
     /// Whether AI actions can run; while not, the app shows Sign in with ChatGPT in their place.
