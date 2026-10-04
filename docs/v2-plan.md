@@ -95,6 +95,13 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - **First run (Oct 3, Trojans Test2 under League rules; 22 calls, ~96k tokens).** Test2's locks put one pitcher in for innings 1–3 against a 2-inning rule, so the case was unsatisfiable. Lineups: Luna 3:04 kept every lock and warned clearly (best); Sol 3:26 and Terra 2:41 moved the locked pitcher, and the safety net put him back; Astra timed out (>10 min) on positions. All three made the same batting order with the best hitter leading off (prompt ambiguity, not a model difference). Assessments: Terra fastest (~37 s); Astra most careful about small samples but wrote fact IDs into prose. Tentative: Luna for lineups, Astra or Sol for assessments. Marty's blind grades are still pending.
    - **Fixed from it:** locks that break a rule go to the coach first (Fill Anyway) and are never sent to the AI; code puts every lock back on every AI answer (`keepingLocks`, `lockMoves` counted); the safety net clears reasons it invalidated; fact IDs are stripped from prose; the thinking level is saved. Rerun on Sol and Terra: both kept every lock, and filling was much faster (Terra 1:09).
    - **Deferred:** batting-order tie-break (best hitter bats 3rd), a prompt change that needs a 4-call batting-order check.
+   - **Next (small):**
+     - Marty grades the first run blind (`Evals/EvalTrojans/grade.html`), then delete the `EvalTrojans` library copy.
+     - Live check of the new lock guarantee and Fill Anyway: about 2 calls on any locked game (only unit-tested so far).
+     - Rerun Luna's 3 assessments at Medium (they were reused; their thinking level wasn't recorded then). 3 calls.
+     - Optional: retry Astra's lineup (it timed out); relaunching the same eval retries only that run.
+     - Log why each revision happened (Sol needed 1 on the rerun; the cause wasn't recorded).
+     - A second hard game whose locks don't conflict with its rules, so "valid on first try" and revisions can separate the models.
    - Still needs:
    - A golden set: fixture teams as JSON, Marty's real rules/rosters, expected rule templates, assessment fixtures.
    - Harness: `swift test --filter Evals`, or a small CLI on the ChatGPT sign-in.

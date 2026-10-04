@@ -88,11 +88,43 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMFlakyScout YES` | With `-PMFakeAI`: Player03 times out once, Player05 always fails (tests retries and resume) |
 | `-PMSignedOut YES` | Act signed out of ChatGPT; your real sign-in stays in the keychain |
 | `-PMShowSignIn YES` | Show the Sign in with ChatGPT sheet that follows creating the first team |
+| `-PMRunEval YES` | Run the model eval on this library (see **Model eval** below) |
+
+## Model eval
+
+Compares the ChatGPT models (Luna, Sol, Terra, Astra) on one hard game and a few players, as cheaply as possible: each model once, at one thinking level, one call at a time. It runs on the coach's real ChatGPT plan, so it spends real usage (the first run was 22 calls, about 96k tokens).
+
+```sh
+# 1. Copy the library (never run it on the real one)
+AS=~/Library/Application\ Support/Peanut\ Manager
+for f in "$AS"/Library.store*; do cp "$f" "$AS/EvalCopy${f##*/Library}"; done
+
+# 2. Run it
+"build/Build/Products/Debug/Peanut Manager.app/Contents/MacOS/Peanut Manager" \
+  -PMStore EvalCopy -PMRunEval YES \
+  -PMEvalGame "<game>" -PMEvalRules "<rule set>" -PMEvalPlayers "<name>,<name>,<name>"
+```
+
+| Flag | Effect |
+|---|---|
+| `-PMEvalGame <opponent>` | The game to line up, with its locks and availability |
+| `-PMEvalRules <rule set>` | Use this rule set instead of the game's (to make it harder) |
+| `-PMEvalPlayers "a,b,c"` | Players to assess (first names or full names) |
+| `-PMEvalModels "id,id"` | Only these models (default: the newest Luna, Sol, Terra and Astra) |
+| `-PMEvalEffort medium` | Thinking level (default: Medium) |
+
+- **Output:** `~/Library/Application Support/Peanut Manager/Evals/<Store>/` holds `results.json`, `progress.log` and `grade.html`. The page opens when the run ends.
+- **Grading is blind:** each lineup and assessment is labeled A, B, C… Grade them (print as-is?, quality; accurate?, useful), then **Reveal Models** shows which model made what, with time, tokens, revisions, safety-net cells and lock-move attempts. **Copy Grades** puts the grades on the clipboard.
+- **Cheap by design:** finished runs are never repeated (relaunch to retry only what failed), a stored assessment from the same model on the same facts is reused, and a usage-limit or sign-in error stops the run at once.
+- **Check the setup with `-PMFakeAI YES` first.** That runs the whole pipeline for free.
+- **Afterwards,** delete the copy: `rm "$AS"/EvalCopy.store*` (and the `Evals/EvalCopy` folder once graded). Results contain real names; they stay on this Mac and never go in the repo.
+
+Results and decisions so far are in `docs/v2-plan.md` (Build status, item 5).
 
 ## How generation works
 
-1. **Feasibility** (code): enough players, and someone eligible at every position. Otherwise the app stops before calling the AI and offers fixes.
-2. **Decide** (AI): batting order, then defense around any locks, using v1's prompts.
+1. **Feasibility** (code): enough players, and someone eligible at every position. Otherwise the app stops before calling the AI and offers fixes. Locks that break a rule (or can't all be kept) go to the coach first: **Fill Anyway** or Cancel. The AI is never asked to fix them.
+2. **Decide** (AI): batting order, then defense around the coach's locks, using v1's prompts. Code puts every lock back on every AI answer; the AI only fills the open spots.
 3. **Verify** (code): `Validator` checks the invariants and every rule with a code check.
 4. **Revise** (AI, up to 2 rounds): the exact violations go back to the AI.
 5. **Safety net** (code, last resort): `Repair` makes the fewest changes it can. Those cells are outlined in orange and disclosed.
