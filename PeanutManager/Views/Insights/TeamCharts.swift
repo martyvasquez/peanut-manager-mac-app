@@ -399,7 +399,8 @@ struct ScoutFitField: View {
 }
 
 /// Every qualified hitter on both sides of the game: on-base % across, defense up (fielding ratings,
-/// nudged by the Scout's best fit). Split at the team's own levels: Core, Bat first, Glove first, Developing.
+/// nudged by the Scout's best fit; without ratings, the Scout's fit alone, drawn hollow).
+/// Split at the team's own levels: Core, Bat first, Glove first, Developing.
 struct TwoWayMap: View {
     let team: Team
     let ranks: TeamRanks
@@ -410,37 +411,59 @@ struct TwoWayMap: View {
         let name: String
         let obp: Double
         let defense: Double
+        /// False when placed by the scouting report alone.
+        let rated: Bool
     }
 
     var body: some View {
         let names = team.shortNames
-        var points: [Point] = [], unrated: [String] = []
+        var points: [Point] = [], unplaced: [String] = []
         for s in ranks.ranked(.obp) {
             guard let player = team.players.first(where: { $0.uid == s.player }) else { continue }
             let best = player.assessment?.defense.map(\.fit).min()
+            let name = names[s.player] ?? player.name
             if let d = TwoWay.defense(ratings: player.ratings, bestFit: best) {
-                points.append(Point(id: s.player, name: names[s.player] ?? player.name, obp: s.value, defense: d))
+                points.append(Point(id: s.player, name: name, obp: s.value, defense: d, rated: true))
+            } else if let d = TwoWay.defense(bestFit: best) {
+                points.append(Point(id: s.player, name: name, obp: s.value, defense: d, rated: false))
             } else {
-                unrated.append(player.name)
+                unplaced.append(player.name)
             }
         }
         let lines = team.activePlayers.compactMap { $0.stats?.batting }
         let pa = lines.reduce(0) { $0 + $1.pa }
-        return Group {
+        return VStack(alignment: .leading, spacing: 12) {
+            Caption("Two-Way Map")
             if points.count >= 4, pa > 0 {
                 let teamOBP = Double(lines.reduce(0) { $0 + $1.h + $1.bb + $1.hbp }) / Double(pa)
                 let teamDefense = points.map(\.defense).reduce(0, +) / Double(points.count)
-                VStack(alignment: .leading, spacing: 12) {
-                    Caption("Two-Way Map")
-                    chart(points, teamOBP: teamOBP, teamDefense: teamDefense)
-                        .frame(height: 360)
-                        .padding(16)
-                        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
-                    if !unrated.isEmpty {
-                        (Text("No fielding ratings  ").foregroundStyle(.tertiary) + Text(unrated.joined(separator: ", ")).foregroundStyle(.secondary))
-                            .font(.callout)
+                chart(points, teamOBP: teamOBP, teamDefense: teamDefense)
+                    .frame(height: 360)
+                    .padding(16)
+                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 4) {
+                    if points.contains(where: { !$0.rated }) {
+                        Label("Hollow: no fielding ratings yet, placed by the scouting report", systemImage: "circle")
+                            .labelStyle(HollowLegend())
+                    }
+                    if !unplaced.isEmpty {
+                        (Text("Not placed  ").foregroundStyle(.tertiary) + Text(unplaced.joined(separator: ", ")).foregroundStyle(.secondary))
                     }
                 }
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            } else {
+                Text("Shows once four players have a scouting report or fielding ratings.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private struct HollowLegend: LabelStyle {
+        func makeBody(configuration: Configuration) -> some View {
+            HStack(spacing: 6) {
+                Circle().strokeBorder(Color.secondary, lineWidth: 1.5).frame(width: 9, height: 9)
+                configuration.title
             }
         }
     }
@@ -457,6 +480,7 @@ struct TwoWayMap: View {
             ForEach(points) { p in
                 let core = p.obp >= teamOBP && p.defense >= teamDefense
                 PointMark(x: .value("OBP", p.obp), y: .value("Defense", p.defense))
+                    .symbol(p.rated ? AnyChartSymbolShape(.circle) : AnyChartSymbolShape(.circle.strokeBorder(lineWidth: 2)))
                     .symbolSize(hovered == p.id ? 140 : 80)
                     .foregroundStyle(core ? Color.accentColor : Color.primary.opacity(0.55))
                     .annotation(position: hovered == p.id ? .trailing : sides[p.id] ?? .trailing, spacing: 4) {
@@ -515,7 +539,7 @@ struct TwoWayMap: View {
                     }
             }
         }
-        .help("Defense: your fielding ratings (hands, throws, arm, fly balls), +½ when the Scout rates a position Strong, −½ when only Developing. Dashed lines are the team's levels.")
+        .help("Defense: your fielding ratings (hands, throws, arm, fly balls), +½ when the Scout rates a position Strong, −½ when only Developing. Without ratings, the Scout's best fit alone (hollow). Dashed lines are the team's levels.")
     }
 
     private func corner(_ text: String) -> some View {

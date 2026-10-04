@@ -182,4 +182,16 @@ public enum TwoWay {
         }
         return min(max(average + nudge, 1), 5)
     }
+
+    /// Without fielding ratings, the Scout's best fit alone places the player: Strong 4, Solid 3, Developing 2.
+    /// The map draws these hollow so the coach can tell them from rated players.
+    public static func defense(bestFit: PositionFit?) -> Double? {
+        switch bestFit {
+        case .strong: 4
+        case .solid: 3
+        case .developing: 2
+        case .notRecommended: 1.5
+        case nil: nil
+        }
+    }
 }

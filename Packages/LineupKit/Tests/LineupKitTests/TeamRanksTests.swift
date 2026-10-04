@@ -74,3 +74,9 @@ private func hitter(pa: Int, onBase: Int, so: Int = 0) -> (id: PlayerID, stats: 
     r[.pitchVelocity] = 1  // not a fielding rating
     #expect(TwoWay.defense(ratings: r, bestFit: .solid) == 5)
 }
+
+@Test func twoWayDefenseFromScoutOnly() {
+    #expect(TwoWay.defense(bestFit: .strong) == 4)
+    #expect(TwoWay.defense(bestFit: .developing) == 2)
+    #expect(TwoWay.defense(bestFit: nil) == nil)
+}
