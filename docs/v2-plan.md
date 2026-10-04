@@ -102,6 +102,10 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 7. **Rules intelligence (§4.3, §8.4, M5).**
    - AI Rule Interpreter that fills "Understood as…" checks automatically (today the coach attaches checks by hand).
    - Jev (Decisions API) cascade.
+   - **Jev in lineup-making (Oct 3, Marty undecided: option 1, option 2, or neither for now).** Not Jev assembling lineups from per-cell scores: the code that combines them would be an optimizer, i.e. the deterministic generator §3 rules out.
+     - *Option 1, Jev picks between lineups:* the AI writes the strategy and 2–3 full candidate lineups; Jev chooses the one that best fits the coach's rules and strategy. Plays to Jev's strength (choosing), but costs 2–3× the tokens per lineup.
+     - *Option 2, Jev's judgments as facts for the AI:* before positions, Jev scores judgment-only questions ("weak fielder at 1B in a close game?") and the scores go into the prompt beside the stats. The AI still decides. Cheap and fits "AI decides, code guarantees"; a prompt change, so gate it on evals.
+     - Trigger to revisit: a game where the AI makes a bad judgment call that code can't catch. So far every problem seen (batting order, weak fielders at 1B, locks) was fixed or fixable with code or a clearer prompt.
    - Learn-from-edits suggestions (§6.9).
 8. **Rules UI/UX redesign.** Marty doesn't like how rules are presented, created or edited today. Direction **not yet decided**; revisit with him before building.
    - Problems seen so far:
