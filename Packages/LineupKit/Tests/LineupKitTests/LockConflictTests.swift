@@ -80,3 +80,46 @@ struct LockConflictTests {
         #expect(result.findings.contains { $0.code == .rule && $0.severity == .warning })
     }
 }
+
+/// The coach locks spots and the AI fills the rest: no AI answer can move a lock.
+struct LocksStayPutTests {
+    let players = makeTeam()
+
+    @Test func aLockTheAIMovedIsPutBackAndTheAIIsToldToReplan() async throws {
+        var ctx = GameContext(innings: 6, players: players)
+        let good = validLineup(players)
+        let ss = good.innings[2].positions[.ss]!
+        ctx.locks = [Lock(inning: 3, player: ss, slot: .field(.ss))]
+        var moved = good
+        let other = moved.innings[2].positions[.lf]!
+        moved.innings[2].assign(other, to: .field(.ss))   // the AI swaps the locked shortstop to LF
+        let client = ScriptedClient([defenseJSON(moved, players: players), defenseJSON(good, players: players)])
+        let result = try await LineupEngine(client: client, model: "m").defense(ctx, battingOrder: players.map(\.id))
+
+        #expect(result.innings[2].positions[.ss] == ss)
+        #expect(result.lockMoves == 1)
+        #expect(result.revisions == 1)
+        #expect(result.adjustedCells.isEmpty)
+        let revise = try #require(client.requests.last?.messages.last?.content)
+        #expect(revise.contains("locked at SS by the coach"))
+    }
+
+    @Test func anAIThatKeepsMovingALockStillNeverMovesIt() async throws {
+        var ctx = GameContext(innings: 6, players: players)
+        let good = validLineup(players)
+        let ss = good.innings[2].positions[.ss]!
+        ctx.locks = [Lock(inning: 3, player: ss, slot: .field(.ss))]
+        var moved = good
+        moved.innings[2].assign(moved.innings[2].positions[.lf]!, to: .field(.ss))
+        let reply = defenseJSON(moved, players: players)
+        let client = ScriptedClient([reply, reply, reply])
+        let result = try await LineupEngine(client: client, model: "m").defense(ctx, battingOrder: players.map(\.id))
+
+        #expect(result.innings[2].positions[.ss] == ss)
+        #expect(result.lockMoves == 3)
+        #expect(!result.findings.hasViolations)
+        // The cell code changed to keep the lock is disclosed, and the AI's reason for that inning is dropped.
+        #expect(!result.adjustedCells.isEmpty)
+        #expect(result.inningReasons[2] == "")
+    }
+}

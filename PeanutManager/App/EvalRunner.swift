@@ -263,6 +263,8 @@ nonisolated struct EvalLineup: Codable {
     var defenseRevisions: Int
     var battingAdjusted: Bool
     var adjusted: [Cell]
+    /// Locked spots the AI tried to move (code put each back). Old results lack it.
+    var lockMoves: Int?
     /// What the validator still finds in the final lineup (notes and warnings; violations only if the safety net failed).
     var findings: [String]
 
@@ -281,6 +283,7 @@ nonisolated struct EvalLineup: Codable {
         defenseRevisions = defense.revisions
         battingAdjusted = batting.adjustedByApp
         adjusted = defense.adjustedCells.map { Cell(inning: $0.inning, player: $0.player.uuidString) }
+        lockMoves = defense.lockMoves
         let lineup = Lineup(battingOrder: batting.order, innings: defense.innings)
         let defenseFindings = Validator.excusing(Validator.validateDefense(lineup, context: context), conflicts: Validator.lockConflicts(context))
         findings = (Validator.validateBattingOrder(batting.order, context: context) + defenseFindings)

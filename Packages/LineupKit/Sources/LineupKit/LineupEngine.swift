@@ -107,6 +107,8 @@ public struct DefenseResult: Sendable {
     public var revisions: Int
     public var provenance: [CellKey: Provenance]
     public var usage: LLMUsage
+    /// Locked spots the AI tried to move, over every round. Code put each one back; the coach never sees it moved.
+    public var lockMoves: Int
 
     public var adjustedCells: [CellKey] { provenance.filter { $0.value == .appAdjusted }.map(\.key) }
 }
@@ -195,6 +197,9 @@ public struct LineupEngine: Sendable {
         var revisions = 0
         var first: MappedDefense?
         var latest: MappedDefense?
+        var latestAsAnswered: [InningAssignment] = []
+        var latestMoved: [Lock] = []
+        var lockMoves = 0
         var findings: [Finding] = []
 
         progress(.asking(.defense))
@@ -202,10 +207,22 @@ public struct LineupEngine: Sendable {
             let response = try await client.complete(LLMRequest(model: model, system: Prompts.defensiveSystem, messages: messages, maxTokens: 8000))
             usage = usage + response.usage
             do {
-                let mapped = try JSONExtraction.decode(DefenseResponse.self, from: response.text).mapped(ids: ids, players: context.players, innings: context.innings)
+                var mapped = try JSONExtraction.decode(DefenseResponse.self, from: response.text).mapped(ids: ids, players: context.players, innings: context.innings)
+                // The coach's locks are decisions, not suggestions: code puts them back before anything else looks.
+                let kept = Self.keepingLocks(mapped.innings, context: context)
+                latestAsAnswered = mapped.innings
+                latestMoved = kept.moved
+                lockMoves += kept.moved.count
+                mapped.innings = kept.innings
                 if first == nil { first = mapped }
                 latest = mapped
-                findings = Validator.excusing(Validator.validateDefense(Lineup(battingOrder: battingOrder, innings: mapped.innings), context: context), conflicts: conflicts)
+                var found = Validator.validateDefense(Lineup(battingOrder: battingOrder, innings: mapped.innings), context: context)
+                for lock in kept.moved {
+                    found.append(Finding(.violation, .lockBroken,
+                        "Inning \(lock.inning): \(context.name(lock.player)) is locked at \(lock.slot) by the coach and must stay there. Plan the rest of the inning around that spot.",
+                        inning: lock.inning, player: lock.player))
+                }
+                findings = Validator.excusing(found, conflicts: conflicts)
                 for miss in mapped.unresolved {
                     let where_ = miss.position.map { " at \($0.label)" } ?? " on the bench"
                     findings.append(Finding(.violation, .unknownPlayer, "Inning \(miss.inning): a player ID\(where_) isn't in the player list.", inning: miss.inning, position: miss.position))
@@ -231,6 +248,13 @@ public struct LineupEngine: Sendable {
                 provenance[key] = firstLineup.slot(of: player.id, inning: inning) == lineup.slot(of: player.id, inning: inning) ? .ai : .aiRevised
             }
         }
+        // Cells code had to change to keep a lock the AI's last answer moved.
+        let answered = Lineup(battingOrder: battingOrder, innings: latestAsAnswered)
+        for (key, _) in provenance where answered.slot(of: key.player, inning: key.inning) != lineup.slot(of: key.player, inning: key.inning) {
+            provenance[key] = .appAdjusted
+        }
+        // Locks are already in place; the safety net only fixes what's still wrong around them.
+        findings = Validator.excusing(Validator.validateDefense(lineup, context: context), conflicts: conflicts)
         if findings.hasViolations {
             progress(.adjusting(.defense))
             let repaired = Repair.defense(lineup, context: context)
@@ -248,9 +272,29 @@ public struct LineupEngine: Sendable {
             reasons[key.inning - 1] = ""
         }
 
+        // If the last answer moved a lock, its notes may describe that move. Drop the ones that name those players.
+        let movedNames = latestMoved.compactMap { context.player($0.player)?.name.components(separatedBy: " ").first }
+        func mentionsMove(_ text: String) -> Bool { movedNames.contains { text.contains($0) } }
+        let warnings = final.warnings.filter { !mentionsMove($0) }
+        let rationale = mentionsMove(final.rationale) ? "" : final.rationale
+
         return DefenseResult(
-            innings: lineup.innings, inningReasons: reasons, rationale: final.rationale, warnings: final.warnings,
-            aiRuleNotes: final.aiRuleNotes, findings: findings, revisions: revisions, provenance: provenance, usage: usage
+            innings: lineup.innings, inningReasons: reasons, rationale: rationale, warnings: warnings,
+            aiRuleNotes: final.aiRuleNotes, findings: findings, revisions: revisions, provenance: provenance, usage: usage,
+            lockMoves: lockMoves
         )
+    }
+
+    /// Every available lock in place, swapping with whoever the AI put there (so the inning stays complete).
+    static func keepingLocks(_ innings: [InningAssignment], context: GameContext) -> (innings: [InningAssignment], moved: [Lock]) {
+        var innings = innings
+        var moved: [Lock] = []
+        for lock in context.locks where innings.indices.contains(lock.inning - 1) {
+            guard context.availability(of: lock.player).isAvailable(inning: lock.inning),
+                  innings[lock.inning - 1].slot(of: lock.player) != lock.slot else { continue }
+            innings[lock.inning - 1].assign(lock.player, to: lock.slot)
+            moved.append(lock)
+        }
+        return (innings, moved)
     }
 }

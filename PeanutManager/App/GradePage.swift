@@ -121,7 +121,7 @@ enum GradePage {
           <p class="why"><b>Defense.</b> ${esc(L.defenseRationale)}</p>` +
           (L.warnings.length ? `<p class="why muted">${L.warnings.map(esc).join("<br>")}</p>` : "");
       }
-      const m = L ? `First try ${L.battingRevisions + L.defenseRevisions === 0 ? "valid" : "invalid"} · revisions ${L.battingRevisions}+${L.defenseRevisions} · safety-net cells ${L.adjusted.length + (L.battingAdjusted ? 1 : 0)} · ` : "";
+      const m = L ? `First try ${L.battingRevisions + L.defenseRevisions === 0 ? "valid" : "invalid"} · revisions ${L.battingRevisions}+${L.defenseRevisions} · safety-net cells ${L.adjusted.length + (L.battingAdjusted ? 1 : 0)} · ${L.lockMoves != null ? `tried to move a lock ${L.lockMoves}× · ` : ""}` : "";
       return `<div class="card"><div class="label">${label}<span class="model">${esc(run.model)}</span></div>
         <div class="metrics">${m}${run.calls.length} calls · ${secs(run).toFixed(0)} s · ${toks(run).toLocaleString()} tokens</div>
         ${body}${gradeControls("lineup|" + run.model, [["print", "Print as-is?", ["Yes", "No"]], ["score", "Quality", ["1", "2", "3", "4", "5"]]])}</div>`;

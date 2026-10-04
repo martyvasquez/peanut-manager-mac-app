@@ -10,6 +10,7 @@ Native SwiftUI + SwiftData macOS app (macOS 26+, Swift 6, XcodeGen) that makes y
 - **Local-first and free.** No server and no accounts of our own. The AI runs on the coach's ChatGPT plan via Sign in with ChatGPT; the sign-in lives in the keychain. OpenRouter was removed on Oct 3 (coaches won't set up keys); don't bring it back.
 - **Design bar: Apple / Cultured Code (Things 3).** Intuitive, minimal, no explanatory paragraphs, color only when it means something, the complicated made to feel simple. The owner reviews screenshots closely; show real screenshots, not descriptions.
 - Night-before flow is the hero path: batting order → lock spots → Fill the Rest → print.
+- **Locks are the coach's decisions; the AI fills the rest.** This is the core feature. Code puts every lock back on every AI answer (`LineupEngine.keepingLocks`), a lock that breaks a rule goes to the coach (Fill Anyway), never to the AI, and nothing on screen may describe a lock being moved.
 
 ## Architecture
 
