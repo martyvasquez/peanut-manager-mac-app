@@ -327,8 +327,13 @@ nonisolated enum FieldGeometry {
 
 /// Straight foul lines, the fence, a square diamond and the mound: lines only.
 struct FieldDrawing: View {
+    /// Draw larger than `FieldGeometry.size` without thickening the lines.
+    var scale: CGFloat = 1
+
     var body: some View {
         Canvas { context, _ in
+            context.scaleBy(x: scale, y: scale)
+            let w = 1 / scale
             let g = FieldGeometry.self
             let home = g.home
             let b = g.bases / 2.0.squareRoot()
@@ -344,16 +349,16 @@ struct FieldDrawing: View {
             var foul = Path()
             foul.move(to: home); foul.addLine(to: g.point(g.polar(-45, g.fence)))
             foul.move(to: home); foul.addLine(to: g.point(g.polar(45, g.fence)))
-            context.stroke(foul, with: .color(line), lineWidth: 1.5)
-            context.stroke(arc(g.fence), with: .color(line), lineWidth: 1.5)
+            context.stroke(foul, with: .color(line), lineWidth: 1.5 * w)
+            context.stroke(arc(g.fence), with: .color(line), lineWidth: 1.5 * w)
 
             let first = g.point((b, b)), second = g.point((0, 2 * b)), third = g.point((-b, b))
             var diamond = Path()
             diamond.move(to: home); diamond.addLine(to: first); diamond.addLine(to: second); diamond.addLine(to: third); diamond.closeSubpath()
-            context.stroke(diamond, with: .color(line), lineWidth: 1.5)
+            context.stroke(diamond, with: .color(line), lineWidth: 1.5 * w)
 
             let mound = g.point((0, g.mound))
-            context.stroke(Path(ellipseIn: CGRect(x: mound.x - 7, y: mound.y - 7, width: 14, height: 14)), with: .color(Color.primary.opacity(0.18)), lineWidth: 1)
+            context.stroke(Path(ellipseIn: CGRect(x: mound.x - 7, y: mound.y - 7, width: 14, height: 14)), with: .color(Color.primary.opacity(0.18)), lineWidth: w)
         }
     }
 }

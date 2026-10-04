@@ -5,6 +5,32 @@ import LineupKit
 extension Team {
     /// Team rankings on every stat; decodes each player's stats, so build once per view.
     var ranks: TeamRanks { TeamRanks(activePlayers.map { ($0.uid, $0.stats) }) }
+
+    /// First names for tight spaces, with a last initial when two players share one.
+    var shortNames: [PlayerID: String] {
+        let players = activePlayers
+        func first(_ p: Player) -> String { p.name.split(separator: " ").first.map(String.init) ?? p.name }
+        var counts: [String: Int] = [:]
+        for p in players { counts[first(p), default: 0] += 1 }
+        return Dictionary(uniqueKeysWithValues: players.map { p in
+            let name = first(p)
+            let last = p.name.split(separator: " ").dropFirst().last?.first
+            return (p.uid, counts[name]! > 1 && last != nil ? "\(name) \(last!)." : name)
+        })
+    }
+}
+
+/// "Offense", "Defense": the big dividers on the team page.
+struct PageSection: View {
+    let title: String
+    init(_ title: String) { self.title = title }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Divider()
+            Text(title).font(.title2.weight(.bold))
+        }
+        .id(title.lowercased())
+    }
 }
 
 /// Every qualified teammate as a faint dot on one line, better to the right; this player is the solid dot.
@@ -55,12 +81,14 @@ struct RankLabel: View {
 /// Team totals from the fact sheet, so they match what the AI was told.
 struct TeamNumbers: View {
     let team: Team
+    let ids: [String]
 
-    private static let shown = ["team.avg", "team.obp", "team.slg", "team.k_rate", "team.bb_rate", "team.sb", "team.fpct", "team.p.whip"]
+    static let offense = ["team.avg", "team.obp", "team.slg", "team.k_rate", "team.bb_rate", "team.sb"]
+    static let defense = ["team.fpct", "team.errors", "team.p.ip", "team.p.whip", "team.pitchers", "team.catchers"]
 
     var body: some View {
         let sheet = FactSheet.team(team.activePlayers.map(\.snapshot))
-        let facts = Self.shown.compactMap { sheet[$0] }
+        let facts = ids.compactMap { sheet[$0] }
         if !facts.isEmpty {
             HStack(spacing: 10) {
                 ForEach(facts, id: \.id) { fact in
@@ -82,7 +110,11 @@ struct TeamNumbers: View {
         switch fact.id {
         case "team.sb": "SB"
         case "team.fpct": "FPCT"
+        case "team.errors": "E"
+        case "team.p.ip": "IP"
         case "team.p.whip": "WHIP"
+        case "team.pitchers": "CAN PITCH"
+        case "team.catchers": "CAN CATCH"
         default: fact.label.replacingOccurrences(of: "Team ", with: "")
         }
     }
@@ -92,14 +124,16 @@ struct TeamNumbers: View {
 struct TeamLeaders: View {
     let team: Team
     let ranks: TeamRanks
+    let metrics: [Metric]
 
-    private static let metrics: [Metric] = [.obp, .slg, .kRate, .bbRate, .sb, .fpct, .whip, .pitchKRate]
+    static let offense: [Metric] = [.obp, .slg, .kRate, .bbRate, .sb]
+    static let defense: [Metric] = [.fpct, .whip, .pitchKRate]
 
     var body: some View {
-        let cards = Self.metrics.filter { !ranks.leaders($0).isEmpty }
+        let cards = metrics.filter { !ranks.leaders($0).isEmpty }
         if !cards.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                Caption("Team Leaders")
+                Caption("Leaders")
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 210), spacing: 12, alignment: .top)], alignment: .leading, spacing: 12) {
                     ForEach(cards, id: \.self) { card($0) }
                 }
@@ -152,10 +186,10 @@ struct HitterMap: View {
     }
 
     var body: some View {
+        let names = team.shortNames
         let points = ranks.ranked(.obp).compactMap { s -> Point? in
-            guard let k = ranks.standing(s.player, .kRate)?.value,
-                  let player = team.players.first(where: { $0.uid == s.player }) else { return nil }
-            return Point(id: s.player, name: player.name.split(separator: " ").first.map(String.init) ?? player.name, obp: s.value, k: k)
+            guard let k = ranks.standing(s.player, .kRate)?.value, let name = names[s.player] else { return nil }
+            return Point(id: s.player, name: name, obp: s.value, k: k)
         }
         // Team rates from counts, like the fact sheet's.
         let lines = team.activePlayers.compactMap { $0.stats?.batting }
@@ -216,5 +250,100 @@ struct HitterMap: View {
 
     private func corner(_ text: String) -> some View {
         Text(text).font(.caption.weight(.medium)).foregroundStyle(Color.primary.opacity(0.35)).padding(6)
+    }
+}
+
+/// Who plays where: the top options at every position on the field, best first.
+/// Order: the coach's position profile, then the Scout's fit, then innings already played there.
+struct DepthChart: View {
+    let team: Team
+    private static let scale: CGFloat = 1.75
+
+    var body: some View {
+        let names = team.shortNames
+        let size = CGSize(width: FieldGeometry.size.width * Self.scale, height: FieldGeometry.size.height * Self.scale)
+        ZStack(alignment: .topLeading) {
+            FieldDrawing(scale: Self.scale)
+            ForEach(Position.allCases, id: \.self) { position in
+                let p = FieldGeometry.point(FieldGeometry.fielder[position]!)
+                node(position, depth(position), names)
+                    .position(x: p.x * Self.scale, y: p.y * Self.scale + (position == .c ? -14 : 18))
+            }
+        }
+        .frame(width: size.width, height: size.height)
+    }
+
+    private func node(_ position: Position, _ players: [Player], _ names: [PlayerID: String]) -> some View {
+        VStack(spacing: 1) {
+            Text(position.label)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+            ForEach(Array(players.prefix(3).enumerated()), id: \.element.uid) { index, player in
+                Button(names[player.uid] ?? player.name) { Navigator.shared.open(player, tab: .scouting) }
+                    .buttonStyle(.plain)
+                    .font(.callout.weight(index == 0 ? .semibold : .regular))
+                    .foregroundStyle(index == 0 ? .primary : .secondary)
+                    .help(help(player, position))
+            }
+            if players.isEmpty {
+                Text("–").foregroundStyle(.tertiary)
+            }
+            // Pitching and catching are opt-in, so a short list there is a real gap.
+            if position == .p || position == .c, case let able = team.activePlayers.filter({ $0.profile.canPlay(position) }).count, able <= 2 {
+                Text(able == 0 ? "No one" : "Only \(able)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.red)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(.background.opacity(0.85), in: RoundedRectangle(cornerRadius: 6))
+        .fixedSize()
+    }
+
+    private func help(_ player: Player, _ position: Position) -> String {
+        var parts = ["\(player.name) at \(position.label)"]
+        if player.profile[position] >= .good { parts.append("your best spot for them") }
+        if let fit = player.assessment?.defense.first(where: { $0.position == position }) { parts.append("Scout: \(fit.fit.label)") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Eligible players at a position, best first. Only players with some evidence for the spot are listed
+    /// (your best positions, the Scout's fit, innings there, or a rating that matters there), so roster order
+    /// never passes for depth.
+    private func depth(_ position: Position) -> [Player] {
+        team.activePlayers
+            .filter { $0.profile.canPlay(position) && $0.assessment?.defense.first { $0.position == position }?.fit != .notRecommended }
+            .compactMap { player -> (Player, [Double])? in
+                let scout: Double = switch player.assessment?.defense.first(where: { $0.position == position })?.fit {
+                case .strong: 3
+                case .solid: 2
+                case .developing: 1
+                default: 0
+                }
+                let innings: Double = switch position {
+                case .c: player.stats?.fielding?.catcherInnings ?? 0
+                case .p: player.stats?.pitching?.innings ?? 0
+                default: player.stats?.fielding?.innings[position] ?? 0
+                }
+                let rated = Self.ratings(position).compactMap { player.ratings[$0] }
+                let rating = rated.isEmpty ? 0 : Double(rated.reduce(0, +)) / Double(rated.count)
+                let best = player.profile[position] >= .good ? 1.0 : 0
+                guard best + scout + innings + rating > 0 else { return nil }
+                return (player, [best, scout, rating, innings, player.stats?.fielding?.fpct ?? 0])
+            }
+            .sorted { $1.1.lexicographicallyPrecedes($0.1) }
+            .map(\.0)
+    }
+
+    /// The coach ratings that matter at a position.
+    private static func ratings(_ position: Position) -> [RatingKey] {
+        switch position {
+        case .p: [.pitchControl, .pitchVelocity, .pitchComposure]
+        case .c: [.catcherAbility, .armStrength]
+        case .first: [.fieldingHands]
+        case .second, .ss, .third: [.fieldingHands, .throwAccuracy, .armStrength]
+        case .lf, .cf, .rf: [.flyBallAbility, .armStrength, .runSpeed]
+        }
     }
 }

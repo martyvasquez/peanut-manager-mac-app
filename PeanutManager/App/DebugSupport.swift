@@ -22,6 +22,8 @@ enum DebugSupport {
     static var autoGenerate: Bool { UserDefaults.standard.bool(forKey: "PMAutoGenerate") }
     static var autoPositions: Bool { UserDefaults.standard.bool(forKey: "PMAutoPositions") }
     static var scrollToChecks: Bool { UserDefaults.standard.bool(forKey: "PMScrollToChecks") }
+    /// A section of the team page to scroll to: "offense", "defense", "practice".
+    static var scrollTo: String? { UserDefaults.standard.string(forKey: "PMScrollTo") }
     static var assessTeam: Bool { UserDefaults.standard.bool(forKey: "PMAssessTeam") }
     static var signedOut: Bool { UserDefaults.standard.bool(forKey: "PMSignedOut") }
     static var showSignIn: Bool { UserDefaults.standard.bool(forKey: "PMShowSignIn") }

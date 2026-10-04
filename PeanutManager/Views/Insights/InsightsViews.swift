@@ -262,7 +262,9 @@ struct StatsInsightsView: View {
         #endif
     }
 
-    private func page(@ViewBuilder _ content: () -> some View) -> some View {
+    private func page(@ViewBuilder _ makeContent: () -> some View) -> some View {
+        let content = makeContent()
+        return ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
                 if !AIService.shared.isReady {
@@ -273,13 +275,22 @@ struct StatsInsightsView: View {
                         Button("Try Again") { runner.assessTeam(team) }.buttonStyle(.link)
                     }
                 }
-                content()
+                content
             }
             .padding(.horizontal, 36)
             .padding(.top, 8)
             .padding(.bottom, 28)
             .frame(maxWidth: 980, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        #if DEBUG
+        .task {
+            if let id = DebugSupport.scrollTo {
+                try? await Task.sleep(for: .milliseconds(500))
+                proxy.scrollTo(id, anchor: .top)
+            }
+        }
+        #endif
         }
     }
 
@@ -318,26 +329,58 @@ struct StatsInsightsView: View {
         }
     }
 
-    /// The AI's read on top, then the numbers it was built from: totals, the hitter map and leaders.
+    /// The AI's read on top, then Offense and Defense: the numbers, charts and leaders, with the AI's roles beside them.
     private var summary: some View {
         let ranks = team.ranks
-        return VStack(alignment: .leading, spacing: 36) {
-            if let a = team.assessment {
+        let a = team.assessment
+        return VStack(alignment: .leading, spacing: 32) {
+            if let a {
                 Text(a.summary).font(.title3).textSelection(.enabled)
-            } else if runner.teamRuns[team.uid] == nil {
-                Text("No team summary yet. It's written after every player is assessed.")
-                    .foregroundStyle(.secondary)
-            }
-            TeamNumbers(team: team)
-            if let a = team.assessment {
                 HStack(alignment: .top, spacing: 40) {
                     ClaimList(title: "Strengths", claims: a.strengths, facts: a.facts)
                     ClaimList(title: "Work On", claims: a.weaknesses, facts: a.facts)
                 }
+            } else if runner.teamRuns[team.uid] == nil {
+                Text("No team summary yet. It's written after every player is assessed.")
+                    .foregroundStyle(.secondary)
+            }
+
+            PageSection("Offense")
+            TeamNumbers(team: team, ids: TeamNumbers.offense)
+            if let a {
+                HStack(alignment: .top, spacing: 40) {
+                    names("Leadoff", a.leadoff)
+                    names("Middle of the Order", a.middleOrder)
+                }
             }
             HitterMap(team: team, ranks: ranks)
-            TeamLeaders(team: team, ranks: ranks)
-            if let a = team.assessment { roles(a) }
+            TeamLeaders(team: team, ranks: ranks, metrics: TeamLeaders.offense)
+
+            PageSection("Defense")
+            TeamNumbers(team: team, ids: TeamNumbers.defense)
+            HStack(alignment: .top, spacing: 40) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Caption("Depth Chart")
+                    DepthChart(team: team)
+                }
+                if let a {
+                    VStack(alignment: .leading, spacing: 28) {
+                        names("Defensive Core", a.defensiveCore)
+                        if !a.defensiveConcerns.isEmpty {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Caption("Concerns")
+                                ForEach(a.defensiveConcerns, id: \.self) { Text($0).fixedSize(horizontal: false, vertical: true) }
+                            }
+                        }
+                    }
+                }
+            }
+            TeamLeaders(team: team, ranks: ranks, metrics: TeamLeaders.defense)
+
+            if let a, !a.practice.isEmpty {
+                PageSection("Practice")
+                practice(a)
+            }
         }
     }
 
@@ -352,43 +395,24 @@ struct StatsInsightsView: View {
         return team.assessment == nil ? "Assess Team" : "Update Summary"
     }
 
-    /// Lineup roles and the practice plan from the team assessment.
-    private func roles(_ a: TeamAssessment) -> some View {
-        VStack(alignment: .leading, spacing: 36) {
-            HStack(alignment: .top, spacing: 40) {
-                names("Leadoff", a.leadoff)
-                names("Middle of the Order", a.middleOrder)
-                names("Defensive Core", a.defensiveCore)
-                if !a.defensiveConcerns.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Caption("Concerns")
-                        ForEach(a.defensiveConcerns, id: \.self) { Text($0) }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-
-            if !a.practice.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Caption("Practice Plan")
-                    ForEach(Array(a.practice.enumerated()), id: \.offset) { index, item in
-                        HStack(alignment: .firstTextBaseline, spacing: 12) {
-                            Text("\(index + 1)").font(.body.monospacedDigit().weight(.semibold)).foregroundStyle(.tertiary).frame(width: 16)
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 8) {
-                                    Text(item.focus).fontWeight(.semibold)
-                                    if item.priority == .high {
-                                        Text("Priority").font(.caption.weight(.medium)).foregroundStyle(.tint)
-                                    }
-                                }
-                                Text(item.drills).foregroundStyle(.secondary)
+    private func practice(_ a: TeamAssessment) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(Array(a.practice.enumerated()), id: \.offset) { index, item in
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text("\(index + 1)").font(.body.monospacedDigit().weight(.semibold)).foregroundStyle(.tertiary).frame(width: 16)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text(item.focus).fontWeight(.semibold)
+                            if item.priority == .high {
+                                Text("Priority").font(.caption.weight(.medium)).foregroundStyle(.tint)
                             }
                         }
+                        Text(item.drills).foregroundStyle(.secondary)
                     }
                 }
-                .textSelection(.enabled)
             }
         }
+        .textSelection(.enabled)
     }
 
     private func names(_ title: String, _ ids: [PlayerID]) -> some View {
