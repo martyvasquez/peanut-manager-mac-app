@@ -206,6 +206,7 @@ struct GameDetailView: View {
         .task {
             #if DEBUG
             if DebugSupport.autoGenerate && !model.hasBattingOrder { model.makeBattingOrder(undoManager: undoManager) }
+            if DebugSupport.autoPositions && model.hasBattingOrder && !model.isFilled { model.setPositions(undoManager: undoManager) }
             #endif
         }
         #if DEBUG
