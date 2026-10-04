@@ -10,7 +10,11 @@ final class Navigator {
     var playerToOpen: Player?
 
     func openScoutingReport(_ player: Player) {
-        UserDefaults.standard.set(PlayerTab.scouting.rawValue, forKey: "playerTab")
+        open(player, tab: .scouting)
+    }
+
+    func open(_ player: Player, tab: PlayerTab) {
+        UserDefaults.standard.set(tab.rawValue, forKey: "playerTab")
         playerToOpen = player
         section = .roster
     }

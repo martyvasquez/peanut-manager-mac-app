@@ -135,7 +135,7 @@ struct PlayerEditorView: View {
     @ViewBuilder
     private var statsTab: some View {
         if let stats = player.stats {
-            StatTiles(stats: stats)
+            StatTiles(stats: stats, player: player.uid, ranks: player.team?.ranks ?? TeamRanks([]))
         } else {
             Text("No stats yet. Import a GameChanger export in Stats & Insights.").foregroundStyle(.secondary)
         }
@@ -394,42 +394,71 @@ struct RatingsGrid: View {
     }
 }
 
-/// Season numbers as big, scannable tiles, one labeled row per kind.
+/// Season numbers as tiles, one labeled row per kind. Ranked stats show where the player stands on the team.
 struct StatTiles: View {
     let stats: PlayerStats
+    let player: PlayerID
+    let ranks: TeamRanks
+
+    private enum Tile {
+        case ranked(Metric)
+        case plain(String, String)
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             if let b = stats.batting, b.pa > 0 {
-                row("Hitting", [(Fmt.rate(b.avg), "AVG"), (Fmt.rate(b.obp), "OBP"), (Fmt.rate(b.slg), "SLG"),
-                                (Fmt.pct(b.kRate), "K%"), (Fmt.pct(b.bbRate), "BB%"), ("\(b.sb)", "SB"), ("\(b.pa)", "PA")])
+                row("Hitting", [.ranked(.avg), .ranked(.obp), .ranked(.slg), .ranked(.kRate), .ranked(.bbRate), .ranked(.sb), .plain("\(b.pa)", "PA")])
             }
             if let f = stats.fielding, f.tc > 0 || f.catcherOuts > 0 {
-                row("Fielding", [(Fmt.rate(f.fpct), "FPCT"), ("\(f.e)", "E")]
-                    + (f.catcherOuts > 0 ? [("\(f.catcherOuts / 3).\(f.catcherOuts % 3)", "INN CAUGHT")] : []))
+                row("Fielding", (f.tc > 0 ? [.ranked(.fpct), .plain("\(f.e)", "E")] : [])
+                    + (f.catcherOuts > 0 ? [.plain("\(f.catcherOuts / 3).\(f.catcherOuts % 3)", "INN CAUGHT")] : []))
             }
             if let p = stats.pitching, p.outs > 0 {
-                row("Pitching", [(p.ipText, "IP"), (Fmt.two(p.era), "ERA"), (Fmt.two(p.whip), "WHIP"), ("\(p.so)", "K"), ("\(p.bb)", "BB")])
+                row("Pitching", [.plain(p.ipText, "IP"), .ranked(.era), .ranked(.whip), .ranked(.pitchKRate), .plain("\(p.bb)", "BB")])
             }
         }
     }
 
-    private func row(_ title: String, _ items: [(String, String)]) -> some View {
+    private func row(_ title: String, _ tiles: [Tile]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title.uppercased()).font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
-            HStack(spacing: 10) {
-                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                    VStack(spacing: 2) {
-                        Text(item.0).font(.title3.weight(.semibold).monospacedDigit())
-                        Text(item.1).font(.caption2.weight(.medium)).foregroundStyle(.secondary)
-                    }
-                    .frame(minWidth: 64)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 10)
-                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+            HStack(alignment: .top, spacing: 10) {
+                ForEach(Array(tiles.enumerated()), id: \.offset) { _, tile in
+                    self.tile(tile)
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func tile(_ tile: Tile) -> some View {
+        let standing: Standing? = if case .ranked(let metric) = tile { ranks.standing(player, metric) } else { nil }
+        let (value, label): (String, String) = switch tile {
+        case .ranked(let metric): (standing.map { metric.format($0.value) } ?? "–", metric.label)
+        case .plain(let value, let label): (value, label)
+        }
+        VStack(spacing: 2) {
+            Text(value).font(.title3.weight(.semibold).monospacedDigit())
+                .foregroundStyle(standing != nil && standing?.rank == nil ? .secondary : .primary)
+            Text(label).font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+            VStack(spacing: 5) {
+                if let standing {
+                    if standing.rank != nil { StandingStrip(standing: standing, ranks: ranks) }
+                    RankLabel(standing: standing).font(.caption2.weight(.medium))
+                }
+            }
+            .frame(height: 30, alignment: .bottom)
+        }
+        .frame(width: 84)
+        .padding(.vertical, 10)
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .help(standing.map(help) ?? "")
+    }
+
+    private func help(_ standing: Standing) -> String {
+        guard let rank = standing.rankText else { return "Too few chances to rank against the team yet" }
+        return "\(rank) of \(standing.of) qualified players on the team"
     }
 }
 

@@ -222,7 +222,7 @@ enum TeamTab: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .summary: "Team Summary"
+        case .summary: "Overview"
         case .players: "Players"
         case .stats: "Stats"
         }
@@ -318,13 +318,26 @@ struct StatsInsightsView: View {
         }
     }
 
-    @ViewBuilder
+    /// The AI's read on top, then the numbers it was built from: totals, the hitter map and leaders.
     private var summary: some View {
-        if let a = team.assessment {
-            teamReport(a)
-        } else if runner.teamRuns[team.uid] == nil {
-            Text("No team summary yet. It's written after every player is assessed.")
-                .foregroundStyle(.secondary)
+        let ranks = team.ranks
+        return VStack(alignment: .leading, spacing: 36) {
+            if let a = team.assessment {
+                Text(a.summary).font(.title3).textSelection(.enabled)
+            } else if runner.teamRuns[team.uid] == nil {
+                Text("No team summary yet. It's written after every player is assessed.")
+                    .foregroundStyle(.secondary)
+            }
+            TeamNumbers(team: team)
+            if let a = team.assessment {
+                HStack(alignment: .top, spacing: 40) {
+                    ClaimList(title: "Strengths", claims: a.strengths, facts: a.facts)
+                    ClaimList(title: "Work On", claims: a.weaknesses, facts: a.facts)
+                }
+            }
+            HitterMap(team: team, ranks: ranks)
+            TeamLeaders(team: team, ranks: ranks)
+            if let a = team.assessment { roles(a) }
         }
     }
 
@@ -339,15 +352,9 @@ struct StatsInsightsView: View {
         return team.assessment == nil ? "Assess Team" : "Update Summary"
     }
 
-    private func teamReport(_ a: TeamAssessment) -> some View {
-        VStack(alignment: .leading, spacing: 32) {
-            Text(a.summary).font(.title3).textSelection(.enabled)
-
-            HStack(alignment: .top, spacing: 40) {
-                ClaimList(title: "Strengths", claims: a.strengths, facts: a.facts)
-                ClaimList(title: "Work On", claims: a.weaknesses, facts: a.facts)
-            }
-
+    /// Lineup roles and the practice plan from the team assessment.
+    private func roles(_ a: TeamAssessment) -> some View {
+        VStack(alignment: .leading, spacing: 36) {
             HStack(alignment: .top, spacing: 40) {
                 names("Leadoff", a.leadoff)
                 names("Middle of the Order", a.middleOrder)
