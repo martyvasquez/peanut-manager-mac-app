@@ -46,3 +46,18 @@ private func hitter(pa: Int, onBase: Int, so: Int = 0) -> (id: PlayerID, stats: 
 @Test func ordinals() {
     #expect([1, 2, 3, 4, 11, 12, 13, 21, 22].map(Standing.ordinal) == ["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd"])
 }
+
+@Test func factSides() {
+    #expect(Side.of("obp") == .offense)
+    #expect(Side.of("team.k_rate") == .offense)
+    #expect(Side.of("P3.slg") == .offense)
+    #expect(Side.of("inn.ss") == .defense)
+    #expect(Side.of("team.p.whip") == .defense)
+    #expect(Side.of("P12.c.pb") == .defense)
+    #expect(Side.of("rating.fielding_arm_strength") == .defense)
+    #expect(Side.of("note.2") == nil)
+    #expect(Side.of("rating.baseball_iq") == nil)
+    #expect(Claim(title: "", detail: "", evidence: ["obp", "bb_rate", "fpct"]).side == .offense)
+    #expect(Claim(title: "", detail: "", evidence: ["obp", "fpct"]).side == nil)
+    #expect(Claim(title: "", detail: "", evidence: ["note.1"]).side == nil)
+}

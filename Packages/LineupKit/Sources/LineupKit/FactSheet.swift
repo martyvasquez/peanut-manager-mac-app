@@ -181,3 +181,40 @@ extension FactSheet {
         value == value.rounded() ? String(Int(value)) : String(format: "%.1f", value)
     }
 }
+
+/// Offense or defense, for organizing facts and the claims that cite them.
+public enum Side: Sendable, Hashable {
+    case offense, defense
+
+    /// The side a fact ID belongs to, or nil for facts about the whole player (notes, IQ, attention).
+    /// Accepts team ("team.obp") and per-player ("P3.obp") prefixes.
+    public static func of(_ id: String) -> Side? {
+        var key = Substring(id)
+        if key.hasPrefix("team.") {
+            key = key.dropFirst(5)
+        } else if key.first == "P", let dot = key.firstIndex(of: "."), key[key.index(after: key.startIndex)..<dot].allSatisfy(\.isNumber) {
+            key = key[key.index(after: dot)...]
+        }
+        switch key {
+        case "pa", "avg", "obp", "slg", "k_rate", "bb_rate", "xbh", "rbi", "sb",
+             "rating.plate_discipline", "rating.contact_ability", "rating.batting_power", "rating.run_speed":
+            return .offense
+        case "tc", "fpct", "errors", "pitchers", "catchers",
+             "rating.fielding_hands", "rating.fielding_throw_accuracy", "rating.fielding_arm_strength",
+             "rating.fly_ball_ability", "rating.pitch_control", "rating.pitch_velocity", "rating.pitch_composure",
+             "rating.catcher_ability":
+            return .defense
+        default:
+            return ["inn.", "c.", "p.", "pos."].contains(where: key.hasPrefix) ? .defense : nil
+        }
+    }
+}
+
+extension Claim {
+    /// The side most of the evidence is on; nil when it's even or the claim cites nothing sided.
+    public var side: Side? {
+        let sides = evidence.compactMap(Side.of)
+        let offense = sides.filter { $0 == .offense }.count, defense = sides.count - offense
+        return offense > defense ? .offense : defense > offense ? .defense : nil
+    }
+}

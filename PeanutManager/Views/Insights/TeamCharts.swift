@@ -347,3 +347,52 @@ struct DepthChart: View {
         }
     }
 }
+
+/// The Scout's position fit on the field: strong in the accent color, solid filled, developing outlined.
+struct ScoutFitField: View {
+    let defense: [DefensiveFit]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack(alignment: .topLeading) {
+                FieldDrawing()
+                ForEach(Position.allCases, id: \.self) { position in
+                    dot(position.label, defense.first { $0.position == position }?.fit, size: 36)
+                        .position(FieldGeometry.point(FieldGeometry.fielder[position]!))
+                }
+            }
+            .frame(width: FieldGeometry.size.width, height: FieldGeometry.size.height)
+            HStack(spacing: 14) {
+                legend(.strong); legend(.solid); legend(.developing)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private func legend(_ fit: PositionFit) -> some View {
+        HStack(spacing: 5) {
+            dot("", fit, size: 12)
+            Text(fit.label)
+        }
+    }
+
+    private func dot(_ label: String, _ fit: PositionFit?, size: CGFloat) -> some View {
+        ZStack {
+            switch fit {
+            case .strong: Circle().fill(Color.accentColor)
+            case .solid: Circle().fill(Color(white: 0.34))
+            case .developing: Circle().fill(.background).overlay(Circle().strokeBorder(Color.secondary, lineWidth: 1.5))
+            case .notRecommended, nil:
+                Circle().fill(.background)
+                    .overlay(Circle().strokeBorder(Color.secondary.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
+            }
+            if !label.isEmpty {
+                Text(label)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(fit == .strong || fit == .solid ? AnyShapeStyle(Color.white) : fit == .developing ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+            }
+        }
+        .frame(width: size, height: size)
+    }
+}

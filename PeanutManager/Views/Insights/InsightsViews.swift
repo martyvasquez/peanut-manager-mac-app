@@ -39,6 +39,12 @@ struct ScoutingReport: View {
                     Button(runner.isStale(player) ? "Refresh" : "Reassess") { runner.assess(player) }
                         .buttonStyle(.link)
                 }
+                Spacer()
+                Text("\(a.confidence.rawValue.capitalized) confidence")
+                    .foregroundStyle(a.confidence == .low ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(Color.primary.opacity(0.06), in: Capsule())
+                    .help(a.confidenceReason)
             }
             .font(.callout)
         } else if player.isAssessable {
@@ -51,59 +57,73 @@ struct ScoutingReport: View {
     }
 
     private func report(_ a: PlayerAssessment) -> some View {
-        VStack(alignment: .leading, spacing: 22) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(a.snapshot).font(.title3)
-                if !a.battingRole.isEmpty {
-                    Text(battingLine(a)).foregroundStyle(.secondary)
-                }
+                SidedClaims(side: nil, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
             }
 
-            HStack(alignment: .top, spacing: 40) {
-                ClaimList(title: "Strengths", claims: a.strengths, facts: a.facts)
-                ClaimList(title: "Work On", claims: a.weaknesses, facts: a.facts)
+            PageSection("Offense")
+            if !a.battingRole.isEmpty {
+                Text(battingLine(a)).fixedSize(horizontal: false, vertical: true)
             }
+            SidedClaims(side: .offense, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
 
+            PageSection("Defense")
             if !a.defense.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Caption("Position Fit")
-                    Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 14, verticalSpacing: 8) {
-                        ForEach(a.defense, id: \.position) { fit in
-                            GridRow {
-                                Text(fit.position.label).font(.body.weight(.semibold)).frame(width: 30, alignment: .leading)
-                                Text(fit.fit.label)
-                                    .foregroundStyle(fit.fit == .strong ? AnyShapeStyle(.tint) : fit.fit == .notRecommended ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(fit.reason).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                                    EvidenceChips(ids: fit.evidence, facts: a.facts)
-                                }
-                            }
-                        }
-                    }
+                HStack(alignment: .top, spacing: 36) {
+                    ScoutFitField(defense: a.defense)
+                    fitList(a)
                 }
             }
+            SidedClaims(side: .defense, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
 
             if let eye = a.eyeVsData {
                 VStack(alignment: .leading, spacing: 6) {
                     Caption("Your Eye vs. the Stats")
-                    Text(eye)
+                    Text(eye).fixedSize(horizontal: false, vertical: true)
                 }
             }
 
             if !a.development.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Caption("Development")
+                PageSection("Develop")
+                VStack(alignment: .leading, spacing: 8) {
                     ForEach(Array(a.development.enumerated()), id: \.offset) { _, item in
-                        (Text(item.focus).fontWeight(.medium) + Text(item.drill.isEmpty ? "" : " — \(item.drill)").foregroundStyle(.secondary))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.focus).fontWeight(.semibold)
+                            if !item.drill.isEmpty { Text(item.drill).foregroundStyle(.secondary) }
+                        }
                     }
                 }
             }
-
-            Text("\(a.confidence.rawValue.capitalized) confidence. \(a.confidenceReason)")
-                .font(.callout)
-                .foregroundStyle(.tertiary)
         }
         .textSelection(.enabled)
+    }
+
+    /// Best fit first. Evidence already shown on an earlier row isn't repeated.
+    private func fitList(_ a: PlayerAssessment) -> some View {
+        let fits = a.defense.sorted { ($0.fit, $0.position) < ($1.fit, $1.position) }
+        var seen: Set<String> = []
+        let evidence = fits.map { fit -> [String] in
+            let fresh = fit.evidence.filter { !seen.contains($0) }
+            seen.formUnion(fit.evidence)
+            return fresh
+        }
+        return Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 14, verticalSpacing: 10) {
+            ForEach(Array(fits.enumerated()), id: \.offset) { index, fit in
+                GridRow {
+                    Text(fit.position.label).font(.body.weight(.semibold)).frame(width: 30, alignment: .leading)
+                    Text(fit.fit.label)
+                        .foregroundStyle(fit.fit == .strong ? AnyShapeStyle(.tint) : fit.fit == .notRecommended ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(fit.reason).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        EvidenceChips(ids: evidence[index], facts: a.facts)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func battingLine(_ a: PlayerAssessment) -> String {
@@ -122,7 +142,7 @@ struct ClaimList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Caption(title)
+            if !claims.isEmpty { Caption(title) }
             ForEach(Array(claims.enumerated()), id: \.offset) { _, claim in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(claim.title).fontWeight(.semibold).fixedSize(horizontal: false, vertical: true)
@@ -132,6 +152,24 @@ struct ClaimList: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Strengths and Work On for one side (nil: claims about the whole player or team). Shows nothing when empty.
+struct SidedClaims: View {
+    let side: Side?
+    let strengths: [Claim]
+    let weaknesses: [Claim]
+    let facts: FactSheet
+
+    var body: some View {
+        let good = strengths.filter { $0.side == side }, work = weaknesses.filter { $0.side == side }
+        if !good.isEmpty || !work.isEmpty {
+            HStack(alignment: .top, spacing: 40) {
+                ClaimList(title: "Strengths", claims: good, facts: facts)
+                ClaimList(title: "Work On", claims: work, facts: facts)
+            }
+        }
     }
 }
 
@@ -336,10 +374,7 @@ struct StatsInsightsView: View {
         return VStack(alignment: .leading, spacing: 32) {
             if let a {
                 Text(a.summary).font(.title3).textSelection(.enabled)
-                HStack(alignment: .top, spacing: 40) {
-                    ClaimList(title: "Strengths", claims: a.strengths, facts: a.facts)
-                    ClaimList(title: "Work On", claims: a.weaknesses, facts: a.facts)
-                }
+                SidedClaims(side: nil, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
             } else if runner.teamRuns[team.uid] == nil {
                 Text("No team summary yet. It's written after every player is assessed.")
                     .foregroundStyle(.secondary)
@@ -348,6 +383,7 @@ struct StatsInsightsView: View {
             PageSection("Offense")
             TeamNumbers(team: team, ids: TeamNumbers.offense)
             if let a {
+                SidedClaims(side: .offense, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
                 HStack(alignment: .top, spacing: 40) {
                     names("Leadoff", a.leadoff)
                     names("Middle of the Order", a.middleOrder)
@@ -358,6 +394,9 @@ struct StatsInsightsView: View {
 
             PageSection("Defense")
             TeamNumbers(team: team, ids: TeamNumbers.defense)
+            if let a {
+                SidedClaims(side: .defense, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
+            }
             HStack(alignment: .top, spacing: 40) {
                 VStack(alignment: .leading, spacing: 12) {
                     Caption("Depth Chart")
