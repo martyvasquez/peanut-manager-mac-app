@@ -282,7 +282,8 @@ nonisolated struct EvalLineup: Codable {
         battingAdjusted = batting.adjustedByApp
         adjusted = defense.adjustedCells.map { Cell(inning: $0.inning, player: $0.player.uuidString) }
         let lineup = Lineup(battingOrder: batting.order, innings: defense.innings)
-        findings = (Validator.validateBattingOrder(batting.order, context: context) + Validator.validateDefense(lineup, context: context))
+        let defenseFindings = Validator.excusing(Validator.validateDefense(lineup, context: context), conflicts: Validator.lockConflicts(context))
+        findings = (Validator.validateBattingOrder(batting.order, context: context) + defenseFindings)
             .map { "\($0.severity.rawValue): \($0.message)" }
     }
 }
