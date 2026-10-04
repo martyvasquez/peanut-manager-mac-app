@@ -177,6 +177,9 @@ struct TeamLeaders: View {
 struct HitterMap: View {
     let team: Team
     let ranks: TeamRanks
+    /// On a player's page: that player bright and named, teammates faint.
+    var highlight: PlayerID? = nil
+    var height: CGFloat = 340
 
     private struct Point: Identifiable {
         let id: PlayerID
@@ -200,7 +203,7 @@ struct HitterMap: View {
             VStack(alignment: .leading, spacing: 12) {
                 Caption("Hitter Map")
                 chart(points, teamOBP: teamOBP, teamK: teamK)
-                    .frame(height: 340)
+                    .frame(height: height)
                     .padding(16)
                     .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
             }
@@ -217,11 +220,17 @@ struct HitterMap: View {
                 .foregroundStyle(Color.primary.opacity(0.18))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             ForEach(points) { p in
+                let color = highlight.map { $0 == p.id ? Color.accentColor : Color.primary.opacity(0.2) }
+                    ?? (p.obp >= teamOBP && p.k <= teamK ? Color.accentColor : Color.primary.opacity(0.55))
                 PointMark(x: .value("OBP", p.obp), y: .value("K%", p.k))
-                    .symbolSize(70)
-                    .foregroundStyle(p.obp >= teamOBP && p.k <= teamK ? Color.accentColor : Color.primary.opacity(0.55))
-                    .annotation(position: sides[p.id] ?? .trailing, spacing: 4) {
-                        Text(p.name).font(.caption).foregroundStyle(.secondary)
+                    .symbolSize(highlight == p.id ? 120 : 70)
+                    .foregroundStyle(color)
+                    .annotation(position: highlight == nil ? sides[p.id] ?? .trailing : .trailing, spacing: 4) {
+                        if highlight == nil {
+                            Text(p.name).font(.caption).foregroundStyle(.secondary)
+                        } else if highlight == p.id {
+                            Text(p.name).font(.caption.weight(.semibold))
+                        }
                     }
             }
         }
@@ -404,6 +413,9 @@ struct ScoutFitField: View {
 struct TwoWayMap: View {
     let team: Team
     let ranks: TeamRanks
+    /// On a player's page: that player bright and named, teammates faint.
+    var highlight: PlayerID? = nil
+    var height: CGFloat = 360
     @State private var hovered: PlayerID?
 
     private struct Point: Identifiable {
@@ -438,10 +450,10 @@ struct TwoWayMap: View {
                 let teamOBP = Double(lines.reduce(0) { $0 + $1.h + $1.bb + $1.hbp }) / Double(pa)
                 let teamDefense = points.map(\.defense).reduce(0, +) / Double(points.count)
                 chart(points, teamOBP: teamOBP, teamDefense: teamDefense)
-                    .frame(height: 360)
+                    .frame(height: height)
                     .padding(16)
                     .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
-                VStack(alignment: .leading, spacing: 4) {
+                if highlight == nil { VStack(alignment: .leading, spacing: 4) {
                     if points.contains(where: { !$0.rated }) {
                         Label("Hollow: no fielding ratings yet, placed by the scouting report", systemImage: "circle")
                             .labelStyle(HollowLegend())
@@ -451,7 +463,7 @@ struct TwoWayMap: View {
                     }
                 }
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.secondary) }
             } else {
                 Text("Shows once four players have a scouting report or fielding ratings.")
                     .foregroundStyle(.secondary)
@@ -481,10 +493,15 @@ struct TwoWayMap: View {
                 let core = p.obp >= teamOBP && p.defense >= teamDefense
                 PointMark(x: .value("OBP", p.obp), y: .value("Defense", p.defense))
                     .symbol(p.rated ? AnyChartSymbolShape(.circle) : AnyChartSymbolShape(.circle.strokeBorder(lineWidth: 2)))
-                    .symbolSize(hovered == p.id ? 140 : 80)
-                    .foregroundStyle(core ? Color.accentColor : Color.primary.opacity(0.55))
-                    .annotation(position: hovered == p.id ? .trailing : sides[p.id] ?? .trailing, spacing: 4) {
-                        if hovered == p.id {
+                    .symbolSize(hovered == p.id || highlight == p.id ? 140 : 80)
+                    .foregroundStyle(highlight.map { $0 == p.id ? Color.accentColor : Color.primary.opacity(0.2) }
+                                     ?? (core ? Color.accentColor : Color.primary.opacity(0.55)))
+                    .annotation(position: hovered == p.id || highlight != nil ? .trailing : sides[p.id] ?? .trailing, spacing: 4) {
+                        if highlight != nil && highlight != p.id && hovered != p.id {
+                            EmptyView()
+                        } else if highlight == p.id && hovered != p.id {
+                            Text(p.name).font(.caption.weight(.semibold))
+                        } else if hovered == p.id {
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(p.name).font(.caption.weight(.semibold))
                                 Text("OBP \(Fmt.rate(p.obp)) · Field \(String(format: "%.1f", p.defense))")

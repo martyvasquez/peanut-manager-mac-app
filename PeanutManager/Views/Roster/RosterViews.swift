@@ -134,8 +134,8 @@ struct PlayerEditorView: View {
 
     @ViewBuilder
     private var statsTab: some View {
-        if let stats = player.stats {
-            StatTiles(stats: stats, player: player.uid, ranks: player.team?.ranks ?? TeamRanks([]))
+        if let stats = player.stats, let team = player.team {
+            PlayerStatsPage(player: player, stats: stats, team: team)
         } else {
             Text("No stats yet. Import a GameChanger export in Stats & Insights.").foregroundStyle(.secondary)
         }
@@ -404,6 +404,7 @@ struct StatTiles: View {
     let stats: PlayerStats
     let player: PlayerID
     let ranks: TeamRanks
+    var kinds: Set<Metric.Kind> = [.hitting, .fielding, .pitching]
 
     private enum Tile {
         case ranked(Metric)
@@ -412,14 +413,14 @@ struct StatTiles: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            if let b = stats.batting, b.pa > 0 {
+            if kinds.contains(.hitting), let b = stats.batting, b.pa > 0 {
                 row("Hitting", [.ranked(.avg), .ranked(.obp), .ranked(.slg), .ranked(.kRate), .ranked(.bbRate), .ranked(.sb), .plain("\(b.pa)", "PA")])
             }
-            if let f = stats.fielding, f.tc > 0 || f.catcherOuts > 0 {
+            if kinds.contains(.fielding), let f = stats.fielding, f.tc > 0 || f.catcherOuts > 0 {
                 row("Fielding", (f.tc > 0 ? [.ranked(.fpct), .plain("\(f.e)", "E")] : [])
                     + (f.catcherOuts > 0 ? [.plain("\(f.catcherOuts / 3).\(f.catcherOuts % 3)", "INN CAUGHT")] : []))
             }
-            if let p = stats.pitching, p.outs > 0 {
+            if kinds.contains(.pitching), let p = stats.pitching, p.outs > 0 {
                 row("Pitching", [.plain(p.ipText, "IP"), .ranked(.era), .ranked(.whip), .ranked(.pitchKRate), .plain("\(p.bb)", "BB")])
             }
         }
@@ -427,7 +428,8 @@ struct StatTiles: View {
 
     private func row(_ title: String, _ tiles: [Tile]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title.uppercased()).font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+            // A single kind sits under its own section heading already.
+            if kinds.count > 1 { Text(title.uppercased()).font(.caption.weight(.semibold)).foregroundStyle(.tertiary) }
             HStack(alignment: .top, spacing: 10) {
                 ForEach(Array(tiles.enumerated()), id: \.offset) { _, tile in
                     self.tile(tile)
