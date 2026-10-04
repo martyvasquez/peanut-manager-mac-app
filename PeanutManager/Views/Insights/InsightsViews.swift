@@ -166,8 +166,10 @@ struct SidedClaims: View {
         let good = strengths.filter { $0.side == side }, work = weaknesses.filter { $0.side == side }
         if !good.isEmpty || !work.isEmpty {
             HStack(alignment: .top, spacing: 40) {
-                ClaimList(title: "Strengths", claims: good, facts: facts)
-                ClaimList(title: "Work On", claims: work, facts: facts)
+                if !good.isEmpty { ClaimList(title: "Strengths", claims: good, facts: facts) }
+                if !work.isEmpty { ClaimList(title: "Work On", claims: work, facts: facts) }
+                // Keep a lone list at half width, on the left.
+                if good.isEmpty || work.isEmpty { Color.clear.frame(maxWidth: .infinity, maxHeight: 0) }
             }
         }
     }
@@ -254,20 +256,21 @@ struct FlowLayout: Layout {
 
 // MARK: - Team
 
-/// Full-width team insights: the Scout's read on the team, lineup ideas, the practice plan, and every player in a line.
+/// Stats & Insights tabs: the one-minute read, each side of the game in depth, and the full table.
 enum TeamTab: String, CaseIterable {
-    case summary, players, stats
+    case summary, offense, defense, stats
 
     var title: String {
         switch self {
         case .summary: "Overview"
-        case .players: "Players"
+        case .offense: "Offense"
+        case .defense: "Defense"
         case .stats: "Stats"
         }
     }
 }
 
-/// Stats & Insights: the AI's team summary, every player's one-line take, and the season stats table.
+/// Stats & Insights: the AI's read on the team, offense and defense in depth, and the season stats table.
 struct StatsInsightsView: View {
     let team: Team
     @State private var runner = ScoutRunner.shared
@@ -280,8 +283,9 @@ struct StatsInsightsView: View {
                 .padding(.top, 28)
                 .padding(.bottom, 16)
             switch tab {
-            case .summary: page { summary }
-            case .players: PlayersTable(team: team)
+            case .summary: page { overview }
+            case .offense: page { offense }
+            case .defense: page { defense }
             case .stats: StatsView(team: team)
             }
         }
@@ -367,9 +371,8 @@ struct StatsInsightsView: View {
         }
     }
 
-    /// The AI's read on top, then Offense and Defense: the numbers, charts and leaders, with the AI's roles beside them.
-    private var summary: some View {
-        let ranks = team.ranks
+    /// The one-minute read: the AI's summary, a card per side and one for the players, then the practice plan.
+    private var overview: some View {
         let a = team.assessment
         return VStack(alignment: .leading, spacing: 32) {
             if let a {
@@ -379,20 +382,38 @@ struct StatsInsightsView: View {
                 Text("No team summary yet. It's written after every player is assessed.")
                     .foregroundStyle(.secondary)
             }
+            HStack(alignment: .top, spacing: 12) {
+                SideCard(title: "Offense", team: team, side: .offense, factIDs: ["team.obp", "team.k_rate", "team.sb"]) { tab = .offense }
+                SideCard(title: "Defense", team: team, side: .defense, factIDs: ["team.fpct", "team.p.whip", "team.catchers"]) { tab = .defense }
+                PlayersCard(team: team)
+            }
+            if let a, !a.practice.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Caption("Practice Plan")
+                    practice(a)
+                }
+            }
+        }
+    }
 
-            PageSection("Offense")
+    private var offense: some View {
+        let ranks = team.ranks
+        let a = team.assessment
+        return VStack(alignment: .leading, spacing: 32) {
             TeamNumbers(team: team, ids: TeamNumbers.offense)
             if let a {
                 SidedClaims(side: .offense, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
-                HStack(alignment: .top, spacing: 40) {
-                    names("Leadoff", a.leadoff)
-                    names("Middle of the Order", a.middleOrder)
-                }
             }
+            BattingGroups(team: team, ranks: ranks)
             HitterMap(team: team, ranks: ranks)
             TeamLeaders(team: team, ranks: ranks, metrics: TeamLeaders.offense)
+        }
+    }
 
-            PageSection("Defense")
+    private var defense: some View {
+        let ranks = team.ranks
+        let a = team.assessment
+        return VStack(alignment: .leading, spacing: 32) {
             TeamNumbers(team: team, ids: TeamNumbers.defense)
             if let a {
                 SidedClaims(side: .defense, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
@@ -415,11 +436,6 @@ struct StatsInsightsView: View {
                 }
             }
             TeamLeaders(team: team, ranks: ranks, metrics: TeamLeaders.defense)
-
-            if let a, !a.practice.isEmpty {
-                PageSection("Practice")
-                practice(a)
-            }
         }
     }
 
@@ -459,11 +475,12 @@ struct StatsInsightsView: View {
             Caption(title)
             let players = ids.compactMap { id in team.players.first { $0.uid == id } }
             if players.isEmpty { Text("–").foregroundStyle(.tertiary) }
-            ForEach(players) { Text($0.name) }
+            ForEach(players) { player in
+                Button(player.name) { Navigator.shared.openScoutingReport(player) }.buttonStyle(.plain)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-
 }
 
 /// "Waiting", "Assessing · 1:42", or "Trying again (2 of 3): the model took too long to answer."

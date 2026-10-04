@@ -82,9 +82,9 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMSection roster\|team\|rules` | Open that section |
 | `-PMOpenSettings YES` / `-settingsTab models` | Open Settings / a tab |
 | `-PMScrollToChecks YES` | Scroll to the summary once filled |
-| `-PMScrollTo offense\|defense\|practice` | Scroll the team Overview to that section |
+| `-PMScrollTo <id>` | Scroll a Stats & Insights tab to a section |
 | `-PMAssessTeam YES` | Assess the team when Stats & Insights opens (use with `-PMSection team`) |
-| `-teamTab summary\|players\|stats` / `-playerTab stats\|scouting\|evaluation` | Open that tab |
+| `-teamTab summary\|offense\|defense\|stats` / `-playerTab stats\|scouting\|evaluation` | Open that tab |
 | `-PMFlakyScout YES` | With `-PMFakeAI`: Player03 times out once, Player05 always fails (tests retries and resume) |
 | `-PMSignedOut YES` | Act signed out of ChatGPT; your real sign-in stays in the keychain |
 | `-PMShowSignIn YES` | Show the Sign in with ChatGPT sheet that follows creating the first team |
