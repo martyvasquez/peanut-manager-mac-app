@@ -30,6 +30,7 @@ Native SwiftUI + SwiftData macOS app (macOS 26+, Swift 6, XcodeGen) that makes y
 - **Exclusivity crash:** inside `GameModel.mutate { doc in … }`, use only `doc`. Reading `document`, `context` or `rows` inside the closure aborts the app. Compute first, then mutate.
 - **Default MainActor isolation** is on for the app target. Codable or Sendable value types used off the main actor need `nonisolated` (see `LineupDocument`, `StatRow`, `FieldGeometry`, `FieldLines`).
 - Building `GameContext` decodes every player; it's memoized by a hash key in `GameModel`. Don't call `game.context(...)` per grid cell.
+- Launch flags that name a stored setting (`-teamTab`, `-playerTab`, `-settingsTab`) override `@AppStorage` for the whole run, so the control can't change it. Use them only for screenshots; launch builds for Marty without them.
 - Never test against the owner's library: run debug builds with `-PMStore <Name>` (see README) and delete `~/Library/Application Support/Peanut Manager/<Name>.store*` afterward.
 - The sample CSV and test fixture are anonymized; never commit real kids' names (the repo is public).
 
