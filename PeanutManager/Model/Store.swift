@@ -235,6 +235,8 @@ nonisolated struct LineupDocument: Codable, Hashable, Sendable {
     var revisions = 0
     var appAdjustedCount = 0
     var model = ""
+    /// The model's thinking level when the lineup was made.
+    var effort: String?
     var cost: Double?
     var generatedAt: Date?
 }

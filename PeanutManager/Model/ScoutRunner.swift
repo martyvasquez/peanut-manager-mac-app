@@ -34,7 +34,7 @@ final class ScoutRunner {
 
     private var scout: Scout {
         let ai = AIService.shared.client()
-        return Scout(client: ai.client, model: ai.model)
+        return Scout(client: ai.client, model: ai.model, effort: ai.effort)
     }
 
     // MARK: - Status

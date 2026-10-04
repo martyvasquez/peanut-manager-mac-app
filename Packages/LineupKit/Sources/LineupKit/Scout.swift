@@ -168,10 +168,13 @@ public enum ScoutError: Error, LocalizedError {
 public struct Scout: Sendable {
     public var client: any LLMClient
     public var model: String
+    /// Recorded with each assessment; the client is what actually sends it.
+    public var effort: String?
 
-    public init(client: any LLMClient, model: String) {
+    public init(client: any LLMClient, model: String, effort: String? = nil) {
         self.client = client
         self.model = model
+        self.effort = effort
     }
 
     public func assess(_ player: PlayerSnapshot, ageGroup: String? = nil) async throws -> PlayerAssessment {
@@ -186,6 +189,7 @@ public struct Scout: Sendable {
         assessment.weaknesses = assessment.weaknesses.map { Grounding.keepingResolved($0, facts: facts) }
         assessment.defense = assessment.defense.map { var fit = $0; fit.evidence = fit.evidence.filter(facts.contains); return fit }
         assessment.model = model
+        assessment.effort = effort
         assessment.cost = cost
         return assessment
     }
@@ -202,7 +206,7 @@ public struct Scout: Sendable {
             var seen = Set<PlayerID>()
             return (refs ?? []).compactMap { $0.resolve(ids: ids, players: players) }.filter { seen.insert($0).inserted }
         }
-        func prose(_ text: String) -> String { ids.humanize(text, players: players) }
+        func prose(_ text: String) -> String { ids.humanize(Grounding.plain(text, facts: facts), players: players) }
         func claims(_ raw: [PlayerAssessmentResponse.RawClaim]?) -> [Claim] {
             (raw ?? []).map { var c = Grounding.keepingResolved($0.claim, facts: facts); c.detail = prose(c.detail); return c }
         }
@@ -219,7 +223,7 @@ public struct Scout: Sendable {
                 return PracticeItem(focus: focus, drills: prose(item.drill_suggestions ?? ""), priority: PracticeItem.Priority(rawValue: item.priority?.lowercased() ?? "") ?? .medium)
             },
             players: players.map(\.id),
-            facts: facts, model: model, cost: cost, assessedAt: .now
+            facts: facts, model: model, effort: effort, cost: cost, assessedAt: .now
         )
     }
 
@@ -265,19 +269,21 @@ public struct Scout: Sendable {
                   let fit = PositionFit(rawValue: d.fit.lowercased().replacingOccurrences(of: " ", with: "_")) else { return nil }
             return DefensiveFit(position: position, fit: fit, reason: d.reason ?? "", evidence: d.evidence ?? [])
         }
-        let eye = raw.eye_vs_data?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let eye = raw.eye_vs_data.map { Grounding.plain($0, facts: facts) }?.trimmingCharacters(in: .whitespacesAndNewlines)
+        func plain(_ text: String?) -> String { Grounding.plain(text ?? "", facts: facts) }
+        func plain(_ claim: Claim) -> Claim { var c = claim; c.title = plain(c.title); c.detail = plain(c.detail); return c }
         return PlayerAssessment(
-            snapshot: raw.summary ?? "",
-            strengths: (raw.strengths ?? []).map(\.claim),
-            weaknesses: (raw.weaknesses ?? []).map(\.claim),
-            battingRole: raw.batting?.role ?? "",
+            snapshot: plain(raw.summary),
+            strengths: (raw.strengths ?? []).map { plain($0.claim) },
+            weaknesses: (raw.weaknesses ?? []).map { plain($0.claim) },
+            battingRole: plain(raw.batting?.role),
             battingZone: BattingZone.allCases.first { zone?.contains($0.rawValue) == true },
-            battingReason: raw.batting?.reason ?? "",
-            defense: defense.sorted { ($0.fit, $0.position) < ($1.fit, $1.position) },
+            battingReason: plain(raw.batting?.reason),
+            defense: defense.map { var d = $0; d.reason = plain(d.reason); return d }.sorted { ($0.fit, $0.position) < ($1.fit, $1.position) },
             eyeVsData: (eye?.isEmpty ?? true) || eye?.lowercased() == "null" ? nil : eye,
-            development: (raw.development_focus ?? []).compactMap { f in f.focus.map { DevelopmentFocus(focus: $0, drill: f.drill ?? "") } },
+            development: (raw.development_focus ?? []).compactMap { f in f.focus.map { DevelopmentFocus(focus: plain($0), drill: plain(f.drill)) } },
             confidence: Confidence(rawValue: raw.data_confidence?.level?.lowercased() ?? "") ?? .low,
-            confidenceReason: raw.data_confidence?.reason ?? "",
+            confidenceReason: plain(raw.data_confidence?.reason),
             facts: facts, model: "", cost: nil, assessedAt: .now
         )
     }

@@ -86,12 +86,17 @@ final class AIService {
     // MARK: - Clients
 
     /// The client and model for the next request. Never fails here: a missing sign-in surfaces when the request runs.
-    func client() -> (client: any LLMClient, model: String) {
+    func client() -> (client: any LLMClient, model: String, effort: String?) {
         #if DEBUG
-        if DebugSupport.fakeAI { return (FakeLLMClient(), chatGPTModelID) }
+        if DebugSupport.fakeAI { return (FakeLLMClient(), chatGPTModelID, effectiveEffort) }
         #endif
-        guard let session else { return (UnavailableClient(), chatGPTModelID) }
-        return (ChatGPTClient(session: session, reasoningEffort: effectiveEffort), chatGPTModelID)
+        guard let session else { return (UnavailableClient(), chatGPTModelID, effectiveEffort) }
+        return (ChatGPTClient(session: session, reasoningEffort: effectiveEffort), chatGPTModelID, effectiveEffort)
+    }
+
+    /// "Luna · Medium": the model and, when known, its thinking level.
+    func displayName(for id: String, effort: String?) -> String {
+        displayName(for: id) + (effort.map { " · \($0.capitalized)" } ?? "")
     }
 
     #if DEBUG

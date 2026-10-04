@@ -78,7 +78,8 @@ final class GameModel {
         let ctx = context
         var result: [Finding] = []
         if hasBattingOrder { result += Validator.validateBattingOrder(document.lineup.battingOrder, context: ctx) }
-        if isFilled { result += Validator.validateDefense(document.lineup, context: ctx) }
+        // What the coach's own locks make unavoidable shows as a warning, not an AI mistake.
+        if isFilled { result += Validator.excusing(Validator.validateDefense(document.lineup, context: ctx), conflicts: Validator.lockConflicts(ctx)) }
         return result
     }
 
@@ -249,23 +250,42 @@ final class GameModel {
             let current = self.hasBattingOrder ? self.document.lineup.battingOrder : nil
             let batting = try await engine.battingOrder(self.context, currentOrder: current, feedback: feedback, progress: report)
             try Task.checkCancellation()
+            let effort = self.effort
             self.mutate("Make Batting Order", undoManager: undoManager) { doc in
                 doc.lineup.battingOrder = batting.order
                 doc.battingReasons = batting.reasons
                 doc.battingRationale = batting.rationale
                 doc.cost = (doc.cost ?? 0) + (batting.usage.cost ?? 0)
                 doc.model = engine.model
+                doc.effort = effort
             }
             self.step = .battingOrder
         }
     }
 
+    /// Locked spots that break a rule (or can't all be kept), waiting for the coach to fill anyway or cancel.
+    var pendingConflicts: [Finding] = []
+    /// The thinking level of the run in progress, saved with what it makes.
+    @ObservationIgnored private var effort: String?
+    @ObservationIgnored private var pendingFeedback: String?
+
     /// Step 2: the AI fills every inning around the batting order. Locked spots stay put.
-    func setPositions(feedback: String? = nil, undoManager: UndoManager?) {
+    /// When the locks themselves break a rule, the coach decides first (`fillAnyway`).
+    func setPositions(feedback: String? = nil, undoManager: UndoManager?, fillAnyway: Bool = false) {
+        if !fillAnyway, task == nil {
+            let conflicts = Validator.lockConflicts(context)
+            if !conflicts.isEmpty {
+                pendingFeedback = feedback
+                pendingConflicts = conflicts
+                return
+            }
+        }
+        pendingConflicts = []
         run(.positions, undoManager: undoManager) { engine, report in
             let current = self.isFilled ? self.document.lineup : nil
             let defense = try await engine.defense(self.context, battingOrder: self.document.lineup.battingOrder, currentLineup: current, feedback: feedback, progress: report)
             try Task.checkCancellation()
+            let effort = self.effort
             self.mutate("Set Positions", undoManager: undoManager) { doc in
                 doc.lineup.innings = defense.innings
                 doc.provenance = defense.provenance
@@ -277,10 +297,17 @@ final class GameModel {
                 doc.appAdjustedCount = defense.adjustedCells.count
                 doc.cost = (doc.cost ?? 0) + (defense.usage.cost ?? 0)
                 doc.model = engine.model
+                doc.effort = effort
                 doc.generatedAt = .now
             }
             self.step = .positions
         }
+    }
+
+    /// The coach chose to keep the conflicting locks.
+    func fillAnyway(undoManager: UndoManager?) {
+        setPositions(feedback: pendingFeedback, undoManager: undoManager, fillAnyway: true)
+        pendingFeedback = nil
     }
 
     private func run(_ step: Step, undoManager: UndoManager?, _ work: @escaping (LineupEngine, @escaping @Sendable (GenerationProgress) -> Void) async throws -> Void) {
@@ -296,6 +323,7 @@ final class GameModel {
         blockedByPositions = false
         let ai = AIService.shared.client()
         let engine = LineupEngine(client: ai.client, model: ai.model)
+        effort = ai.effort
         if hasBattingOrder || hasDefense { snapshot("Before Remake") }
         generating = step
 

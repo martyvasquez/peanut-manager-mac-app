@@ -120,14 +120,14 @@ enum EvalRunner {
                 if let stored = player.assessment, stored.model == model.id, stored.facts.fingerprint == FactSheet.player(snapshot).fingerprint,
                    !results.runs.contains(where: { $0.subject == subject && $0.model == model.id && $0.error == nil }) {
                     results.runs.removeAll { $0.subject == subject && $0.model == model.id }
-                    results.runs.append(EvalRun(kind: "player", subject: subject, model: model.id, effort: nil, reused: true, assessment: stored))
+                    results.runs.append(EvalRun(kind: "player", subject: subject, model: model.id, effort: stored.effort, reused: true, assessment: stored))
                     if results.blind[subject] == nil { results.blind[subject] = models.map(\.id).shuffled() }
                     log("player \(subject) · \(model.id): reused the stored assessment")
                     save()
                     continue
                 }
                 await attempt("player", subject, model) { client, run in
-                    run.assessment = try await Scout(client: client, model: model.id).assess(snapshot, ageGroup: team.ageGroup)
+                    run.assessment = try await Scout(client: client, model: model.id, effort: run.effort).assess(snapshot, ageGroup: team.ageGroup)
                 }
             }
         }

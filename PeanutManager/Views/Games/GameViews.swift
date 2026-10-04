@@ -192,6 +192,12 @@ struct GameDetailView: View {
                 Text(model.errorMessage ?? "")
             }
         }
+        .alert(model.pendingConflicts.count == 1 ? "A Locked Spot Breaks a Rule" : "Locked Spots Break Rules", isPresented: Binding(get: { !model.pendingConflicts.isEmpty }, set: { if !$0 { model.pendingConflicts = [] } })) {
+            Button("Fill Anyway") { model.fillAnyway(undoManager: undoManager) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(model.pendingConflicts.map(\.message).joined(separator: "\n\n") + "\n\nUnlock a spot, or fill anyway and keep your locks.")
+        }
         .confirmationDialog("Clear this lineup?", isPresented: $confirmStartOver) {
             Button("Clear Lineup", role: .destructive) { model.startOver(undoManager: undoManager) }
         } message: {

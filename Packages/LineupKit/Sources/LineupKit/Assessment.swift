@@ -68,6 +68,8 @@ public struct PlayerAssessment: Codable, Sendable, Hashable {
     /// What the assessment was made from; it's stale when the player's facts no longer match.
     public var facts: FactSheet
     public var model: String
+    /// The model's thinking level ("medium"); nil when unknown or the model has none.
+    public var effort: String? = nil
     public var cost: Double?
     public var assessedAt: Date
 }
@@ -95,6 +97,7 @@ public struct TeamAssessment: Codable, Sendable, Hashable {
     /// Team facts plus every player's, keyed "P3.obp"-style as the prompt showed them.
     public var facts: FactSheet
     public var model: String
+    public var effort: String? = nil
     public var cost: Double?
     public var assessedAt: Date
 }
@@ -177,6 +180,16 @@ enum Grounding {
             }
         }
         return problems
+    }
+
+    /// Removes fact IDs the model wrote into its prose ("…top of the order [avg, k_rate]."). The app shows the
+    /// cited values itself; raw IDs mean nothing to a coach. Only brackets holding nothing but fact IDs go.
+    static func plain(_ text: String, facts: FactSheet) -> String {
+        let cleaned = text.replacing(/\s*\[([A-Za-z0-9_.]+(?:\s*,\s*[A-Za-z0-9_.]+)*)\]/) { match in
+            let ids = match.1.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+            return ids.allSatisfy(facts.contains) ? "" : String(match.0)
+        }
+        return cleaned.trimmingCharacters(in: .whitespaces)
     }
 
     /// After the one retry: drop citations that still don't resolve rather than show them.

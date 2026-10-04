@@ -186,6 +186,8 @@ public struct LineupEngine: Sendable {
         let feasibility = Validator.feasibility(context)
         guard !feasibility.hasViolations else { throw GenerationError.infeasible(feasibility) }
 
+        // Conflicts the coach's locks cause can't be fixed by the AI; don't ask it to.
+        let conflicts = Validator.lockConflicts(context)
         let ids = PromptIDs(players: context.players)
         let prompt = Prompts.defense(context, battingOrder: battingOrder, ids: ids, currentLineup: currentLineup, feedback: feedback)
         var messages = [LLMMessage(.user, prompt)]
@@ -203,7 +205,7 @@ public struct LineupEngine: Sendable {
                 let mapped = try JSONExtraction.decode(DefenseResponse.self, from: response.text).mapped(ids: ids, players: context.players, innings: context.innings)
                 if first == nil { first = mapped }
                 latest = mapped
-                findings = Validator.validateDefense(Lineup(battingOrder: battingOrder, innings: mapped.innings), context: context)
+                findings = Validator.excusing(Validator.validateDefense(Lineup(battingOrder: battingOrder, innings: mapped.innings), context: context), conflicts: conflicts)
                 for miss in mapped.unresolved {
                     let where_ = miss.position.map { " at \($0.label)" } ?? " on the bench"
                     findings.append(Finding(.violation, .unknownPlayer, "Inning \(miss.inning): a player ID\(where_) isn't in the player list.", inning: miss.inning, position: miss.position))
@@ -234,13 +236,17 @@ public struct LineupEngine: Sendable {
             let repaired = Repair.defense(lineup, context: context)
             lineup = repaired.lineup
             for key in repaired.adjusted { provenance[key] = .appAdjusted }
-            findings = Validator.validateDefense(lineup, context: context)
+            findings = Validator.excusing(Validator.validateDefense(lineup, context: context), conflicts: conflicts)
         }
         for lock in context.locks { provenance[CellKey(inning: lock.inning, player: lock.player)] = .coach }
 
         var reasons = final.inningReasons
         reasons = Array(reasons.prefix(context.innings))
         while reasons.count < context.innings { reasons.append("") }
+        // The AI's reason describes its own plan; once the safety net changes an inning, it no longer does.
+        for key in provenance.filter({ $0.value == .appAdjusted }).keys where reasons.indices.contains(key.inning - 1) {
+            reasons[key.inning - 1] = ""
+        }
 
         return DefenseResult(
             innings: lineup.innings, inningReasons: reasons, rationale: final.rationale, warnings: final.warnings,

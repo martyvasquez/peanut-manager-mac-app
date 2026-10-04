@@ -47,6 +47,9 @@ struct EngineTests {
         #expect(result.findings.isEmpty)
         #expect(!result.adjustedCells.isEmpty)
         #expect(progressEvents.contains(.adjusting(.defense)))
+        // The AI's reason for inning 1 described the plan the safety net changed.
+        #expect(result.inningReasons[0] == "")
+        #expect(result.inningReasons[1] == "inning 2")
     }
 
     @Test func unreadableReplyIsRetried() async throws {

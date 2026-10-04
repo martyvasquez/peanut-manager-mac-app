@@ -124,3 +124,17 @@ private let goodReply = """
         #expect(t.facts["P1.obp"]?.label == "Avery OBP")
     }
 }
+
+struct PlainProseTests {
+    let facts = FactSheet([Fact("avg", "AVG", ".550"), Fact("k_rate", "K%", "0%"), Fact("pa", "PA", "40")])
+
+    @Test func factIDsWrittenIntoProseAreRemoved() {
+        #expect(Grounding.plain("A strong top-of-the-order option [avg, k_rate].", facts: facts) == "A strong top-of-the-order option.")
+        #expect(Grounding.plain("The sample is limited [pa], so wait.", facts: facts) == "The sample is limited, so wait.")
+    }
+
+    @Test func bracketsThatArentAllFactIDsStay() {
+        #expect(Grounding.plain("Plays [mostly] shortstop", facts: facts) == "Plays [mostly] shortstop")
+        #expect(Grounding.plain("Hits well [avg, power]", facts: facts) == "Hits well [avg, power]")
+    }
+}

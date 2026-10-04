@@ -14,6 +14,8 @@ public struct Finding: Codable, Sendable, Hashable, Identifiable {
         case wrongInningCount, emptyPosition, unknownPlayer, unavailablePlayer, duplicatePlayer
         case unaccountedPlayer, ineligiblePosition, lockBroken, pitcherReentry, notEnoughPlayers
         case battingMissingPlayer, battingDuplicate, battingUnknownPlayer, battingAbsentPlayer
+        // The coach's locks can't all be kept, or keeping them breaks a rule
+        case lockConflict
         // Coach rules with a typed check
         case rule
     }
@@ -72,6 +74,134 @@ public enum Validator {
             }
         }
         return findings
+    }
+
+    // MARK: - Lock conflicts
+
+    /// Problems the coach's locks cause by themselves, whatever the AI does: a rule the locked spots already
+    /// break (or leave no room to meet), two players locked into one spot, a lock the player can't fill.
+    /// Only the coach can fix these. Each is a warning: the coach may fill anyway on purpose.
+    public static func lockConflicts(_ context: GameContext) -> [Finding] {
+        let locks = context.locks.filter { $0.inning <= context.innings }
+        guard !locks.isEmpty else { return [] }
+        var findings: [Finding] = []
+        func conflict(_ message: String, inning: Int? = nil, player: PlayerID? = nil, position: Position? = nil, rule: UUID? = nil) {
+            findings.append(Finding(.warning, .lockConflict, message, inning: inning, player: player, position: position, ruleID: rule))
+        }
+
+        // Locks the grid can't hold.
+        for inning in Set(locks.map(\.inning)).sorted() {
+            let here = locks.filter { $0.inning == inning }
+            for position in Position.allCases {
+                let same = here.filter { $0.slot == .field(position) }
+                if same.count > 1 {
+                    conflict("Inning \(inning): \(names(same.map(\.player), context)) are \(same.count == 2 ? "both" : "all") locked at \(position.label).", inning: inning, position: position)
+                }
+            }
+            for lock in here {
+                guard let player = context.player(lock.player) else { continue }
+                if !context.availability(of: lock.player).isAvailable(inning: inning) {
+                    conflict("\(player.name) is locked at \(lock.slot) in inning \(inning) but isn't here then.", inning: inning, player: lock.player)
+                } else if case .field(let position) = lock.slot, !player.profile.canPlay(position) {
+                    conflict("\(player.name) is locked at \(position.label) in inning \(inning) but is marked as unable to play it.", inning: inning, player: lock.player, position: position)
+                }
+            }
+        }
+
+        // A pitcher locked back on the mound after someone else was locked there.
+        for player in context.presentPlayers {
+            let pitched = locks.filter { $0.player == player.id && $0.slot == .field(.p) }.map(\.inning).sorted()
+            guard let first = pitched.first, let last = pitched.last, last > first else { continue }
+            if locks.contains(where: { $0.player != player.id && $0.slot == .field(.p) && $0.inning > first && $0.inning < last }) {
+                conflict("\(player.name) is locked to pitch innings \(list(pitched)) with someone else pitching in between, and a pitcher can't return.", player: player.id, position: .p)
+            }
+        }
+
+        // Rules the locked spots already break, or leave no room to meet.
+        for rule in context.activeRules {
+            guard let check = rule.check else { continue }
+            let because = check.summary.prefix(1).lowercased() + check.summary.dropFirst()
+            for player in context.presentPlayers {
+                let mine = (1...max(context.innings, 1)).filter { context.availability(of: player.id).isAvailable(inning: $0) }
+                let locked = locks.filter { $0.player == player.id && mine.contains($0.inning) }
+                func innings(_ slot: Slot) -> [Int] { locked.filter { $0.slot == slot }.map(\.inning).sorted() }
+                let sits = innings(.bench)
+                func fail(_ what: String) {
+                    conflict("\(player.name) is \(what), but \(because).", player: player.id, rule: rule.id)
+                }
+
+                switch check {
+                case .maxPitchingInnings(let n):
+                    if innings(.field(.p)).count > n { fail("locked at P in innings \(list(innings(.field(.p))))") }
+                case .maxCatchingInnings(let n):
+                    if innings(.field(.c)).count > n { fail("locked at C in innings \(list(innings(.field(.c))))") }
+                case .maxInningsAtOnePosition(let n):
+                    for position in Position.allCases where innings(.field(position)).count > n {
+                        fail("locked at \(position.label) in innings \(list(innings(.field(position))))")
+                    }
+                case .catcherCannotPitchAfter(let n):
+                    if innings(.field(.c)).count >= n && !innings(.field(.p)).isEmpty {
+                        fail("locked at C in innings \(list(innings(.field(.c)))) and at P in \(innings(.field(.p)).count == 1 ? "inning" : "innings") \(list(innings(.field(.p))))")
+                    }
+                case .maxSitInnings(let n):
+                    if sits.count > n { fail("locked to sit in innings \(list(sits))") }
+                case .maxConsecutiveSits(let n):
+                    var run: [Int] = [], longest: [Int] = []
+                    for inning in mine {
+                        if sits.contains(inning) { run.append(inning) } else { run = [] }
+                        if run.count > longest.count { longest = run }
+                    }
+                    if longest.count > n { fail("locked to sit in innings \(list(longest))") }
+                case .minFieldInnings(let n):
+                    if mine.count - sits.count < min(n, mine.count) { fail("locked to sit in innings \(list(sits))") }
+                case .infieldBy(let inning):
+                    let window = mine.filter { $0 <= inning }
+                    guard !window.isEmpty else { break }
+                    let lockedHere = locked.filter { $0.inning <= inning }
+                    let canStillPlayInfield = lockedHere.count < window.count
+                        || lockedHere.contains { if case .field(let p) = $0.slot { p.isInfield } else { false } }
+                    if !canStillPlayInfield { fail("locked in the outfield or on the bench every inning through \(inning)") }
+                }
+            }
+        }
+        return findings
+    }
+
+    /// The same findings, with the ones the coach's locks make unavoidable turned into warnings: the AI isn't
+    /// asked to fix them, and they don't count against the lineup.
+    public static func excusing(_ findings: [Finding], conflicts: [Finding]) -> [Finding] {
+        guard !conflicts.isEmpty else { return findings }
+        return findings.map { finding in
+            guard finding.severity == .violation else { return finding }
+            let excused = conflicts.contains { c in
+                switch finding.code {
+                case .rule: c.ruleID != nil && c.ruleID == finding.ruleID && c.player == finding.player
+                case .pitcherReentry: c.ruleID == nil && c.player == finding.player && c.position == .p && c.inning == nil
+                case .ineligiblePosition, .unavailablePlayer:
+                    c.ruleID == nil && c.inning == finding.inning && c.player == finding.player
+                case .lockBroken:
+                    // Two players locked into one spot: one of them can't be where they're locked.
+                    c.ruleID == nil && c.inning == finding.inning && (c.player == finding.player || c.player == nil)
+                default: false
+                }
+            }
+            guard excused else { return finding }
+            var warning = finding
+            warning.severity = .warning
+            return warning
+        }
+    }
+
+    static func list(_ innings: [Int]) -> String {
+        let text = innings.map(String.init)
+        guard text.count > 1 else { return text.first ?? "" }
+        return text.dropLast().joined(separator: ", ") + " and " + text.last!
+    }
+
+    static func names(_ ids: [PlayerID], _ context: GameContext) -> String {
+        let names = ids.map { context.name($0) }
+        guard names.count > 1 else { return names.first ?? "" }
+        return names.dropLast().joined(separator: ", ") + " and " + names.last!
     }
 
     public static func validateBattingOrder(_ order: [PlayerID], context: GameContext) -> [Finding] {
