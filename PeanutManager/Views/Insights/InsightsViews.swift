@@ -243,7 +243,7 @@ struct StatsInsightsView: View {
                 .padding(.bottom, 16)
             switch tab {
             case .summary: page { summary }
-            case .players: page { players }
+            case .players: PlayersTable(team: team)
             case .stats: StatsView(team: team)
             }
         }
@@ -425,44 +425,6 @@ struct StatsInsightsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var players: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(team.activePlayers) { player in
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(player.jersey.isEmpty ? "–" : player.jersey)
-                        .font(.callout.monospacedDigit().weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 26, alignment: .trailing)
-                    Text(player.name).fontWeight(.medium).frame(width: 150, alignment: .leading)
-                    if let job = runner.jobs[player.uid] {
-                        if case .failed(let message) = job {
-                            Text(message).foregroundStyle(.red).lineLimit(2)
-                            Button("Try Again") { runner.assessTeam(team) }.buttonStyle(.link)
-                                .disabled(runner.teamRuns[team.uid] != nil)
-                        } else {
-                            JobStatus(job: job)
-                        }
-                    } else if let a = player.assessment {
-                        Text(a.snapshot).foregroundStyle(.secondary).lineLimit(2)
-                        Spacer(minLength: 12)
-                        Text(runner.isStale(player) ? "Changed" : a.battingZone.map { "\($0.rawValue.capitalized) of order" } ?? "")
-                            .font(.callout).foregroundStyle(.tertiary).fixedSize()
-                    } else {
-                        Text(player.isAssessable ? "Not assessed" : "No ratings, notes or stats").foregroundStyle(.tertiary)
-                    }
-                    Spacer(minLength: 0)
-                    if player.assessment != nil {
-                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(.vertical, 9)
-                .contentShape(Rectangle())
-                .onTapGesture { if player.assessment != nil { Navigator.shared.openScoutingReport(player) } }
-                .help(player.assessment != nil ? "Open \(player.name)'s scouting report" : "")
-                Divider()
-            }
-        }
-    }
 }
 
 /// "Waiting", "Assessing · 1:42", or "Trying again (2 of 3): the model took too long to answer."
