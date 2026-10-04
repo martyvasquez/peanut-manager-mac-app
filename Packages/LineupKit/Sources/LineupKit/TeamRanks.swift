@@ -164,3 +164,22 @@ public struct TeamRanks: Sendable {
         ranked(metric).filter { $0.rank! <= top }
     }
 }
+
+/// The defense axis of the Two-Way Map: the coach's fielding ratings, nudged by the Scout's best position fit.
+public enum TwoWay {
+    public static let fieldingRatings: [RatingKey] = [.fieldingHands, .throwAccuracy, .armStrength, .flyBallAbility]
+
+    /// Average fielding rating (1–5), +0.5 when the Scout's best fit anywhere is Strong, −0.5 when it's only
+    /// Developing or worse. Nil without any fielding rating: the map leaves the player out rather than guess.
+    public static func defense(ratings: Ratings, bestFit: PositionFit?) -> Double? {
+        let rated = fieldingRatings.compactMap { ratings[$0] }
+        guard !rated.isEmpty else { return nil }
+        let average = Double(rated.reduce(0, +)) / Double(rated.count)
+        let nudge: Double = switch bestFit {
+        case .strong: 0.5
+        case .developing, .notRecommended: -0.5
+        case .solid, nil: 0
+        }
+        return min(max(average + nudge, 1), 5)
+    }
+}

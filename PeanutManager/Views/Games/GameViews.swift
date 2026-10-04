@@ -250,9 +250,13 @@ struct GameDetailView: View {
 
     private var ruleSetMenu: some View {
         Menu {
-            Picker("Rules", selection: $game.ruleSet) {
-                Text("No Rules").tag(RuleSet?.none)
-                ForEach(game.team?.sortedRuleSets ?? []) { Text($0.name).tag(Optional($0)) }
+            // Selects by ID: in clean builds the compiler doesn't always see @Model's Hashable conformance here.
+            Picker("Rules", selection: Binding(
+                get: { game.ruleSet?.persistentModelID },
+                set: { id in game.ruleSet = game.team?.ruleSets.first { $0.persistentModelID == id } }
+            )) {
+                Text("No Rules").tag(PersistentIdentifier?.none)
+                ForEach(game.team?.sortedRuleSets ?? []) { Text($0.name).tag(Optional($0.persistentModelID)) }
             }
             .pickerStyle(.inline)
         } label: {

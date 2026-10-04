@@ -125,6 +125,11 @@ enum SampleData {
         t.ruleSet = tournament
     }
 
+    private static let sampleFielding = [
+        [4, 4, 3, 3], [3, 3, 4, 2], [5, 4, 4, 3], [2, 2, 2, 3], [4, 3, 5, 4], [3, 4, 3, 5],
+        [4, 5, 4, 4], [5, 5, 4, 3], [2, 3, 3, 2], [3, 2, 2, 4], [4, 4, 4, 2],
+    ]
+
     /// A 12-player team built from the bundled (anonymized) GameChanger export.
     static func makeTeam(in context: ModelContext) throws -> Team {
         guard let url = Bundle.main.url(forResource: "sample-team", withExtension: "csv") else {
@@ -141,6 +146,12 @@ enum SampleData {
             player.team = team
             player.stats = PlayerStats(batting: row.batting, fielding: row.fielding, pitching: row.pitching)
             player.applyGameChangerHistory()
+            // Made-up fielding ratings (hands, throws, arm, fly balls); the last player is left unrated.
+            if index < sampleFielding.count {
+                var ratings = Ratings()
+                for (key, stars) in zip(TwoWay.fieldingRatings, sampleFielding[index]) { ratings[key] = stars }
+                player.ratings = ratings
+            }
         }
         team.statsImportedAt = .now
 

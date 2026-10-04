@@ -61,3 +61,16 @@ private func hitter(pa: Int, onBase: Int, so: Int = 0) -> (id: PlayerID, stats: 
     #expect(Claim(title: "", detail: "", evidence: ["obp", "fpct"]).side == nil)
     #expect(Claim(title: "", detail: "", evidence: ["note.1"]).side == nil)
 }
+
+@Test func twoWayDefense() {
+    var r = Ratings()
+    #expect(TwoWay.defense(ratings: r, bestFit: .strong) == nil)
+    r[.fieldingHands] = 4; r[.armStrength] = 3
+    #expect(TwoWay.defense(ratings: r, bestFit: nil) == 3.5)
+    #expect(TwoWay.defense(ratings: r, bestFit: .strong) == 4.0)
+    #expect(TwoWay.defense(ratings: r, bestFit: .developing) == 3.0)
+    r[.fieldingHands] = 5; r[.armStrength] = 5
+    #expect(TwoWay.defense(ratings: r, bestFit: .strong) == 5)
+    r[.pitchVelocity] = 1  // not a fielding rating
+    #expect(TwoWay.defense(ratings: r, bestFit: .solid) == 5)
+}

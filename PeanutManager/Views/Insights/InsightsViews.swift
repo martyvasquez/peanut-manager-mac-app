@@ -387,6 +387,7 @@ struct StatsInsightsView: View {
                 SideCard(title: "Defense", team: team, side: .defense, factIDs: ["team.fpct", "team.p.whip", "team.catchers"]) { tab = .defense }
                 PlayersCard(team: team)
             }
+            TwoWayMap(team: team, ranks: team.ranks)
             if let a, !a.practice.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     Caption("Practice Plan")

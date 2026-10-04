@@ -208,7 +208,8 @@ struct HitterMap: View {
     }
 
     private func chart(_ points: [Point], teamOBP: Double, teamK: Double) -> some View {
-        Chart {
+        let sides = ChartLabels.positions(points.map { ($0.id, $0.obp, -$0.k) })
+        return Chart {
             RuleMark(x: .value("Team OBP", teamOBP))
                 .foregroundStyle(Color.primary.opacity(0.18))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
@@ -219,7 +220,7 @@ struct HitterMap: View {
                 PointMark(x: .value("OBP", p.obp), y: .value("K%", p.k))
                     .symbolSize(70)
                     .foregroundStyle(p.obp >= teamOBP && p.k <= teamK ? Color.accentColor : Color.primary.opacity(0.55))
-                    .annotation(position: .trailing, spacing: 4) {
+                    .annotation(position: sides[p.id] ?? .trailing, spacing: 4) {
                         Text(p.name).font(.caption).foregroundStyle(.secondary)
                     }
             }
@@ -394,5 +395,159 @@ struct ScoutFitField: View {
             }
         }
         .frame(width: size, height: size)
+    }
+}
+
+/// Every qualified hitter on both sides of the game: on-base % across, defense up (fielding ratings,
+/// nudged by the Scout's best fit). Split at the team's own levels: Core, Bat first, Glove first, Developing.
+struct TwoWayMap: View {
+    let team: Team
+    let ranks: TeamRanks
+    @State private var hovered: PlayerID?
+
+    private struct Point: Identifiable {
+        let id: PlayerID
+        let name: String
+        let obp: Double
+        let defense: Double
+    }
+
+    var body: some View {
+        let names = team.shortNames
+        var points: [Point] = [], unrated: [String] = []
+        for s in ranks.ranked(.obp) {
+            guard let player = team.players.first(where: { $0.uid == s.player }) else { continue }
+            let best = player.assessment?.defense.map(\.fit).min()
+            if let d = TwoWay.defense(ratings: player.ratings, bestFit: best) {
+                points.append(Point(id: s.player, name: names[s.player] ?? player.name, obp: s.value, defense: d))
+            } else {
+                unrated.append(player.name)
+            }
+        }
+        let lines = team.activePlayers.compactMap { $0.stats?.batting }
+        let pa = lines.reduce(0) { $0 + $1.pa }
+        return Group {
+            if points.count >= 4, pa > 0 {
+                let teamOBP = Double(lines.reduce(0) { $0 + $1.h + $1.bb + $1.hbp }) / Double(pa)
+                let teamDefense = points.map(\.defense).reduce(0, +) / Double(points.count)
+                VStack(alignment: .leading, spacing: 12) {
+                    Caption("Two-Way Map")
+                    chart(points, teamOBP: teamOBP, teamDefense: teamDefense)
+                        .frame(height: 360)
+                        .padding(16)
+                        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+                    if !unrated.isEmpty {
+                        (Text("No fielding ratings  ").foregroundStyle(.tertiary) + Text(unrated.joined(separator: ", ")).foregroundStyle(.secondary))
+                            .font(.callout)
+                    }
+                }
+            }
+        }
+    }
+
+    private func chart(_ points: [Point], teamOBP: Double, teamDefense: Double) -> some View {
+        let sides = ChartLabels.positions(points.map { ($0.id, $0.obp, $0.defense) })
+        return Chart {
+            RuleMark(x: .value("Team OBP", teamOBP))
+                .foregroundStyle(Color.primary.opacity(0.18))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            RuleMark(y: .value("Team defense", teamDefense))
+                .foregroundStyle(Color.primary.opacity(0.18))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            ForEach(points) { p in
+                let core = p.obp >= teamOBP && p.defense >= teamDefense
+                PointMark(x: .value("OBP", p.obp), y: .value("Defense", p.defense))
+                    .symbolSize(hovered == p.id ? 140 : 80)
+                    .foregroundStyle(core ? Color.accentColor : Color.primary.opacity(0.55))
+                    .annotation(position: hovered == p.id ? .trailing : sides[p.id] ?? .trailing, spacing: 4) {
+                        if hovered == p.id {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(p.name).font(.caption.weight(.semibold))
+                                Text("OBP \(Fmt.rate(p.obp)) · Field \(String(format: "%.1f", p.defense))")
+                                    .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 6).padding(.vertical, 3)
+                            .background(.background, in: RoundedRectangle(cornerRadius: 5))
+                        } else {
+                            Text(p.name).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+            }
+        }
+        .chartXScale(domain: .automatic(includesZero: false))
+        .chartYScale(domain: 1...5)
+        .chartXAxisLabel("On-base %", alignment: .trailing)
+        .chartYAxisLabel("Defense", position: .leading, alignment: .bottom)
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                AxisGridLine().foregroundStyle(Color.primary.opacity(0.06))
+                AxisValueLabel { if let v = value.as(Double.self) { Text(Fmt.rate(v)) } }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: [1, 2, 3, 4, 5]) { value in
+                AxisGridLine().foregroundStyle(Color.primary.opacity(0.06))
+                AxisValueLabel { if let v = value.as(Int.self) { Text("\(v)") } }
+            }
+        }
+        .chartPlotStyle { plot in
+            plot.overlay(alignment: .topTrailing) { corner("Core") }
+                .overlay(alignment: .topLeading) { corner("Glove first") }
+                .overlay(alignment: .bottomTrailing) { corner("Bat first") }
+                .overlay(alignment: .bottomLeading) { corner("Developing") }
+        }
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                Rectangle().fill(.clear).contentShape(Rectangle())
+                    .onContinuousHover { phase in
+                        guard case .active(let location) = phase, let frame = proxy.plotFrame else { hovered = nil; return }
+                        let origin = geo[frame].origin
+                        let nearest = points.compactMap { p -> (PlayerID, CGFloat)? in
+                            guard let at = proxy.position(for: (x: p.obp, y: p.defense)) else { return nil }
+                            return (p.id, hypot(at.x + origin.x - location.x, at.y + origin.y - location.y))
+                        }.min { $0.1 < $1.1 }
+                        hovered = nearest.flatMap { $0.1 < 24 ? $0.0 : nil }
+                    }
+                    .onTapGesture {
+                        if let id = hovered, let player = team.players.first(where: { $0.uid == id }) {
+                            Navigator.shared.openScoutingReport(player)
+                        }
+                    }
+            }
+        }
+        .help("Defense: your fielding ratings (hands, throws, arm, fly balls), +½ when the Scout rates a position Strong, −½ when only Developing. Dashed lines are the team's levels.")
+    }
+
+    private func corner(_ text: String) -> some View {
+        Text(text).font(.caption.weight(.medium)).foregroundStyle(Color.primary.opacity(0.35)).padding(6)
+    }
+}
+
+/// Where to put each dot's name so neighbors don't overlap. Names go right of the dot; when two dots are close,
+/// the left one's name moves to its left so the pair point away from each other; a third goes above, then below.
+/// Coordinates are in the chart's own units.
+enum ChartLabels {
+    static func positions(_ points: [(id: PlayerID, x: Double, y: Double)]) -> [PlayerID: AnnotationPosition] {
+        let xs = points.map(\.x), ys = points.map(\.y)
+        let x0 = xs.min() ?? 0, y0 = ys.min() ?? 0
+        let dx = max((xs.max() ?? 1) - x0, 0.0001), dy = max((ys.max() ?? 1) - y0, 0.0001)
+        var placed: [(id: PlayerID, x: Double, y: Double)] = []
+        var result: [PlayerID: AnnotationPosition] = [:]
+        for p in points.sorted(by: { $0.x < $1.x }) {
+            let x = (p.x - x0) / dx, y = (p.y - y0) / dy
+            // Close: within about a name's width across and a line's height up or down.
+            let near = placed.filter { abs($0.x - x) < 0.12 && abs($0.y - y) < 0.08 }
+            let taken = near.compactMap { result[$0.id] }
+            if near.isEmpty {
+                result[p.id] = .trailing
+            } else if let left = near.last(where: { result[$0.id] == .trailing }), !taken.contains(.leading) {
+                result[left.id] = .leading
+                result[p.id] = .trailing
+            } else {
+                result[p.id] = [.top, .bottom, .leading, .trailing].first { !taken.contains($0) } ?? .trailing
+            }
+            placed.append((p.id, x, y))
+        }
+        return result
     }
 }
