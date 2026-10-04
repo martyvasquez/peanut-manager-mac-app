@@ -40,7 +40,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
   - Settings carry over from the last game.
   - Feasibility alert offers "Use GameChanger History" / "Open Roster."
 - **Stats:** full-width sortable table; import sheet with match review.
-- **Settings:** Sign in with ChatGPT (account, Manage Usage, Sign Out); Model (Default = newest Sol, or a picked model); Thinking (Default = Medium).
+- **Settings:** Sign in with ChatGPT (account, Manage Usage, Sign Out); Model (Default = newest Luna, or a picked model); Thinking (Default = Medium).
 - **App:** icon and accent color; local SwiftData store in its own folder; debug launch flags (README).
 
 ### Still to do (priority order)
@@ -57,7 +57,8 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 2. **Sign in with ChatGPT.** Done and shipped (builds 105–106); it is the only AI. Marty: "a huge, huge win." Left: the quality check (step 5) and a stable signing certificate (item 3).
    - What: OpenAI's [Sign in with ChatGPT](https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt). The coach signs in with their ChatGPT account and AI calls run on their Plus/Pro plan: no key, no credits, no bill to us. Eligible: "open-source projects, personal projects that run locally" (we're both). Free ChatGPT accounts can't use it.
    - **Decided (Oct 3): default thinking is Medium** (falls back to the model's own default where there's no Medium).
-   - **Decided (Oct 3): the default model is the newest Sol** the account offers (`ChatGPTClient.preferredModel`), not a fixed slug. Coaches on Default move up when OpenAI ships a new Sol; a picked model stays until OpenAI retires it, then it falls back to Default. The model list loads at launch.
+   - **Decided (Oct 3, later): the default model is the newest Luna** (was newest Sol). Marty, after the first eval: Luna "paid attention" (it kept the coach's locks when the others moved one) and the rest was about the same. Falls back to the newest Sol, then the first model offered.
+   - **Earlier (Oct 3): the default model was the newest Sol** the account offers (`ChatGPTClient.preferredModel`), not a fixed slug. Coaches on Default move up when OpenAI ships a new Sol; a picked model stays until OpenAI retires it, then it falls back to Default. The model list loads at launch.
    - **Decided (Oct 3, later): ChatGPT only. OpenRouter is removed** (key, model library, Models tab, client). Marty: no consumer will make an OpenRouter account, add money, pull a key and pick a model; sign in with ChatGPT solves it. Also, with a key saved the app kept running Muse. Consequence: the Jev plan (item 8 below, §8.4) assumed the OpenRouter key and needs a new route.
    - **Decided (Oct 3, after the test):** Astra is far more than lineups need; keep a ChatGPT model picker so Marty can experiment. (Earlier calls to keep OpenRouter as an option were reversed the same day; see above.)
    - Spec: the full protocol is in `https://developers.openai.com/siwc/llms-full.txt` (section "Registration and sign-in" onward). Don't copy the DevKit (Node/React, noncommercial license); write it in Swift from the docs.

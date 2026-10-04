@@ -34,7 +34,7 @@ final class AIService {
     var chosenModelID: String? {
         didSet { UserDefaults.standard.set(chosenModelID, forKey: Keys.choice) }
     }
-    /// The newest Sol the account offers, remembered so the app starts on it before the list loads.
+    /// The newest Luna the account offers, remembered so the app starts on it before the list loads.
     private(set) var defaultModelID: String {
         didSet { UserDefaults.standard.set(defaultModelID, forKey: Keys.defaultModel) }
     }
@@ -68,7 +68,7 @@ final class AIService {
         // Builds before the newest-Sol default stored every model as a choice; only a non-default one was picked on purpose.
         if let legacy = defaults.string(forKey: Keys.legacyModel) {
             defaults.removeObject(forKey: Keys.legacyModel)
-            if legacy != ChatGPTClient.defaultModel { defaults.set(legacy, forKey: Keys.choice) }
+            if legacy != "gpt-5.6-sol" { defaults.set(legacy, forKey: Keys.choice) }
         }
         chosenModelID = defaults.string(forKey: Keys.choice)
         reasoningEffort = defaults.string(forKey: Keys.effort)

@@ -84,14 +84,15 @@ struct ChatGPTErrorTests {
         #expect(models[1].summary == "Workhorse")
     }
 
-    @Test func preferredModelIsNewestSol() {
-        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.5"]) == "gpt-5.6-sol")
-        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-5.6-sol", "gpt-6.6-sol", "gpt-6.10-sol"]) == "gpt-6.10-sol")
-        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-7-sol", "gpt-6.6-sol"]) == "gpt-7-sol")
-        // No Sol: the old default if offered, else the first in the list.
-        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-5.6-luna"]) == "gpt-6-astra")
-        // Variants like previews don't count as Sol.
-        #expect(ChatGPTClient.preferredModel(in: ["gpt-5.5", "gpt-6.6-sol-preview", "gpt-5.6-sol"]) == "gpt-5.6-sol")
+    @Test func preferredModelIsNewestLuna() {
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5"]) == "gpt-5.6-luna")
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-5.6-luna", "gpt-6.6-luna", "gpt-6.10-luna"]) == "gpt-6.10-luna")
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-7-luna", "gpt-6.6-luna"]) == "gpt-7-luna")
+        // No Luna: the newest Sol, else the first in the list.
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-5.6-sol", "gpt-6.6-sol"]) == "gpt-6.6-sol")
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-6-astra", "gpt-5.5"]) == "gpt-6-astra")
+        // Variants like previews don't count.
+        #expect(ChatGPTClient.preferredModel(in: ["gpt-5.5", "gpt-6.6-luna-preview", "gpt-5.6-luna"]) == "gpt-5.6-luna")
         #expect(ChatGPTClient.preferredModel(in: []) == nil)
     }
 }

@@ -5,18 +5,20 @@ import LineupKit
 /// The route requires `stream: true` and `store: false` and rejects `max_output_tokens` and `temperature`.
 public struct ChatGPTClient: LLMClient {
     /// The default until the account's model list loads; after that, `preferredModel(in:)` decides.
-    public static let defaultModel = "gpt-5.6-sol"
+    public static let defaultModel = "gpt-5.6-luna"
 
-    /// The default model: the newest Sol (OpenAI's workhorse tier) the account offers, so the app
-    /// moves up as OpenAI ships new ones. Falls back to `defaultModel`, then the first in the list.
+    /// The default model: the newest Luna the account offers, so the app moves up as OpenAI ships new ones.
+    /// Chosen by the Oct 3 eval: Luna kept the coach's locks under pressure, matched the others elsewhere,
+    /// and is fast. Falls back to the newest Sol, then the first in the list.
     public static func preferredModel(in ids: [String]) -> String? {
-        func solVersion(_ id: String) -> [Int]? {
-            guard let match = id.wholeMatch(of: /gpt-(\d+(?:\.\d+)*)-sol/) else { return nil }
-            return match.1.split(separator: ".").compactMap { Int($0) }
+        func newest(_ family: String) -> String? {
+            ids.compactMap { id -> (String, [Int])? in
+                guard let match = id.wholeMatch(of: /gpt-(\d+(?:\.\d+)*)-([a-z]+)/), match.2 == family else { return nil }
+                return (id, match.1.split(separator: ".").compactMap { Int($0) })
+            }
+            .max { $0.1.lexicographicallyPrecedes($1.1) }?.0
         }
-        let sols = ids.compactMap { id in solVersion(id).map { (id, $0) } }
-        if let newest = sols.max(by: { $0.1.lexicographicallyPrecedes($1.1) }) { return newest.0 }
-        return ids.contains(defaultModel) ? defaultModel : ids.first
+        return newest("luna") ?? newest("sol") ?? ids.first
     }
 
     public var session: ChatGPTSession
