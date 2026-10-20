@@ -9,7 +9,7 @@ import LineupAI
 /// The model eval (plan, Build status item 5): one hard game and a few players, each model once, one call at a time.
 /// Runs only on a copy of the library:
 ///   -PMStore <Copy> -PMRunEval YES -PMEvalGame <opponent> [-PMEvalRules <rule set>] -PMEvalPlayers "<name>,<name>"
-///   [-PMEvalModels "<id>,<id>"] [-PMEvalEffort medium]
+///   [-PMEvalModels "<id>,<id>"] [-PMEvalEffort medium] [-PMEvalWeighting gc-heavy]
 /// Claude models (`claude-…`) run too when ANTHROPIC_API_KEY is set in the environment.
 /// Writes ~/Library/Application Support/Peanut Manager/Evals/<Copy>/: results.json (finished runs are never
 /// repeated), progress.log, and grade.html (blind: A, B, C… until you reveal).
@@ -85,9 +85,16 @@ enum EvalRunner {
                     ctx.rules = set.sortedRules.map(\.teamRule)
                     ruleSetName = name
                 }
+                if let raw = defaults.string(forKey: "PMEvalWeighting") {
+                    guard let weighting = DataWeighting(rawValue: raw) else {
+                        log("Unknown weighting \(raw); use one of \(DataWeighting.allCases.map(\.rawValue).joined(separator: ", ")).")
+                        return
+                    }
+                    ctx.weighting = weighting
+                }
                 results.addPlayers(ctx.players)
                 results.lineupCase = LineupCase(
-                    game: gameName, ruleSet: ruleSetName, rules: ctx.rules.filter(\.enabled).map(\.text), innings: ctx.innings,
+                    game: gameName, ruleSet: ruleSetName, weighting: ctx.weighting.rawValue, rules: ctx.rules.filter(\.enabled).map(\.text), innings: ctx.innings,
                     locks: ctx.locks.map { EvalLock(inning: $0.inning, player: $0.player.uuidString, slot: $0.slot.description) },
                     absent: ctx.players.filter { !ctx.availability(of: $0.id).present }.map(\.id.uuidString)
                 )
@@ -154,7 +161,12 @@ enum EvalRunner {
         }
         if let list = UserDefaults.standard.string(forKey: "PMEvalModels") {
             return list.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.compactMap { id in
-                id.hasPrefix("claude-") ? claude(id) : chatGPT.first { $0.id == id }.map(openAI)
+                if id.hasPrefix("claude-") { return claude(id) }
+                guard let info = chatGPT.first(where: { $0.id == id }) else {
+                    log("Skipping \(id): this ChatGPT account offers \(chatGPT.map(\.id).joined(separator: ", ")).")
+                    return nil
+                }
+                return openAI(info)
             }
         }
         let newest = families.compactMap { family in
@@ -236,6 +248,7 @@ nonisolated struct EvalPlayer: Codable {
 nonisolated struct LineupCase: Codable {
     var game: String
     var ruleSet: String
+    var weighting: String?
     var rules: [String]
     var innings: Int
     var locks: [EvalLock]

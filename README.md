@@ -112,6 +112,7 @@ for f in "$AS"/Library.store*; do cp "$f" "$AS/EvalCopy${f##*/Library}"; done
 | `-PMEvalPlayers "a,b,c"` | Players to assess (first names or full names) |
 | `-PMEvalModels "id,id"` | Only these models (default: the newest Luna, Sol, Terra and Astra, plus `claude-haiku-5-5` and `claude-sonnet-5-5` when a key is set) |
 | `-PMEvalEffort medium` | Thinking level (default: Medium) |
+| `-PMEvalWeighting gc-heavy` | Data weighting instead of the game's (`gc-only`, `gc-heavy`, `equal`, `coach-heavy`, `coach-only`) |
 
 - **Claude:** set `ANTHROPIC_API_KEY=sk-ant-…` in front of the launch command to add Claude models. They run on the Claude API (a Max or Team plan's monthly credits, or paid credits), so unlike ChatGPT they cost money; the log and Reveal Models show each run's cost. Eval only: the app itself is still ChatGPT-only.
 - **Output:** `~/Library/Application Support/Peanut Manager/Evals/<Store>/` holds `results.json`, `progress.log` and `grade.html`. The page opens when the run ends.
