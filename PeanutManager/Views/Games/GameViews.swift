@@ -328,6 +328,7 @@ struct GameDetailView: View {
             VStack(spacing: 10) {
                 SignInButton(prominent: true)
                 Text("Lineups run on your ChatGPT plan.").font(.callout).foregroundStyle(.secondary)
+                SettingsLink { Text("Use a Claude API Key Instead") }.buttonStyle(.link).font(.callout)
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 40)
@@ -443,22 +444,37 @@ struct GameDetailView: View {
     }
 }
 
-/// Which ChatGPT model makes the lineup.
+/// Which model makes the lineup: ChatGPT (the coach's plan) or Claude (the coach's API key).
 struct ModelMenu: View {
     @State private var ai = AIService.shared
 
     var body: some View {
         Menu {
-            if ai.isSignedIn {
+            if ai.isReady {
                 // Picking the default model follows the default (Settings can pin it).
-                Picker("Model", selection: Binding(get: { ai.chatGPTModelID }, set: { ai.chosenModelID = $0 == ai.defaultModelID ? nil : $0 })) {
-                    if ai.chatGPTModels.isEmpty { Text(ai.currentModelName).tag(ai.chatGPTModelID) }
-                    ForEach(ai.chatGPTModels) { Text($0.name).tag($0.id) }
+                let selection = Binding(get: { ai.modelID }, set: { ai.chosenModelID = $0 == ai.defaultModelID ? nil : $0 })
+                if ai.isSignedIn {
+                    Picker("ChatGPT", selection: selection) {
+                        if ai.chatGPTModels.isEmpty && !ai.usesClaude { Text(ai.currentModelName).tag(ai.modelID) }
+                        ForEach(ai.chatGPTModels) { Text($0.name).tag($0.id) }
+                    }
+                    .pickerStyle(.inline)
                 }
-                .pickerStyle(.inline)
+                if ai.hasClaudeKey {
+                    Picker("Claude", selection: selection) {
+                        ForEach(AnthropicClient.models) { Text($0.name).tag($0.id) }
+                    }
+                    .pickerStyle(.inline)
+                }
                 Divider()
-                Section("Using ChatGPT plan") {
-                    Link("Manage Usage…", destination: ChatGPTAuth.manageUsageURL)
+                if ai.usesClaude {
+                    Section("Using your Claude API key") {
+                        Link("Claude Console…", destination: AnthropicClient.keysURL)
+                    }
+                } else {
+                    Section("Using ChatGPT plan") {
+                        Link("Manage Usage…", destination: ChatGPTAuth.manageUsageURL)
+                    }
                 }
             } else {
                 SettingsLink { Text("Sign In with ChatGPT…") }
@@ -467,7 +483,7 @@ struct ModelMenu: View {
             Chip(ai.currentModelName, symbol: "sparkles")
         }
         .menuStyle(.button).buttonStyle(.plain).fixedSize()
-        .help("The AI that makes this lineup · Using ChatGPT plan")
+        .help("The AI that makes this lineup · " + (ai.usesClaude ? "Using your Claude API key" : "Using ChatGPT plan"))
         .task { if ai.isSignedIn && ai.chatGPTModels.isEmpty { await ai.loadModels() } }
     }
 }

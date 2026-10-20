@@ -5,7 +5,11 @@ struct SettingsView: View {
     @State private var ai = AIService.shared
 
     var body: some View {
-        Form { ChatGPTSettings() }
+        Form {
+            ChatGPTSettings()
+            ClaudeSettings()
+            if ai.isReady { ModelSettings() }
+        }
             .formStyle(.grouped)
             .scrollDisabled(true)
             .frame(width: 500)
@@ -42,27 +46,9 @@ struct ChatGPTSettings: View {
                     Spacer()
                     Button("Sign Out") { ai.signOut() }
                 }
+            } header: {
+                Text("ChatGPT")
             }
-            Section {
-                Picker("Model", selection: $ai.chosenModelID) {
-                    Text("Default (\(ai.displayName(for: ai.defaultModelID)))").tag(String?.none)
-                    Divider()
-                    if ai.chatGPTModels.isEmpty, let chosen = ai.chosenModelID { Text(ai.displayName(for: chosen)).tag(Optional(chosen)) }
-                    ForEach(ai.chatGPTModels) { Text($0.name).tag(Optional($0.id)) }
-                }
-                Picker("Thinking", selection: $ai.reasoningEffort) {
-                    Text("Default\(ai.defaultEffortName.map { " (\($0))" } ?? "")").tag(String?.none)
-                    Divider()
-                    ForEach(ai.effortChoices, id: \.self) { Text($0.capitalized).tag(Optional($0)) }
-                }
-            } footer: {
-                if let error = ai.modelsError {
-                    Text(error).foregroundStyle(.secondary)
-                } else if let summary = ai.currentModel?.summary {
-                    Text(summary).foregroundStyle(.secondary)
-                }
-            }
-            .task { if ai.chatGPTModels.isEmpty { await ai.loadModels() } }
             if let error = ai.signInError {
                 Section { Text(error).foregroundStyle(.secondary) }
             }
@@ -95,6 +81,93 @@ struct ChatGPTSettings: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
             }
+        }
+    }
+}
+
+/// The coach's own Anthropic API key, for running on Claude.
+struct ClaudeSettings: View {
+    @State private var ai = AIService.shared
+    @State private var draft = ""
+
+    var body: some View {
+        Section {
+            if let masked = ai.maskedClaudeKey {
+                LabeledContent("API Key") {
+                    HStack {
+                        Text(masked).foregroundStyle(.secondary)
+                        Button("Remove") { ai.removeClaudeKey() }
+                    }
+                }
+                LabeledContent("Billing", value: "Your Anthropic account")
+            } else {
+                HStack {
+                    SecureField("API Key", text: $draft, prompt: Text("Paste your key"))
+                        .onSubmit(save)
+                    if ai.isCheckingKey {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button("Add", action: save).disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+            }
+        } header: {
+            Text("Claude")
+        } footer: {
+            if let error = ai.keyError {
+                Text(error).foregroundStyle(.red)
+            } else if !ai.hasClaudeKey {
+                HStack(spacing: 4) {
+                    Text("Claude Max and Team plans include monthly API credits.").foregroundStyle(.secondary)
+                    Link("Get a Key", destination: AnthropicClient.keysURL)
+                }
+            }
+        }
+    }
+
+    private func save() {
+        Task { if await ai.saveClaudeKey(draft) { draft = "" } }
+    }
+}
+
+/// Which model runs, from every service that's connected, and how hard it thinks.
+struct ModelSettings: View {
+    @State private var ai = AIService.shared
+
+    var body: some View {
+        Section {
+            Picker("Model", selection: $ai.activeChoice) {
+                Text("Default (\(ai.displayName(for: ai.defaultModelID)))").tag(String?.none)
+                if ai.isSignedIn {
+                    Section("ChatGPT") {
+                        if ai.chatGPTModels.isEmpty, let chosen = ai.activeChoice, !AnthropicClient.isClaude(chosen) {
+                            Text(ai.displayName(for: chosen)).tag(Optional(chosen))
+                        }
+                        ForEach(ai.chatGPTModels) { Text($0.name).tag(Optional($0.id)) }
+                    }
+                }
+                if ai.hasClaudeKey {
+                    Section("Claude") {
+                        ForEach(AnthropicClient.models) { Text($0.name).tag(Optional($0.id)) }
+                    }
+                }
+            }
+            Picker("Thinking", selection: $ai.reasoningEffort) {
+                Text("Default\(ai.defaultEffortName.map { " (\($0))" } ?? "")").tag(String?.none)
+                Divider()
+                ForEach(ai.effortChoices, id: \.self) { Text($0.capitalized).tag(Optional($0)) }
+            }
+        } footer: {
+            if let error = ai.modelsError, !ai.usesClaude {
+                Text(error).foregroundStyle(.secondary)
+            } else if let summary = ai.currentModel?.summary {
+                Text(summary).foregroundStyle(.secondary)
+            }
+        }
+        .task { if ai.isSignedIn && ai.chatGPTModels.isEmpty { await ai.loadModels() } }
+        .onChange(of: ai.modelID) {
+            // Claude and ChatGPT offer different thinking levels.
+            if let effort = ai.reasoningEffort, !ai.effortChoices.contains(effort) { ai.reasoningEffort = nil }
         }
     }
 }

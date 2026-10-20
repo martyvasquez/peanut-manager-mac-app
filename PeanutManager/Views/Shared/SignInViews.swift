@@ -63,12 +63,15 @@ struct SignInSheet: View {
             if let error = ai.signInError {
                 Text(error).font(.callout).foregroundStyle(.red).multilineTextAlignment(.center)
             }
+            SettingsLink { Text("Use a Claude API Key Instead") }
+                .buttonStyle(.link)
+                .simultaneousGesture(TapGesture().onEnded { dismiss() })
             Button("Later") { dismiss() }
                 .buttonStyle(.link)
                 .foregroundStyle(.secondary)
         }
         .padding(36)
         .frame(width: 420)
-        .onChange(of: ai.isSignedIn) { _, signedIn in if signedIn { dismiss() } }
+        .onChange(of: ai.isReady) { _, ready in if ready { dismiss() } }
     }
 }

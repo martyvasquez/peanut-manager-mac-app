@@ -2,13 +2,30 @@ import Foundation
 import LineupKit
 
 /// Runs requests on Claude through the Messages API with the coach's own API key (Claude Max and Team plans include
-/// monthly API credits). Eval-only for now (plan, Build status item 5): it ships only if Claude beats Luna in the blind eval.
-/// Streams, since thinking can run for minutes before the first byte. Thinking is adaptive (the default on current models);
-/// `effort` sets its depth.
+/// monthly API credits). Streams, since thinking can run for minutes before the first byte. Thinking is adaptive
+/// (the default on current models); `effort` sets its depth.
 public struct AnthropicClient: LLMClient {
+    /// A Claude model the app offers.
+    public struct ModelInfo: Identifiable, Hashable, Sendable {
+        public var id: String
+        public var name: String
+    }
+
+    /// The models the app offers. Sonnet is the default: in the Oct 20 evals it followed every rule on the first answer
+    /// and made the best rule-following lineups.
+    public static let models = [
+        ModelInfo(id: "claude-sonnet-5-5", name: "Claude Sonnet 5.5"),
+        ModelInfo(id: "claude-haiku-5-5", name: "Claude Haiku 5.5"),
+        ModelInfo(id: "claude-opus-5-5", name: "Claude Opus 5.5"),
+    ]
+    public static let defaultModel = "claude-sonnet-5-5"
+    /// Where coaches make a key.
+    public static let keysURL = URL(string: "https://console.anthropic.com/settings/keys")!
     /// The models the eval compares by default, roughly cheapest first.
     public static let evalModels = ["claude-haiku-5-5", "claude-sonnet-5-5"]
     public static let efforts = ["low", "medium", "high", "xhigh", "max"]
+
+    public static func isClaude(_ id: String) -> Bool { id.hasPrefix("claude-") }
 
     public var apiKey: String
     /// `low`…`max`; nil uses the model's default.
@@ -87,6 +104,16 @@ public struct AnthropicClient: LLMClient {
             if try stream.consume(line) { break }
         }
         return try stream.result(model: request.model)
+    }
+
+    /// Confirms the key works with one free call (the model list).
+    public func checkKey() async throws {
+        var request = URLRequest(url: baseURL.appending(path: "models").appending(queryItems: [URLQueryItem(name: "limit", value: "1")]))
+        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        let (data, response) = try await urlSession.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else { throw Self.error(status: status, data: data) }
     }
 
     func body(for request: LLMRequest) throws -> Data {

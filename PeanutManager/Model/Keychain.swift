@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// Stores secrets (the ChatGPT sign-in) in the login keychain. They are never written anywhere else.
+/// Stores secrets (the ChatGPT sign-in, the Claude API key) in the login keychain. They are never written anywhere else.
 enum Keychain {
     nonisolated private static let service = "com.martyvasquez.PeanutManager"
 
