@@ -103,7 +103,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
      - Rerun Luna's 3 assessments at Medium (they were reused; their thinking level wasn't recorded then). 3 calls.
      - Optional: retry Astra's lineup (it timed out); relaunching the same eval retries only that run.
      - Log why each revision happened (Sol needed 1 on the rerun; the cause wasn't recorded).
-     - Run Claude Sonnet 5.5 and Haiku 5.5 on the same case and grade blind (needs an Anthropic key; a few dollars).
+     - Done Oct 20 (EvalClaude, Test2 under League, Medium): Marty's blind grades put Sonnet 5.5 best (69 s, $0.11), Haiku 5.5 middle (78 s, $0.01) and Luna worst (175 s, plan). All three kept every lock and the safety net changed nothing. One game only, so it needs a second game and the assessments before anything ships. All three put Kian at 1B: his profile marks only P and C as can't, so the prompt said "1B: yes". That's a data gap, not the model: unmarked premium positions default to playable.
      - A second hard game whose locks don't conflict with its rules, so "valid on first try" and revisions can separate the models.
    - Still needs:
    - A golden set: fixture teams as JSON, Marty's real rules/rosters, expected rule templates, assessment fixtures.
