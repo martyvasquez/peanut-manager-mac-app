@@ -274,12 +274,14 @@ final class AIService {
     static func isFatal(_ error: Error) -> Bool {
         if error is AIServiceError { return true }
         if let error = error as? ChatGPTAuth.AuthError { return error == .signInAgain }
+        if let error = error as? AnthropicClient.ClientError { return error.isFatal }
         return (error as? ChatGPTClient.ClientError)?.isFatal ?? false
     }
 
     /// Problems that usually clear up on their own: timeouts, dropped connections, rate limits, server errors.
     static func isTransient(_ error: Error) -> Bool {
         if error is URLError { return true }
+        if let error = error as? AnthropicClient.ClientError { return error.isTransient }
         return (error as? ChatGPTClient.ClientError)?.isTransient ?? false
     }
 

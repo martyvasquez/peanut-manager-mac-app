@@ -110,9 +110,10 @@ for f in "$AS"/Library.store*; do cp "$f" "$AS/EvalCopy${f##*/Library}"; done
 | `-PMEvalGame <opponent>` | The game to line up, with its locks and availability |
 | `-PMEvalRules <rule set>` | Use this rule set instead of the game's (to make it harder) |
 | `-PMEvalPlayers "a,b,c"` | Players to assess (first names or full names) |
-| `-PMEvalModels "id,id"` | Only these models (default: the newest Luna, Sol, Terra and Astra) |
+| `-PMEvalModels "id,id"` | Only these models (default: the newest Luna, Sol, Terra and Astra, plus `claude-sonnet-5-5` and `claude-opus-5-5` when a key is set) |
 | `-PMEvalEffort medium` | Thinking level (default: Medium) |
 
+- **Claude:** set `ANTHROPIC_API_KEY=sk-ant-…` in front of the launch command to add Claude models. They run on the Claude API (a Max or Team plan's monthly credits, or paid credits), so unlike ChatGPT they cost money; the log and Reveal Models show each run's cost. Eval only: the app itself is still ChatGPT-only.
 - **Output:** `~/Library/Application Support/Peanut Manager/Evals/<Store>/` holds `results.json`, `progress.log` and `grade.html`. The page opens when the run ends.
 - **Grading is blind:** each lineup and assessment is labeled A, B, C… Grade them (print as-is?, quality; accurate?, useful), then **Reveal Models** shows which model made what, with time, tokens, revisions, safety-net cells and lock-move attempts. **Copy Grades** puts the grades on the clipboard.
 - **Cheap by design:** finished runs are never repeated (relaunch to retry only what failed), a stored assessment from the same model on the same facts is reused, and a usage-limit or sign-in error stops the run at once.

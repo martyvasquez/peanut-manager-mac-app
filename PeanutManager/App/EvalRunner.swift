@@ -10,6 +10,7 @@ import LineupAI
 /// Runs only on a copy of the library:
 ///   -PMStore <Copy> -PMRunEval YES -PMEvalGame <opponent> [-PMEvalRules <rule set>] -PMEvalPlayers "<name>,<name>"
 ///   [-PMEvalModels "<id>,<id>"] [-PMEvalEffort medium]
+/// Claude models (`claude-…`) run too when ANTHROPIC_API_KEY is set in the environment.
 /// Writes ~/Library/Application Support/Peanut Manager/Evals/<Copy>/: results.json (finished runs are never
 /// repeated), progress.log, and grade.html (blind: A, B, C… until you reveal).
 enum EvalRunner {
@@ -41,11 +42,11 @@ enum EvalRunner {
 
         let ai = AIService.shared
         await ai.loadModels()
-        guard ai.isSignedIn, !ai.chatGPTModels.isEmpty else {
-            log("Sign in with ChatGPT first. \(ai.modelsError ?? "")")
+        let models = pickModels(ai.isSignedIn ? ai.chatGPTModels : [], anthropicKey: ProcessInfo.processInfo.environment["ANTHROPIC_API_KEY"])
+        guard !models.isEmpty else {
+            log("No models to run. Sign in with ChatGPT, or set ANTHROPIC_API_KEY for Claude. \(ai.modelsError ?? "")")
             return
         }
-        let models = pickModels(ai.chatGPTModels)
         log("Models: \(models.map(\.id).joined(separator: ", ")) · thinking \(effort)")
 
         let context = container.mainContext
@@ -53,14 +54,14 @@ enum EvalRunner {
         var stopped = false
 
         /// One model on one subject, unless it's already done. Returns false once a retry can't help (usage limit, sign-in).
-        func attempt(_ kind: String, _ subject: String, _ model: ChatGPTClient.ModelInfo, _ body: (RecordingClient, inout EvalRun) async throws -> Void) async {
+        func attempt(_ kind: String, _ subject: String, _ model: EvalModel, _ body: (RecordingClient, inout EvalRun) async throws -> Void) async {
             guard !stopped else { return }
             if results.blind[subject] == nil { results.blind[subject] = models.map(\.id).shuffled() }
             for id in models.map(\.id) where !(results.blind[subject]?.contains(id) ?? false) { results.blind[subject]?.append(id) }
             if results.runs.contains(where: { $0.subject == subject && $0.model == model.id && $0.error == nil }) { return }
             results.runs.removeAll { $0.subject == subject && $0.model == model.id }
             let thinking = model.efforts.contains(effort) ? effort : nil
-            let client = RecordingClient(ai.client(effort: thinking))
+            let client = RecordingClient(model.client(thinking))
             var run = EvalRun(kind: kind, subject: subject, model: model.id, effort: thinking)
             log("\(kind) \(subject) · \(model.id)")
             do {
@@ -140,17 +141,31 @@ enum EvalRunner {
         NSWorkspace.shared.open(page)
     }
 
-    static func pickModels(_ models: [ChatGPTClient.ModelInfo]) -> [ChatGPTClient.ModelInfo] {
-        if let list = UserDefaults.standard.string(forKey: "PMEvalModels") {
-            return list.split(separator: ",").compactMap { id in models.first { $0.id == id.trimmingCharacters(in: .whitespaces) } }
+    /// The models in `-PMEvalModels`, or by default the newest of each ChatGPT family plus Claude's eval models.
+    /// Claude needs `anthropicKey`; without it, Claude models are skipped.
+    static func pickModels(_ chatGPT: [ChatGPTClient.ModelInfo], anthropicKey: String?) -> [EvalModel] {
+        let ai = AIService.shared
+        func openAI(_ info: ChatGPTClient.ModelInfo) -> EvalModel {
+            EvalModel(id: info.id, efforts: info.efforts) { ai.client(effort: $0) }
         }
-        return families.compactMap { family in
-            models.compactMap { model -> (ChatGPTClient.ModelInfo, [Int])? in
+        func claude(_ id: String) -> EvalModel? {
+            guard let key = anthropicKey, !key.isEmpty else { log("Skipping \(id): set ANTHROPIC_API_KEY to run Claude."); return nil }
+            return EvalModel(id: id, efforts: AnthropicClient.efforts) { AnthropicClient(apiKey: key, effort: $0) }
+        }
+        if let list = UserDefaults.standard.string(forKey: "PMEvalModels") {
+            return list.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.compactMap { id in
+                id.hasPrefix("claude-") ? claude(id) : chatGPT.first { $0.id == id }.map(openAI)
+            }
+        }
+        let newest = families.compactMap { family in
+            chatGPT.compactMap { model -> (ChatGPTClient.ModelInfo, [Int])? in
                 guard let match = model.id.wholeMatch(of: /gpt-(\d+(?:\.\d+)*)-([a-z]+)/), match.2 == family else { return nil }
                 return (model, match.1.split(separator: ".").compactMap { Int($0) })
             }
             .max { $0.1.lexicographicallyPrecedes($1.1) }?.0
         }
+        let claudeModels = (anthropicKey?.isEmpty ?? true) ? [] : AnthropicClient.evalModels.compactMap(claude)
+        return newest.map(openAI) + claudeModels
     }
 
     nonisolated static func log(_ message: String) {
@@ -167,6 +182,13 @@ enum EvalRunner {
     }
 }
 
+/// A model the eval can run: a ChatGPT plan model or a Claude API model.
+struct EvalModel {
+    var id: String
+    var efforts: [String]
+    var client: (_ effort: String?) -> any LLMClient
+}
+
 /// Passes requests through and records how long each took and its tokens.
 nonisolated final class RecordingClient: LLMClient, Sendable {
     let base: any LLMClient
@@ -177,9 +199,11 @@ nonisolated final class RecordingClient: LLMClient, Sendable {
     func complete(_ request: LLMRequest) async throws -> LLMResponse {
         let start = ContinuousClock.now
         let response = try await base.complete(request)
-        let call = EvalCall(seconds: (ContinuousClock.now - start) / .seconds(1), inputTokens: response.usage.promptTokens, outputTokens: response.usage.completionTokens)
+        let call = EvalCall(seconds: (ContinuousClock.now - start) / .seconds(1), inputTokens: response.usage.promptTokens,
+                            outputTokens: response.usage.completionTokens, cost: response.usage.cost)
         calls.withLock { $0.append(call) }
-        EvalRunner.log(String(format: "  call: %.0f s, %d in / %d out", call.seconds, call.inputTokens, call.outputTokens))
+        EvalRunner.log(String(format: "  call: %.0f s, %d in / %d out", call.seconds, call.inputTokens, call.outputTokens)
+                       + (call.cost.map { String(format: ", $%.3f", $0) } ?? ""))
         return response
     }
 
@@ -228,6 +252,8 @@ nonisolated struct EvalCall: Codable {
     var seconds: Double
     var inputTokens: Int
     var outputTokens: Int
+    /// USD, for API models (Claude). Plan models (ChatGPT) cost nothing extra.
+    var cost: Double?
 }
 
 nonisolated struct EvalRun: Codable {

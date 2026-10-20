@@ -90,6 +90,7 @@ enum GradePage {
     const runFor = (subject, model) => DATA.runs.find(r => r.subject === subject && r.model === model);
     const secs = r => r.calls.reduce((a, c) => a + c.seconds, 0);
     const toks = r => r.calls.reduce((a, c) => a + c.inputTokens + c.outputTokens, 0);
+    const cost = r => r.calls.some(c => c.cost != null) ? ` · $${r.calls.reduce((a, c) => a + (c.cost ?? 0), 0).toFixed(2)}` : "";
 
     function gradeControls(key, questions) {
       const g = grades[key] || {};
@@ -123,7 +124,7 @@ enum GradePage {
       }
       const m = L ? `First try ${L.battingRevisions + L.defenseRevisions === 0 ? "valid" : "invalid"} · revisions ${L.battingRevisions}+${L.defenseRevisions} · safety-net cells ${L.adjusted.length + (L.battingAdjusted ? 1 : 0)} · ${L.lockMoves != null ? `tried to move a lock ${L.lockMoves}× · ` : ""}` : "";
       return `<div class="card"><div class="label">${label}<span class="model">${esc(run.model)}</span></div>
-        <div class="metrics">${m}${run.calls.length} calls · ${secs(run).toFixed(0)} s · ${toks(run).toLocaleString()} tokens</div>
+        <div class="metrics">${m}${run.calls.length} calls · ${secs(run).toFixed(0)} s · ${toks(run).toLocaleString()} tokens${cost(run)}</div>
         ${body}${gradeControls("lineup|" + run.model, [["print", "Print as-is?", ["Yes", "No"]], ["score", "Quality", ["1", "2", "3", "4", "5"]]])}</div>`;
     }
 
@@ -147,7 +148,7 @@ enum GradePage {
           `<div class="head">Develop</div><ul class="claims">${a.development.map(d => `<li><b>${esc(d.focus)}.</b> ${esc(d.drill)}</li>`).join("")}</ul>
           <p class="why muted">Confidence ${esc(a.confidence)}: ${esc(a.confidenceReason)}</p>`;
       }
-      const m = run.reused ? "Reused from the library (no new call) · " : `${run.calls.length} call${run.calls.length === 1 ? "" : "s"}${run.calls.length > 1 ? " (retried for bad citations)" : ""} · ${secs(run).toFixed(0)} s · ${toks(run).toLocaleString()} tokens · `;
+      const m = run.reused ? "Reused from the library (no new call) · " : `${run.calls.length} call${run.calls.length === 1 ? "" : "s"}${run.calls.length > 1 ? " (retried for bad citations)" : ""} · ${secs(run).toFixed(0)} s · ${toks(run).toLocaleString()} tokens${cost(run)} · `;
       return `<div class="card"><div class="label">${label}<span class="model">${esc(run.model)}</span></div>
         <div class="metrics">${m}</div>
         ${body}${gradeControls(run.subject + "|" + run.model, [["accurate", "Accurate?", ["Yes", "Mostly", "No"]], ["score", "Useful", ["1", "2", "3", "4", "5"]]])}</div>`;
