@@ -7,7 +7,7 @@ import LineupKit
 /// `effort` sets its depth.
 public struct AnthropicClient: LLMClient {
     /// The models the eval compares by default, roughly cheapest first.
-    public static let evalModels = ["claude-sonnet-5-5", "claude-opus-5-5"]
+    public static let evalModels = ["claude-haiku-5-5", "claude-sonnet-5-5"]
     public static let efforts = ["low", "medium", "high", "xhigh", "max"]
 
     public var apiKey: String
