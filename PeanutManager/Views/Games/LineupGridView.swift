@@ -81,6 +81,12 @@ struct LineupGridView: View {
         .focusEffectDisabled()
         .focused($focused)
         .onKeyPress(phases: .down, action: handleKey)
+        // A drag dropped outside any target never reports back; the next plain mouse move ends it.
+        .onContinuousHover { _ in
+            guard NSEvent.pressedMouseButtons == 0, dragging != nil || draggingCell != nil || draggingInning != nil else { return }
+            dragging = nil; draggingCell = nil; draggingInning = nil
+            dropTarget = nil; cellTarget = nil; inningTarget = nil
+        }
         #if DEBUG
         .task(id: model.hasGrid) {
             if UserDefaults.standard.bool(forKey: "PMOpenPicker"), model.hasGrid, rows.count > 1 {

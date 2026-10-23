@@ -130,6 +130,11 @@ enum SampleData {
         [4, 5, 4, 4], [5, 5, 4, 3], [2, 3, 3, 2], [3, 2, 2, 4], [4, 4, 4, 2],
     ]
 
+    /// Made-up best positions (the export has no innings by position); a few kids have none.
+    private static let sampleBest: [[Position]] = [
+        [.first], [.p], [.ss], [.third], [.second], [.lf], [.cf], [.c], [.rf], [], [.cf], [],
+    ]
+
     /// A 12-player team built from the bundled (anonymized) GameChanger export.
     static func makeTeam(in context: ModelContext) throws -> Team {
         guard let url = Bundle.main.url(forResource: "sample-team", withExtension: "csv") else {
@@ -146,6 +151,11 @@ enum SampleData {
             player.team = team
             player.stats = PlayerStats(batting: row.batting, fielding: row.fielding, pitching: row.pitching)
             player.applyGameChangerHistory()
+            if index < sampleBest.count {
+                var profile = player.profile
+                for position in sampleBest[index] where profile.canPlay(position) { profile[position] = .primary }
+                player.profile = profile
+            }
             // Made-up fielding ratings (hands, throws, arm, fly balls); the last player is left unrated.
             if index < sampleFielding.count {
                 var ratings = Ratings()

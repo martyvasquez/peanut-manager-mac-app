@@ -1,8 +1,11 @@
 import SwiftUI
+import AppKit
 import LineupKit
 
 /// One inning on the field, the way a coach pictures it. Drag a kid onto another to trade places, onto an open
 /// position to put them there, or onto Sitting to sit them. The arrows step through the innings.
+/// A kid at one of their best positions (the orange ones on the roster) gets an orange ring and ★; while dragging,
+/// the ring moves to the spots that are best for the kid being dragged.
 struct InningDiamond: View {
     let model: GameModel
     @State var inning: Int
@@ -47,6 +50,10 @@ struct InningDiamond: View {
         }
         .padding(18)
         .animation(.snappy, value: assignment)
+        // A drag dropped outside any target never reports back; the next plain mouse move ends it.
+        .onContinuousHover { _ in
+            if dragging != nil && NSEvent.pressedMouseButtons == 0 { dragging = nil; target = nil }
+        }
     }
 
     // MARK: Pieces
@@ -54,36 +61,48 @@ struct InningDiamond: View {
     @ViewBuilder
     private func spot(_ position: Position, holder: PlayerSnapshot?) -> some View {
         if let holder {
-            chip(holder, caption: position.label)
+            chip(holder, at: position)
         } else {
             let lit = target == .position(position) && dragging.map { canPlace($0, at: position) } == true
+            let hint = dragging.map { isBest($0, at: position) } == true
             Text(position.label)
                 .font(.callout.weight(.semibold))
-                .foregroundStyle(lit ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
+                .foregroundStyle(lit || hint ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                 .frame(width: 44, height: 44)
                 .background(lit ? Color.accentColor.opacity(0.15) : Color.clear, in: Circle())
-                .overlay(Circle().strokeBorder(lit ? Color.accentColor : Color.secondary.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
+                .overlay(Circle().strokeBorder(lit || hint ? Color.accentColor : Color.secondary.opacity(0.4), style: StrokeStyle(lineWidth: hint ? 1.5 : 1, dash: hint ? [] : [3, 2])))
                 .contentShape(Circle())
                 .onDrop(of: [.plainText], isTargeted: targeted(.position(position))) { _ in drop(on: .position(position)) }
                 .help("\(position.label) is open")
         }
     }
 
-    /// A kid, by first name. `caption` is their position on the field.
-    private func chip(_ player: PlayerSnapshot, caption: String?) -> some View {
+    /// A kid, by first name, at `position` on the field (nil on the bench or not placed).
+    private func chip(_ player: PlayerSnapshot, at position: Position?) -> some View {
         let lit = target == .player(player.id) && dragging.map { $0 != player.id && model.canSwap($0, player.id, inning: inning) } == true
+        let best = position.map { isBest(player.id, at: $0) } == true
+        // While dragging, ring the spots that are best for the dragged kid instead.
+        let ringed = if let dragging, dragging != player.id {
+            position.map { isBest(dragging, at: $0) && model.canSwap(dragging, player.id, inning: inning) } == true
+        } else {
+            dragging == nil && best
+        }
         return VStack(spacing: 0) {
-            if let caption {
-                Text(caption).font(.caption2.weight(.semibold)).foregroundStyle(lit ? AnyShapeStyle(Color.white.opacity(0.8)) : AnyShapeStyle(.secondary))
+            if let position {
+                Text(position.label).font(.caption2.weight(.semibold)).foregroundStyle(lit ? AnyShapeStyle(Color.white.opacity(0.8)) : AnyShapeStyle(.secondary))
             }
-            Text(Self.firstName(player)).font(.callout.weight(.medium)).lineLimit(1)
-                .foregroundStyle(lit ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
+            HStack(spacing: 3) {
+                if best { Image(systemName: "star.fill").font(.system(size: 8)).foregroundStyle(lit ? Color.white : Color.accentColor) }
+                Text(Self.firstName(player)).font(.callout.weight(.medium)).lineLimit(1)
+                    .foregroundStyle(lit ? AnyShapeStyle(Color.white) : AnyShapeStyle(.primary))
+            }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, caption == nil ? 6 : 4)
+        .padding(.vertical, position == nil ? 6 : 4)
         .frame(minWidth: 64)
         .background(lit ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.regularMaterial), in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
+        .overlay(Capsule().strokeBorder(ringed ? Color.accentColor : Color.primary.opacity(0.12), lineWidth: ringed ? 1.5 : 0.5))
+        .help(best ? "\(player.name) · one of their best positions" : player.name)
         .scaleEffect(lit ? 1.08 : 1)
         .opacity(dragging == player.id ? 0.35 : 1)
         .contentShape(Capsule())
@@ -95,7 +114,6 @@ struct InningDiamond: View {
                 .background(.regularMaterial, in: Capsule())
         }
         .onDrop(of: [.plainText], isTargeted: targeted(.player(player.id))) { _ in drop(on: .player(player.id)) }
-        .help(player.name)
         .animation(.snappy(duration: 0.18), value: lit)
     }
 
@@ -107,7 +125,7 @@ struct InningDiamond: View {
             if players.isEmpty {
                 Text("Nobody").font(.callout).foregroundStyle(.tertiary)
             }
-            ForEach(players) { chip($0, caption: nil) }
+            ForEach(players) { chip($0, at: nil) }
             Spacer(minLength: 0)
         }
         .padding(8)
@@ -121,6 +139,11 @@ struct InningDiamond: View {
 
     private func targeted(_ spot: Target) -> Binding<Bool> {
         Binding(get: { target == spot }, set: { target = $0 ? spot : (target == spot ? nil : target) })
+    }
+
+    /// "Best" on the roster (Good or Primary).
+    private func isBest(_ player: PlayerID, at position: Position) -> Bool {
+        (model.context.player(player)?.profile[position] ?? .cant) >= .good
     }
 
     private func canPlace(_ player: PlayerID, at position: Position) -> Bool {
