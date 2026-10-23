@@ -1,0 +1,6031 @@
+{
+ "players": [
+  {
+   "name": "Alex Player01",
+   "id": "39529C2D-5415-436B-92D1-D483A7CBDAB8",
+   "assessment": {
+    "assessedAt": 814489507.48722,
+    "confidence": "low",
+    "eyeVsData": "The coach gave no batting ratings, so there is nothing to compare for hitting. The stats show a patient hitter who has not yet made contact, but 21 plate appearances is a small sample. Trust the coach's fielding ratings, since there are no fielding stats to check them against.",
+    "battingReason": "Gets on base through walks and can steal, but the strikeout rate and lack of hits suggest a lower lineup spot while contact develops.",
+    "snapshot": "Alex has a patient eye and gets on base by drawing walks, and drives in runs despite having no hits yet. Making contact more often is the key next step, and the fielding ratings show a sure-handed infielder who fits best at first base.",
+    "effort": "medium",
+    "model": "Sample · Claude Sonnet 5.5",
+    "facts": {
+     "facts": [
+      {
+       "id": "pa",
+       "label": "Plate appearances",
+       "value": "21"
+      },
+      {
+       "id": "avg",
+       "label": "AVG",
+       "value": ".000"
+      },
+      {
+       "id": "obp",
+       "label": "OBP",
+       "value": ".429"
+      },
+      {
+       "id": "slg",
+       "label": "SLG",
+       "value": ".000"
+      },
+      {
+       "id": "k_rate",
+       "label": "K%",
+       "value": "52%"
+      },
+      {
+       "id": "bb_rate",
+       "label": "BB%",
+       "value": "38%"
+      },
+      {
+       "id": "xbh",
+       "label": "Extra-base hits",
+       "value": "0"
+      },
+      {
+       "id": "rbi",
+       "label": "RBI",
+       "value": "6"
+      },
+      {
+       "id": "sb",
+       "label": "Stolen bases",
+       "value": "2 of 2"
+      },
+      {
+       "id": "rating.fielding_hands",
+       "label": "Fielding Hands",
+       "value": "4/5"
+      },
+      {
+       "id": "rating.fielding_throw_accuracy",
+       "label": "Throw Accuracy",
+       "value": "4/5"
+      },
+      {
+       "id": "rating.fielding_arm_strength",
+       "label": "Arm Strength",
+       "value": "3/5"
+      },
+      {
+       "id": "rating.fly_ball_ability",
+       "label": "Fly Ball Ability",
+       "value": "3/5"
+      },
+      {
+       "id": "pos.p",
+       "label": "P",
+       "value": "doesn't play"
+      },
+      {
+       "id": "pos.c",
+       "label": "C",
+       "value": "doesn't play"
+      },
+      {
+       "id": "pos.1b",
+       "label": "1B",
+       "value": "best"
+      },
+      {
+       "id": "pos.2b",
+       "label": "2B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.3b",
+       "label": "3B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.ss",
+       "label": "SS",
+       "value": "plays"
+      },
+      {
+       "id": "pos.lf",
+       "label": "LF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.cf",
+       "label": "CF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.rf",
+       "label": "RF",
+       "value": "plays"
+      }
+     ]
+    },
+    "battingZone": "bottom",
+    "weaknesses": [
+     {
+      "title": "Contact",
+      "detail": "Strikes out in about half of plate appearances and has not yet gotten a hit, so he needs to put more balls in play.",
+      "evidence": [
+       "k_rate",
+       "avg"
+      ]
+     },
+     {
+      "title": "Power",
+      "detail": "No extra-base hits or slugging production yet; the focus should be on making solid contact first.",
+      "evidence": [
+       "slg",
+       "xbh"
+      ]
+     },
+     {
+      "title": "Arm Strength",
+      "detail": "Arm and fly ball ability are average, which limits fit for long throws and outfield range.",
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fly_ball_ability"
+      ]
+     }
+    ],
+    "confidenceReason": "Only 21 plate appearances, no hits, and no fielding stats; the coach gave no batting ratings, so the fielding ratings are the main basis for defensive fit.",
+    "strengths": [
+     {
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a very high rate and is willing to take pitches, which keeps OBP well above AVG.",
+      "evidence": [
+       "bb_rate",
+       "obp",
+       "pa"
+      ]
+     },
+     {
+      "title": "Situational Hitting",
+      "detail": "Produces runs even without hits, showing he moves runners and finishes innings with walks and productive at-bats.",
+      "evidence": [
+       "rbi",
+       "obp"
+      ]
+     },
+     {
+      "title": "Baserunning",
+      "detail": "Steals bases successfully when he goes, using his on-base time well.",
+      "evidence": [
+       "sb"
+      ]
+     },
+     {
+      "title": "Fielding Hands",
+      "detail": "Coach rates his glove and throwing accuracy highly, which gives him a solid base for infield play.",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ]
+     }
+    ],
+    "defense": [
+     {
+      "fit": "strong",
+      "position": "1B",
+      "reason": "Coach's top spot for him; good hands and accurate throws suit first base without needing a big arm.",
+      "evidence": [
+       "pos.1b",
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "2B",
+      "reason": "Good hands and accuracy fit well, and the shorter throw suits an average arm.",
+      "evidence": [
+       "pos.2b",
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "3B",
+      "reason": "Hands and accuracy help, but the longer throw tests an average arm.",
+      "evidence": [
+       "pos.3b",
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "SS",
+      "reason": "Hands and accuracy are good, but the arm is average for the longest infield throw.",
+      "evidence": [
+       "pos.ss",
+       "rating.fielding_arm_strength",
+       "rating.fielding_hands"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "LF",
+      "reason": "Average fly ball ability; a reasonable spot to build outfield skills.",
+      "evidence": [
+       "pos.lf",
+       "rating.fly_ball_ability"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "CF",
+      "reason": "Average fly ball ability and arm; no range data to show he can cover the most ground.",
+      "evidence": [
+       "pos.cf",
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "RF",
+      "reason": "Average arm strength for the long throws from right field; fly ball ability is average.",
+      "evidence": [
+       "pos.rf",
+       "rating.fielding_arm_strength",
+       "rating.fly_ball_ability"
+      ]
+     }
+    ],
+    "battingRole": "table-setter",
+    "development": [
+     {
+      "drill": "Soft toss and front toss with a focus on seeing the ball and swinging at strikes, with a goal of putting every swing in play.",
+      "focus": "Make more contact"
+     },
+     {
+      "drill": "Live at-bats where he must swing at the first strike in the zone, then return to normal patience.",
+      "focus": "Be aggressive on hittable pitches"
+     },
+     {
+      "drill": "Long toss progression, gradually increasing distance, with accuracy targets.",
+      "focus": "Build arm strength"
+     }
+    ]
+   }
+  },
+  {
+   "name": "Blake Player02",
+   "id": "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+   "assessment": {
+    "assessedAt": 814489507.543167,
+    "confidence": "low",
+    "eyeVsData": "The coach lists pitching as the best position, but the stats show many walks and a high WHIP. The pitching sample is only a few innings, so trust the coach's view of arm quality, while treating the walk rate as a real command issue to fix. The perfect fielding percentage comes from only a few chances and says little about defense.",
+    "battingReason": "Gets on base by walking and is a perfect base stealer, which fits leadoff or second in the order.",
+    "snapshot": "A high-on-base, high-speed table-setter who draws walks and steals bases without getting caught. Pitching command is the biggest area to develop, and the small sample means these reads are early.",
+    "effort": "medium",
+    "model": "Sample · Claude Sonnet 5.5",
+    "facts": {
+     "facts": [
+      {
+       "label": "Plate appearances",
+       "id": "pa",
+       "value": "14"
+      },
+      {
+       "label": "AVG",
+       "id": "avg",
+       "value": ".222"
+      },
+      {
+       "label": "OBP",
+       "id": "obp",
+       "value": ".500"
+      },
+      {
+       "label": "SLG",
+       "id": "slg",
+       "value": ".222"
+      },
+      {
+       "label": "K%",
+       "id": "k_rate",
+       "value": "21%"
+      },
+      {
+       "label": "BB%",
+       "id": "bb_rate",
+       "value": "36%"
+      },
+      {
+       "label": "Extra-base hits",
+       "id": "xbh",
+       "value": "0"
+      },
+      {
+       "label": "RBI",
+       "id": "rbi",
+       "value": "2"
+      },
+      {
+       "label": "Stolen bases",
+       "id": "sb",
+       "value": "7 of 7"
+      },
+      {
+       "label": "Total chances",
+       "id": "tc",
+       "value": "3"
+      },
+      {
+       "label": "Fielding %",
+       "id": "fpct",
+       "value": "1.000"
+      },
+      {
+       "label": "Errors",
+       "id": "errors",
+       "value": "0"
+      },
+      {
+       "label": "Innings pitched",
+       "id": "p.ip",
+       "value": "3.1"
+      },
+      {
+       "label": "ERA",
+       "id": "p.era",
+       "value": "13.50"
+      },
+      {
+       "label": "WHIP",
+       "id": "p.whip",
+       "value": "4.20"
+      },
+      {
+       "label": "Pitching K%",
+       "id": "p.k_rate",
+       "value": "24%"
+      },
+      {
+       "label": "Pitching BB%",
+       "id": "p.bb_rate",
+       "value": "32%"
+      },
+      {
+       "label": "Fielding Hands",
+       "id": "rating.fielding_hands",
+       "value": "3/5"
+      },
+      {
+       "label": "Throw Accuracy",
+       "id": "rating.fielding_throw_accuracy",
+       "value": "3/5"
+      },
+      {
+       "label": "Arm Strength",
+       "id": "rating.fielding_arm_strength",
+       "value": "4/5"
+      },
+      {
+       "label": "Fly Ball Ability",
+       "id": "rating.fly_ball_ability",
+       "value": "2/5"
+      },
+      {
+       "label": "P",
+       "id": "pos.p",
+       "value": "best"
+      },
+      {
+       "label": "C",
+       "id": "pos.c",
+       "value": "doesn't play"
+      },
+      {
+       "label": "1B",
+       "id": "pos.1b",
+       "value": "plays"
+      },
+      {
+       "label": "2B",
+       "id": "pos.2b",
+       "value": "plays"
+      },
+      {
+       "label": "3B",
+       "id": "pos.3b",
+       "value": "plays"
+      },
+      {
+       "label": "SS",
+       "id": "pos.ss",
+       "value": "plays"
+      },
+      {
+       "label": "LF",
+       "id": "pos.lf",
+       "value": "plays"
+      },
+      {
+       "label": "CF",
+       "id": "pos.cf",
+       "value": "plays"
+      },
+      {
+       "label": "RF",
+       "id": "pos.rf",
+       "value": "plays"
+      }
+     ]
+    },
+    "battingZone": "top",
+    "weaknesses": [
+     {
+      "evidence": [
+       "p.bb_rate",
+       "p.whip",
+       "p.era"
+      ],
+      "title": "Pitching Command",
+      "detail": "Walks too many batters, which drives up baserunners and runs allowed. Throwing more strikes is the top priority."
+     },
+     {
+      "evidence": [
+       "xbh",
+       "slg"
+      ],
+      "title": "Power",
+      "detail": "No extra-base hits and slugging equal to batting average, so all hits are singles so far."
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability"
+      ],
+      "title": "Fly Ball Ability",
+      "detail": "Coach rates tracking and catching fly balls as a weak area, which matters for outfield play."
+     }
+    ],
+    "confidenceReason": "Only 14 plate appearances, 3 fielding chances, and 3.1 innings pitched, so rates swing widely. Ratings cover only fielding and throwing; no batting or pitching ratings.",
+    "strengths": [
+     {
+      "evidence": [
+       "bb_rate",
+       "obp",
+       "k_rate"
+      ],
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a very high rate, which pushes on-base percentage well above batting average. Strikeouts are modest for this age."
+     },
+     {
+      "evidence": [
+       "sb"
+      ],
+      "title": "Speed",
+      "detail": "Steals bases aggressively and has not been caught, turning walks into scoring chances."
+     },
+     {
+      "evidence": [
+       "rating.fielding_arm_strength"
+      ],
+      "title": "Arm Strength",
+      "detail": "Coach rates the arm as a clear strength, which supports pitching and throws from the left side of the infield."
+     },
+     {
+      "evidence": [
+       "rbi",
+       "pa"
+      ],
+      "title": "Situational Hitting",
+      "detail": "Drove in runs despite a small number of plate appearances."
+     }
+    ],
+    "defense": [
+     {
+      "evidence": [
+       "rating.fielding_hands"
+      ],
+      "position": "1B",
+      "fit": "solid",
+      "reason": "Average hands and few demands on range or arm; a safe spot."
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ],
+      "position": "2B",
+      "fit": "solid",
+      "reason": "Average hands and accuracy fit; the throw is short."
+     },
+     {
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy"
+      ],
+      "position": "3B",
+      "fit": "solid",
+      "reason": "Strong arm suits the long throw, with average hands and accuracy."
+     },
+     {
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "fpct"
+      ],
+      "position": "SS",
+      "fit": "solid",
+      "reason": "Arm is a plus and hands are average; the few chances so far were clean."
+     },
+     {
+      "evidence": [
+       "pos.p",
+       "rating.fielding_arm_strength",
+       "p.bb_rate",
+       "p.whip"
+      ],
+      "position": "P",
+      "fit": "developing",
+      "reason": "Coach lists pitching as best position and the arm is strong, but walk rate and WHIP show command is not there yet."
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability"
+      ],
+      "position": "LF",
+      "fit": "developing",
+      "reason": "Fly ball ability is rated low, so outfield reps should focus on tracking balls."
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability"
+      ],
+      "position": "CF",
+      "fit": "developing",
+      "reason": "Center field demands the most fly ball work, and that is the weakest rated skill."
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ],
+      "position": "RF",
+      "fit": "developing",
+      "reason": "Strong arm helps, but fly ball ability is a concern."
+     }
+    ],
+    "battingRole": "table-setter",
+    "development": [
+     {
+      "focus": "Throw more strikes",
+      "drill": "Bullpen sessions throwing to a target with a strike-count goal, such as 10 of 15 pitches in the zone, before adding velocity."
+     },
+     {
+      "focus": "Hit with more authority",
+      "drill": "Tee and front-toss work on driving the ball to the gaps, focusing on a strong base and swinging at hittable pitches."
+     },
+     {
+      "focus": "Fly ball tracking",
+      "drill": "Partner fly ball drills starting with easy tosses, using drop-step reads and calling for the ball."
+     }
+    ]
+   }
+  },
+  {
+   "name": "Casey Player03",
+   "id": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+   "assessment": {
+    "assessedAt": 814489506.935603,
+    "confidence": "low",
+    "eyeVsData": "The coach's ratings (excellent hands, good arm) fit the data without conflict. The .833 fielding percentage reflects one error in only six chances, so trust the ratings over the stat. Likewise, the pitching ERA and WHIP come from under three innings and are very noisy, though the walk rate matches a real control issue worth working on.",
+    "battingReason": "Gets on base at a high clip, rarely strikes out, and steals bases without being caught",
+    "snapshot": "A high-energy table-setter who reaches base often, runs the bases without getting caught, and drives in runs. The main development areas are throwing strikes on the mound and cleaning up the occasional error in the field.",
+    "effort": "medium",
+    "model": "Sample · Claude Sonnet 5.5",
+    "facts": {
+     "facts": [
+      {
+       "id": "pa",
+       "label": "Plate appearances",
+       "value": "20"
+      },
+      {
+       "id": "avg",
+       "label": "AVG",
+       "value": ".500"
+      },
+      {
+       "id": "obp",
+       "label": "OBP",
+       "value": ".600"
+      },
+      {
+       "id": "slg",
+       "label": "SLG",
+       "value": ".562"
+      },
+      {
+       "id": "k_rate",
+       "label": "K%",
+       "value": "15%"
+      },
+      {
+       "id": "bb_rate",
+       "label": "BB%",
+       "value": "20%"
+      },
+      {
+       "id": "xbh",
+       "label": "Extra-base hits",
+       "value": "1"
+      },
+      {
+       "id": "rbi",
+       "label": "RBI",
+       "value": "10"
+      },
+      {
+       "id": "sb",
+       "label": "Stolen bases",
+       "value": "8 of 8"
+      },
+      {
+       "id": "tc",
+       "label": "Total chances",
+       "value": "6"
+      },
+      {
+       "id": "fpct",
+       "label": "Fielding %",
+       "value": ".833"
+      },
+      {
+       "id": "errors",
+       "label": "Errors",
+       "value": "1"
+      },
+      {
+       "id": "p.ip",
+       "label": "Innings pitched",
+       "value": "2.2"
+      },
+      {
+       "id": "p.era",
+       "label": "ERA",
+       "value": "13.50"
+      },
+      {
+       "id": "p.whip",
+       "label": "WHIP",
+       "value": "3.38"
+      },
+      {
+       "id": "p.k_rate",
+       "label": "Pitching K%",
+       "value": "47%"
+      },
+      {
+       "id": "p.bb_rate",
+       "label": "Pitching BB%",
+       "value": "29%"
+      },
+      {
+       "id": "rating.fielding_hands",
+       "label": "Fielding Hands",
+       "value": "5/5"
+      },
+      {
+       "id": "rating.fielding_throw_accuracy",
+       "label": "Throw Accuracy",
+       "value": "4/5"
+      },
+      {
+       "id": "rating.fielding_arm_strength",
+       "label": "Arm Strength",
+       "value": "4/5"
+      },
+      {
+       "id": "rating.fly_ball_ability",
+       "label": "Fly Ball Ability",
+       "value": "3/5"
+      },
+      {
+       "id": "pos.p",
+       "label": "P",
+       "value": "plays"
+      },
+      {
+       "id": "pos.c",
+       "label": "C",
+       "value": "doesn't play"
+      },
+      {
+       "id": "pos.1b",
+       "label": "1B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.2b",
+       "label": "2B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.3b",
+       "label": "3B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.ss",
+       "label": "SS",
+       "value": "best"
+      },
+      {
+       "id": "pos.lf",
+       "label": "LF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.cf",
+       "label": "CF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.rf",
+       "label": "RF",
+       "value": "plays"
+      }
+     ]
+    },
+    "battingZone": "top",
+    "weaknesses": [
+     {
+      "title": "Pitching Control",
+      "detail": "Strikes out many hitters but walks too many, which drives up baserunners and runs allowed. Throwing more strikes is the key to turning the raw stuff into results.",
+      "evidence": [
+       "p.bb_rate",
+       "p.whip",
+       "p.era"
+      ]
+     },
+     {
+      "title": "Power",
+      "detail": "Slugging is only slightly above batting average, so most hits are singles. Gap power is an area to grow.",
+      "evidence": [
+       "slg",
+       "xbh"
+      ]
+     }
+    ],
+    "confidenceReason": "Only 20 plate appearances, 6 fielding chances and under 3 innings pitched. The ratings are limited, with no rating for contact, power or range.",
+    "strengths": [
+     {
+      "title": "Contact",
+      "detail": "Hits for a high average and keeps strikeouts low, putting the ball in play regularly in a small sample",
+      "evidence": [
+       "avg",
+       "k_rate",
+       "pa"
+      ]
+     },
+     {
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a high rate, which pushes on-base percentage well above batting average",
+      "evidence": [
+       "obp",
+       "bb_rate"
+      ]
+     },
+     {
+      "title": "Speed",
+      "detail": "Steals bases successfully every time, showing good instincts and aggressiveness on the bases",
+      "evidence": [
+       "sb"
+      ]
+     },
+     {
+      "title": "Run Production",
+      "detail": "Drives in runs at a strong pace for the number of plate appearances",
+      "evidence": [
+       "rbi",
+       "pa"
+      ]
+     }
+    ],
+    "defense": [
+     {
+      "position": "3B",
+      "reason": "Sure hands and a good, accurate arm suit the position",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_arm_strength"
+      ],
+      "fit": "strong"
+     },
+     {
+      "position": "SS",
+      "reason": "Coach's best position; elite hands and a good arm with accurate throws. The one error in few chances is not meaningful.",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy",
+       "rating.fielding_arm_strength",
+       "fpct"
+      ],
+      "fit": "strong"
+     },
+     {
+      "position": "1B",
+      "reason": "Reliable hands help, though the arm is not needed much here",
+      "evidence": [
+       "rating.fielding_hands"
+      ],
+      "fit": "solid"
+     },
+     {
+      "position": "2B",
+      "reason": "Hands and accuracy translate well to the infield",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ],
+      "fit": "solid"
+     },
+     {
+      "position": "LF",
+      "reason": "Arm is a plus, but fly ball ability is only average",
+      "evidence": [
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ],
+      "fit": "solid"
+     },
+     {
+      "position": "RF",
+      "reason": "Good arm helps on throws; fly ball ability is average",
+      "evidence": [
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ],
+      "fit": "solid"
+     },
+     {
+      "position": "P",
+      "reason": "Misses a lot of bats but walks too many and has allowed many runs in a small number of innings",
+      "evidence": [
+       "p.k_rate",
+       "p.bb_rate",
+       "p.era"
+      ],
+      "fit": "developing"
+     },
+     {
+      "position": "CF",
+      "reason": "Average fly ball ability and no range rating make this a stretch for now",
+      "evidence": [
+       "rating.fly_ball_ability"
+      ],
+      "fit": "developing"
+     }
+    ],
+    "battingRole": "table-setter",
+    "development": [
+     {
+      "drill": "Bullpen sessions throwing to a target with a goal of first-pitch strikes; count strikes out of 20 pitches and track progress",
+      "focus": "Throwing strikes on the mound"
+     },
+     {
+      "drill": "Tee work and front-toss aimed at line drives to the gaps, focusing on a strong, balanced swing",
+      "focus": "Driving the ball for extra bases"
+     },
+     {
+      "drill": "Partner-thrown fly balls and drop-step reads, starting with easy lobs and progressing to deeper balls",
+      "focus": "Fly ball tracking"
+     }
+    ]
+   }
+  },
+  {
+   "name": "Drew Player04",
+   "id": "70588014-989D-445C-B5E0-A5EBD18C08D4",
+   "assessment": {
+    "weaknesses": [
+     {
+      "title": "Contact",
+      "detail": "Strikes out in more than half of plate appearances and has no hits or extra-base hits, so he needs to put more balls in play",
+      "evidence": [
+       "k_rate",
+       "avg",
+       "xbh"
+      ]
+     },
+     {
+      "title": "Fielding",
+      "detail": "Hands, throw accuracy and arm strength are all rated below average, which limits him on harder-hit balls and long throws",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy",
+       "rating.fielding_arm_strength"
+      ]
+     }
+    ],
+    "battingReason": "Walks and steals bases to create runs, but the lack of contact keeps him lower in the order for now",
+    "development": [
+     {
+      "focus": "Put the ball in play",
+      "drill": "Soft toss and short-distance front toss with a goal of making contact on every swing, then two-strike approach practice choking up and shortening the swing"
+     },
+     {
+      "focus": "Glove work and fielding fundamentals",
+      "drill": "Daily 50 ground balls at close range, focusing on getting low and fielding with two hands, then move back as hands improve"
+     },
+     {
+      "focus": "Throw accuracy and arm strength",
+      "drill": "Partner throwing at increasing distances with targets at chest height, focusing on footwork and a full follow-through"
+     }
+    ],
+    "defense": [
+     {
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_hands"
+      ],
+      "position": "1B",
+      "fit": "solid",
+      "reason": "Short throws and fewer demands on arm strength suit his ratings; hands need to improve for scoops"
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability"
+      ],
+      "position": "LF",
+      "fit": "solid",
+      "reason": "Average fly ball ability fits, and a corner spot hides the weaker arm"
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ],
+      "position": "2B",
+      "fit": "developing",
+      "reason": "Shorter throws help, but hands and accuracy are still developing"
+     },
+     {
+      "evidence": [
+       "pos.3b",
+       "rating.fielding_hands",
+       "rating.fielding_arm_strength"
+      ],
+      "position": "3B",
+      "fit": "developing",
+      "reason": "Coach's best spot for him, but below-average hands and arm make the long throw a challenge; the facts only partly support it"
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ],
+      "position": "CF",
+      "fit": "developing",
+      "reason": "Fly ball ability is average, but center requires longer throws and more range than the ratings show"
+     },
+     {
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fly_ball_ability"
+      ],
+      "position": "RF",
+      "fit": "developing",
+      "reason": "Right field needs the longest throws, which is a weakness; fly ball ability is adequate"
+     },
+     {
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy",
+       "rating.fielding_hands"
+      ],
+      "position": "SS",
+      "fit": "not_recommended",
+      "reason": "Long throws and the range of plays at short expose below-average arm, accuracy and hands for now"
+     }
+    ],
+    "battingZone": "bottom",
+    "snapshot": "Drew gets on base by drawing walks and is a perfect base stealer, but has not yet put the ball in play for a hit and strikes out often. Defensively he is still developing, with fly ball ability as the best-rated skill.",
+    "model": "Sample · Claude Sonnet 5.5",
+    "assessedAt": 814489519.862322,
+    "facts": {
+     "facts": [
+      {
+       "value": "19",
+       "label": "Plate appearances",
+       "id": "pa"
+      },
+      {
+       "value": ".000",
+       "label": "AVG",
+       "id": "avg"
+      },
+      {
+       "value": ".368",
+       "label": "OBP",
+       "id": "obp"
+      },
+      {
+       "value": ".000",
+       "label": "SLG",
+       "id": "slg"
+      },
+      {
+       "value": "58%",
+       "label": "K%",
+       "id": "k_rate"
+      },
+      {
+       "value": "37%",
+       "label": "BB%",
+       "id": "bb_rate"
+      },
+      {
+       "value": "0",
+       "label": "Extra-base hits",
+       "id": "xbh"
+      },
+      {
+       "value": "1",
+       "label": "RBI",
+       "id": "rbi"
+      },
+      {
+       "value": "5 of 5",
+       "label": "Stolen bases",
+       "id": "sb"
+      },
+      {
+       "value": "2/5",
+       "label": "Fielding Hands",
+       "id": "rating.fielding_hands"
+      },
+      {
+       "value": "2/5",
+       "label": "Throw Accuracy",
+       "id": "rating.fielding_throw_accuracy"
+      },
+      {
+       "value": "2/5",
+       "label": "Arm Strength",
+       "id": "rating.fielding_arm_strength"
+      },
+      {
+       "value": "3/5",
+       "label": "Fly Ball Ability",
+       "id": "rating.fly_ball_ability"
+      },
+      {
+       "value": "doesn't play",
+       "label": "P",
+       "id": "pos.p"
+      },
+      {
+       "value": "doesn't play",
+       "label": "C",
+       "id": "pos.c"
+      },
+      {
+       "value": "plays",
+       "label": "1B",
+       "id": "pos.1b"
+      },
+      {
+       "value": "plays",
+       "label": "2B",
+       "id": "pos.2b"
+      },
+      {
+       "value": "best",
+       "label": "3B",
+       "id": "pos.3b"
+      },
+      {
+       "value": "plays",
+       "label": "SS",
+       "id": "pos.ss"
+      },
+      {
+       "value": "plays",
+       "label": "LF",
+       "id": "pos.lf"
+      },
+      {
+       "value": "plays",
+       "label": "CF",
+       "id": "pos.cf"
+      },
+      {
+       "value": "plays",
+       "label": "RF",
+       "id": "pos.rf"
+      }
+     ]
+    },
+    "confidence": "low",
+    "eyeVsData": "The coach rates 3B as his best position, while the ratings show below-average hands and arm; the ratings suggest 1B or LF fit better. There are no fielding stats, so lean on the coach's observation but consider a trial at first base or left field. At the plate, 19 plate appearances is too small to read the strikeout and zero-hit numbers as a true skill level, though the steals and walks match a patient, aggressive runner.",
+    "strengths": [
+     {
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a high rate and reaches base even without hits, showing patience at the plate",
+      "evidence": [
+       "bb_rate",
+       "obp"
+      ]
+     },
+     {
+      "title": "Baserunning",
+      "detail": "Steals bases successfully every time he tries, showing good instincts and jumps once on base",
+      "evidence": [
+       "sb"
+      ]
+     },
+     {
+      "title": "Versatility",
+      "detail": "Coach is comfortable playing him at every infield and outfield spot, with 3B as his best position",
+      "evidence": [
+       "pos.3b",
+       "pos.ss",
+       "pos.cf"
+      ]
+     },
+     {
+      "title": "Fielding",
+      "detail": "Fly ball ability is average, his best-rated defensive skill, which supports outfield play",
+      "evidence": [
+       "rating.fly_ball_ability"
+      ]
+     }
+    ],
+    "effort": "medium",
+    "confidenceReason": "Only 19 plate appearances and no fielding stats, so the batting numbers could change quickly. The ratings are the main basis for the defensive picture.",
+    "battingRole": "table-setter"
+   }
+  },
+  {
+   "name": "Eli Player05",
+   "id": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+   "assessment": {
+    "weaknesses": [
+     {
+      "title": "Pitching Control",
+      "detail": "Strikes out many batters but walks too many and allows too many baserunners and runs, so control is the main issue",
+      "evidence": [
+       "p.bb_rate",
+       "p.whip",
+       "p.era"
+      ]
+     },
+     {
+      "title": "Throw Accuracy",
+      "detail": "Arm strength is well ahead of accuracy; a more accurate throw would make the arm a bigger asset",
+      "evidence": [
+       "rating.fielding_throw_accuracy",
+       "rating.fielding_arm_strength"
+      ]
+     }
+    ],
+    "battingReason": "Gets on base, rarely strikes out, and steals bases reliably; he also drives in runs, so he is useful anywhere in the top of the order",
+    "development": [
+     {
+      "drill": "Bullpen sessions throwing to a catcher with a target, tracking first-pitch strikes; try to land 6 of 10 in the zone before adding velocity",
+      "focus": "Pitching strike throwing"
+     },
+     {
+      "drill": "Partner throws from the infield to a chest-high target, focusing on footwork and a full follow-through before increasing the distance",
+      "focus": "Throw accuracy"
+     },
+     {
+      "drill": "Soft toss and live batting practice with a focus on selecting pitches in the zone to keep strikeouts low",
+      "focus": "Sustaining hitting"
+     }
+    ],
+    "defense": [
+     {
+      "fit": "strong",
+      "position": "2B",
+      "reason": "The coach's best spot for him; good hands and a strong arm fit, and no errors so far",
+      "evidence": [
+       "pos.2b",
+       "rating.fielding_hands",
+       "errors"
+      ]
+     },
+     {
+      "fit": "strong",
+      "position": "RF",
+      "reason": "A 5/5 arm is most valuable on the long throws from right field, and his fly ball skills are good",
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fly_ball_ability"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "1B",
+      "reason": "Good hands and a clean record; his arm is not needed much here",
+      "evidence": [
+       "rating.fielding_hands",
+       "fpct"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "3B",
+      "reason": "Arm strength suits the long throw; accuracy needs to keep improving",
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "SS",
+      "reason": "Hands and arm strength fit; throw accuracy is the thing to tighten up",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "LF",
+      "reason": "Good fly ball rating and a strong arm",
+      "evidence": [
+       "rating.fly_ball_ability"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "CF",
+      "reason": "Fly ball skills and arm play well here; no range rating to confirm",
+      "evidence": [
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "P",
+      "reason": "Misses plenty of bats and has a strong arm, but walks and baserunners are driving up runs allowed",
+      "evidence": [
+       "p.k_rate",
+       "p.bb_rate",
+       "p.whip"
+      ]
+     }
+    ],
+    "battingZone": "top",
+    "snapshot": "Eli has produced very well at the plate and on the bases, and he has a plus arm and sure hands in the field. Pitching is the clear area to develop: he misses bats but needs to throw more strikes. The batting sample is small, so the numbers are a promising start rather than a settled picture.",
+    "model": "Sample · Claude Sonnet 5.5",
+    "assessedAt": 814489520.061119,
+    "facts": {
+     "facts": [
+      {
+       "id": "pa",
+       "label": "Plate appearances",
+       "value": "22"
+      },
+      {
+       "id": "avg",
+       "label": "AVG",
+       "value": ".667"
+      },
+      {
+       "id": "obp",
+       "label": "OBP",
+       "value": ".727"
+      },
+      {
+       "id": "slg",
+       "label": "SLG",
+       "value": ".889"
+      },
+      {
+       "id": "k_rate",
+       "label": "K%",
+       "value": "14%"
+      },
+      {
+       "id": "bb_rate",
+       "label": "BB%",
+       "value": "14%"
+      },
+      {
+       "id": "xbh",
+       "label": "Extra-base hits",
+       "value": "4"
+      },
+      {
+       "id": "rbi",
+       "label": "RBI",
+       "value": "15"
+      },
+      {
+       "id": "sb",
+       "label": "Stolen bases",
+       "value": "8 of 8"
+      },
+      {
+       "id": "tc",
+       "label": "Total chances",
+       "value": "7"
+      },
+      {
+       "id": "fpct",
+       "label": "Fielding %",
+       "value": "1.000"
+      },
+      {
+       "id": "errors",
+       "label": "Errors",
+       "value": "0"
+      },
+      {
+       "id": "p.ip",
+       "label": "Innings pitched",
+       "value": "4.0"
+      },
+      {
+       "id": "p.era",
+       "label": "ERA",
+       "value": "15.75"
+      },
+      {
+       "id": "p.whip",
+       "label": "WHIP",
+       "value": "2.25"
+      },
+      {
+       "id": "p.k_rate",
+       "label": "Pitching K%",
+       "value": "42%"
+      },
+      {
+       "id": "p.bb_rate",
+       "label": "Pitching BB%",
+       "value": "19%"
+      },
+      {
+       "id": "rating.fielding_hands",
+       "label": "Fielding Hands",
+       "value": "4/5"
+      },
+      {
+       "id": "rating.fielding_throw_accuracy",
+       "label": "Throw Accuracy",
+       "value": "3/5"
+      },
+      {
+       "id": "rating.fielding_arm_strength",
+       "label": "Arm Strength",
+       "value": "5/5"
+      },
+      {
+       "id": "rating.fly_ball_ability",
+       "label": "Fly Ball Ability",
+       "value": "4/5"
+      },
+      {
+       "id": "pos.p",
+       "label": "P",
+       "value": "plays"
+      },
+      {
+       "id": "pos.c",
+       "label": "C",
+       "value": "doesn't play"
+      },
+      {
+       "id": "pos.1b",
+       "label": "1B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.2b",
+       "label": "2B",
+       "value": "best"
+      },
+      {
+       "id": "pos.3b",
+       "label": "3B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.ss",
+       "label": "SS",
+       "value": "plays"
+      },
+      {
+       "id": "pos.lf",
+       "label": "LF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.cf",
+       "label": "CF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.rf",
+       "label": "RF",
+       "value": "plays"
+      }
+     ]
+    },
+    "confidence": "low",
+    "eyeVsData": "The ratings and stats mostly agree on his defense, but there are only 7 chances, so the clean fielding record says little by itself; trust the coach's ratings more. At the plate, a .667 average over 22 plate appearances is almost certainly inflated by a hot stretch, so expect it to come down. The pitching line (15.75 ERA) comes from only 4 innings and is also noisy, though the walk rate matches the control concerns.",
+    "strengths": [
+     {
+      "title": "Contact",
+      "detail": "Puts the ball in play and gets on base at a very high rate, with a low strikeout rate for this age",
+      "evidence": [
+       "avg",
+       "obp",
+       "k_rate"
+      ]
+     },
+     {
+      "title": "Run Production",
+      "detail": "Turns at-bats into extra-base hits and drives in a lot of runs",
+      "evidence": [
+       "xbh",
+       "rbi",
+       "slg"
+      ]
+     },
+     {
+      "title": "Baserunning",
+      "detail": "Steals bases successfully every time he tries, which adds pressure on the defense",
+      "evidence": [
+       "sb"
+      ]
+     },
+     {
+      "title": "Arm Strength",
+      "detail": "Top-rated arm, and he has handled his chances cleanly with no errors",
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_hands",
+       "fpct"
+      ]
+     }
+    ],
+    "effort": "medium",
+    "confidenceReason": "Only 22 plate appearances, 7 fielding chances and 4 innings pitched, so the stats can swing a lot; there are also no ratings for hitting, range or pitching.",
+    "battingRole": "table-setter"
+   }
+  },
+  {
+   "name": "Finn Player06",
+   "id": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+   "assessment": {
+    "weaknesses": [
+     {
+      "title": "Fielding Hands",
+      "detail": "Hands are rated as average and he committed an error in a small number of chances, so glove work on ground balls can be more consistent",
+      "evidence": [
+       "rating.fielding_hands",
+       "errors",
+       "fpct"
+      ]
+     },
+     {
+      "title": "Arm Strength",
+      "detail": "Arm strength is average, which limits value on longer infield throws even though accuracy is good",
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy"
+      ]
+     }
+    ],
+    "battingReason": "Reaches base at a very high rate, is patient, and steals bases successfully; he also drives in runs, so he can handle a top spot well",
+    "development": [
+     {
+      "focus": "Infield glove work",
+      "drill": "Ground ball reps with a partner: short hops, backhands and forehands, staying low and fielding out front"
+     },
+     {
+      "focus": "Arm strength",
+      "drill": "Long toss progression, extending distance each week, plus crow-hop throws from the outfield to a cutoff"
+     },
+     {
+      "focus": "Driving the ball",
+      "drill": "Front toss aimed at line drives to the gaps while keeping his patient approach"
+     }
+    ],
+    "defense": [
+     {
+      "evidence": [
+       "pos.lf",
+       "rating.fly_ball_ability"
+      ],
+      "position": "LF",
+      "fit": "strong",
+      "reason": "Coach's best position and his fly ball ability is rated top marks"
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability",
+       "sb"
+      ],
+      "position": "CF",
+      "fit": "strong",
+      "reason": "Elite fly ball ability and good speed on the bases suggest he can cover ground; arm is average but adequate"
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ],
+      "position": "1B",
+      "fit": "solid",
+      "reason": "Accurate throwing and average hands are workable at first base; the arm is not a concern here"
+     },
+     {
+      "evidence": [
+       "rating.fielding_throw_accuracy",
+       "rating.fielding_arm_strength"
+      ],
+      "position": "2B",
+      "fit": "solid",
+      "reason": "Accurate throws suit a shorter infield throw, and average arm strength is enough here"
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ],
+      "position": "RF",
+      "fit": "solid",
+      "reason": "Fly ball skill fits well, though average arm strength is a mild limit on longer throws"
+     },
+     {
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_hands",
+       "errors"
+      ],
+      "position": "3B",
+      "fit": "developing",
+      "reason": "Longer throws test average arm strength and the hands are only average; one error in few chances is too small to judge"
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_arm_strength",
+       "pos.lf"
+      ],
+      "position": "SS",
+      "fit": "developing",
+      "reason": "Needs more range, arm and glove consistency to be a strong fit here; the coach plays him there, but the ratings point to the outfield as his best spot"
+     }
+    ],
+    "battingZone": "top",
+    "snapshot": "Finn has been very productive at the plate, getting on base often, driving in runs and running the bases without a miss. He is a strong fly ball defender who fits best in the outfield, and his infield glove work is still developing.",
+    "model": "Sample · Claude Sonnet 5.5",
+    "assessedAt": 814489520.482677,
+    "facts": {
+     "facts": [
+      {
+       "value": "23",
+       "label": "Plate appearances",
+       "id": "pa"
+      },
+      {
+       "value": ".533",
+       "label": "AVG",
+       "id": "avg"
+      },
+      {
+       "value": ".696",
+       "label": "OBP",
+       "id": "obp"
+      },
+      {
+       "value": ".800",
+       "label": "SLG",
+       "id": "slg"
+      },
+      {
+       "value": "17%",
+       "label": "K%",
+       "id": "k_rate"
+      },
+      {
+       "value": "35%",
+       "label": "BB%",
+       "id": "bb_rate"
+      },
+      {
+       "value": "2",
+       "label": "Extra-base hits",
+       "id": "xbh"
+      },
+      {
+       "value": "14",
+       "label": "RBI",
+       "id": "rbi"
+      },
+      {
+       "value": "6 of 6",
+       "label": "Stolen bases",
+       "id": "sb"
+      },
+      {
+       "value": "7",
+       "label": "Total chances",
+       "id": "tc"
+      },
+      {
+       "value": ".857",
+       "label": "Fielding %",
+       "id": "fpct"
+      },
+      {
+       "value": "1",
+       "label": "Errors",
+       "id": "errors"
+      },
+      {
+       "value": "3/5",
+       "label": "Fielding Hands",
+       "id": "rating.fielding_hands"
+      },
+      {
+       "value": "4/5",
+       "label": "Throw Accuracy",
+       "id": "rating.fielding_throw_accuracy"
+      },
+      {
+       "value": "3/5",
+       "label": "Arm Strength",
+       "id": "rating.fielding_arm_strength"
+      },
+      {
+       "value": "5/5",
+       "label": "Fly Ball Ability",
+       "id": "rating.fly_ball_ability"
+      },
+      {
+       "value": "doesn't play",
+       "label": "P",
+       "id": "pos.p"
+      },
+      {
+       "value": "doesn't play",
+       "label": "C",
+       "id": "pos.c"
+      },
+      {
+       "value": "plays",
+       "label": "1B",
+       "id": "pos.1b"
+      },
+      {
+       "value": "plays",
+       "label": "2B",
+       "id": "pos.2b"
+      },
+      {
+       "value": "plays",
+       "label": "3B",
+       "id": "pos.3b"
+      },
+      {
+       "value": "plays",
+       "label": "SS",
+       "id": "pos.ss"
+      },
+      {
+       "value": "best",
+       "label": "LF",
+       "id": "pos.lf"
+      },
+      {
+       "value": "plays",
+       "label": "CF",
+       "id": "pos.cf"
+      },
+      {
+       "value": "plays",
+       "label": "RF",
+       "id": "pos.rf"
+      }
+     ]
+    },
+    "confidence": "low",
+    "eyeVsData": "The stats and ratings mostly agree on defense. The fielding percentage is lower than his ratings might suggest, but it comes from only a few chances and a single error, so trust the coach's ratings. At the plate there are no batting ratings to compare, and the very high averages come from a small number of plate appearances, so expect them to settle down.",
+    "strengths": [
+     {
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a very high rate while keeping strikeouts low, which shows a patient eye and good pitch selection",
+      "evidence": [
+       "bb_rate",
+       "k_rate",
+       "obp"
+      ]
+     },
+     {
+      "title": "Contact",
+      "detail": "Hits for a high average and gets on base consistently, with some extra-base damage",
+      "evidence": [
+       "avg",
+       "slg",
+       "xbh"
+      ]
+     },
+     {
+      "title": "Speed",
+      "detail": "Steals bases with perfect success, showing good instincts and baserunning aggression",
+      "evidence": [
+       "sb"
+      ]
+     },
+     {
+      "title": "Run Production",
+      "detail": "Drives in many runs for the number of plate appearances",
+      "evidence": [
+       "rbi",
+       "pa"
+      ]
+     }
+    ],
+    "effort": "medium",
+    "confidenceReason": "Only 23 plate appearances and 7 fielding chances, so rates like average, walk rate and fielding percentage can swing a lot; there are no batting ratings from the coach",
+    "battingRole": "table-setter"
+   }
+  },
+  {
+   "name": "Gray Player07",
+   "id": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+   "assessment": {
+    "model": "Sample · Claude Sonnet 5.5",
+    "snapshot": "An on-base and baserunning standout who walks often, rarely strikes out and never gets caught stealing. Pitching control is the clear priority, and the very small defensive sample means the coach's ratings carry most of the fielding picture.",
+    "battingZone": "top",
+    "battingRole": "table-setter",
+    "confidenceReason": "Only 26 plate appearances, 6 innings pitched and 2 fielding chances. The batting line, especially the average, is likely inflated by the small sample, and defensive conclusions rest mainly on the coach's ratings.",
+    "weaknesses": [
+     {
+      "title": "Pitching Control",
+      "detail": "Walks far too many batters, which leads to a high WHIP and ERA. He does miss bats, so the raw stuff is there",
+      "evidence": [
+       "p.bb_rate",
+       "p.whip",
+       "p.era"
+      ]
+     },
+     {
+      "title": "Power",
+      "detail": "All hits are singles, with no extra-base hits. He gets on base but doesn't yet drive the ball into gaps",
+      "evidence": [
+       "xbh",
+       "slg",
+       "avg"
+      ]
+     }
+    ],
+    "eyeVsData": "The coach rates his throw accuracy at 5/5, but his pitching walk rate is very high. Throwing accuracy to a teammate does not automatically carry over to pitching strikes, and pitching has a fuller sample at 6 innings than fielding does at 2 chances. Trust the pitching stats for pitching and the coach's ratings for fielding, since the fielding sample is too small to judge on its own.",
+    "defense": [
+     {
+      "evidence": [
+       "pos.cf",
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ],
+      "position": "CF",
+      "fit": "strong",
+      "reason": "Coach's best position. Fly ball ability, arm and speed all fit, though the chance count is tiny"
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "errors"
+      ],
+      "position": "1B",
+      "fit": "solid",
+      "reason": "Reliable hands and no errors, though his arm is more valuable elsewhere"
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "pos.2b"
+      ],
+      "position": "2B",
+      "fit": "solid",
+      "reason": "Hands and accurate throws translate well"
+     },
+     {
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy",
+       "pos.3b"
+      ],
+      "position": "3B",
+      "fit": "solid",
+      "reason": "Strong arm and accuracy fit the long throw across the diamond"
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy",
+       "pos.ss"
+      ],
+      "position": "SS",
+      "fit": "solid",
+      "reason": "Good hands, accuracy and arm suit the position, with limited game data to confirm"
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability",
+       "pos.lf"
+      ],
+      "position": "LF",
+      "fit": "solid",
+      "reason": "Fly ball skill carries over from center"
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength",
+       "pos.rf"
+      ],
+      "position": "RF",
+      "fit": "solid",
+      "reason": "Good fly ball ability and a strong arm for the throw to third"
+     },
+     {
+      "evidence": [
+       "p.bb_rate",
+       "p.era",
+       "rating.fielding_throw_accuracy"
+      ],
+      "position": "P",
+      "fit": "developing",
+      "reason": "Strikeout stuff is promising, but walks and runs allowed are high, even though the coach rates his arm and accuracy well"
+     }
+    ],
+    "assessedAt": 814489532.953518,
+    "battingReason": "Gets on base at a very high rate, rarely strikes out and is a threat to steal every time he reaches",
+    "development": [
+     {
+      "focus": "Throw more strikes on the mound",
+      "drill": "Bullpen sessions with a target or catcher's mitt: throw 20 pitches aiming at the corners, track strikes, and work on a repeatable delivery and release point"
+     },
+     {
+      "focus": "Drive the ball for extra bases",
+      "drill": "Tee work and front-toss on line drives to the gaps, using a good hitter's count to look for pitches to drive"
+     },
+     {
+      "focus": "Get more fielding reps",
+      "drill": "Rotate through infield and outfield groundball and fly ball sessions so his ratings can be backed by game data"
+     }
+    ],
+    "effort": "medium",
+    "strengths": [
+     {
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a very high rate and keeps strikeouts low, so he reaches base even when not putting the ball in play",
+      "evidence": [
+       "bb_rate",
+       "k_rate",
+       "obp"
+      ]
+     },
+     {
+      "title": "Contact",
+      "detail": "Hits for a very high average and drives in runs. The sample is small, so treat it as a good sign rather than a settled level",
+      "evidence": [
+       "avg",
+       "rbi",
+       "pa"
+      ]
+     },
+     {
+      "title": "Speed",
+      "detail": "Steals bases at a perfect success rate, which shows good instincts and quick jumps",
+      "evidence": [
+       "sb"
+      ]
+     },
+     {
+      "title": "Arm and Accuracy",
+      "detail": "Coach rates his throwing accuracy as elite and his arm strength and hands as strong, with no errors in the few chances he has had",
+      "evidence": [
+       "rating.fielding_throw_accuracy",
+       "rating.fielding_arm_strength",
+       "errors"
+      ]
+     }
+    ],
+    "confidence": "low",
+    "facts": {
+     "facts": [
+      {
+       "value": "26",
+       "label": "Plate appearances",
+       "id": "pa"
+      },
+      {
+       "value": ".733",
+       "label": "AVG",
+       "id": "avg"
+      },
+      {
+       "value": ".846",
+       "label": "OBP",
+       "id": "obp"
+      },
+      {
+       "value": ".733",
+       "label": "SLG",
+       "id": "slg"
+      },
+      {
+       "value": "15%",
+       "label": "K%",
+       "id": "k_rate"
+      },
+      {
+       "value": "38%",
+       "label": "BB%",
+       "id": "bb_rate"
+      },
+      {
+       "value": "0",
+       "label": "Extra-base hits",
+       "id": "xbh"
+      },
+      {
+       "value": "7",
+       "label": "RBI",
+       "id": "rbi"
+      },
+      {
+       "value": "14 of 14",
+       "label": "Stolen bases",
+       "id": "sb"
+      },
+      {
+       "value": "2",
+       "label": "Total chances",
+       "id": "tc"
+      },
+      {
+       "value": "1.000",
+       "label": "Fielding %",
+       "id": "fpct"
+      },
+      {
+       "value": "0",
+       "label": "Errors",
+       "id": "errors"
+      },
+      {
+       "value": "6.0",
+       "label": "Innings pitched",
+       "id": "p.ip"
+      },
+      {
+       "value": "22.50",
+       "label": "ERA",
+       "id": "p.era"
+      },
+      {
+       "value": "4.50",
+       "label": "WHIP",
+       "id": "p.whip"
+      },
+      {
+       "value": "29%",
+       "label": "Pitching K%",
+       "id": "p.k_rate"
+      },
+      {
+       "value": "44%",
+       "label": "Pitching BB%",
+       "id": "p.bb_rate"
+      },
+      {
+       "value": "4/5",
+       "label": "Fielding Hands",
+       "id": "rating.fielding_hands"
+      },
+      {
+       "value": "5/5",
+       "label": "Throw Accuracy",
+       "id": "rating.fielding_throw_accuracy"
+      },
+      {
+       "value": "4/5",
+       "label": "Arm Strength",
+       "id": "rating.fielding_arm_strength"
+      },
+      {
+       "value": "4/5",
+       "label": "Fly Ball Ability",
+       "id": "rating.fly_ball_ability"
+      },
+      {
+       "value": "plays",
+       "label": "P",
+       "id": "pos.p"
+      },
+      {
+       "value": "doesn't play",
+       "label": "C",
+       "id": "pos.c"
+      },
+      {
+       "value": "plays",
+       "label": "1B",
+       "id": "pos.1b"
+      },
+      {
+       "value": "plays",
+       "label": "2B",
+       "id": "pos.2b"
+      },
+      {
+       "value": "plays",
+       "label": "3B",
+       "id": "pos.3b"
+      },
+      {
+       "value": "plays",
+       "label": "SS",
+       "id": "pos.ss"
+      },
+      {
+       "value": "plays",
+       "label": "LF",
+       "id": "pos.lf"
+      },
+      {
+       "value": "best",
+       "label": "CF",
+       "id": "pos.cf"
+      },
+      {
+       "value": "plays",
+       "label": "RF",
+       "id": "pos.rf"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Hayden Player08",
+   "id": "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+   "assessment": {
+    "weaknesses": [
+     {
+      "evidence": [
+       "p.bb_rate",
+       "p.whip",
+       "p.era"
+      ],
+      "title": "Pitching Control",
+      "detail": "Strikes out many batters but walks just as many, which leads to a high WHIP and ERA. Throwing more strikes is the main step forward."
+     },
+     {
+      "evidence": [
+       "c.pb",
+       "c.cs",
+       "c.innings"
+      ],
+      "title": "Catching",
+      "detail": "Passed balls are frequent and no runners have been caught stealing, so blocking and the throw down to second need work despite the good arm."
+     }
+    ],
+    "battingReason": "Reaches base at a very high rate through walks and hits, and steals bases once on.",
+    "development": [
+     {
+      "drill": "Bullpen sessions throwing to a target with a strike-zone count goal, such as 10 of 15 pitches in the zone, before adding game-like pressure.",
+      "focus": "Throwing strikes on the mound"
+     },
+     {
+      "drill": "Knee-drop blocking drills with tennis balls thrown in the dirt, then live bounces from a partner.",
+      "focus": "Blocking and receiving"
+     },
+     {
+      "drill": "Catch-and-throw reps from the crouch to second base, with a focus on footwork and a quick transfer.",
+      "focus": "Pop time to second"
+     }
+    ],
+    "defense": [
+     {
+      "evidence": [
+       "pos.c",
+       "c.pb",
+       "c.cs",
+       "rating.fielding_arm_strength"
+      ],
+      "position": "C",
+      "fit": "solid",
+      "reason": "The coach rates this his best spot, and the arm and hands fit. But passed balls and zero caught stealings show the receiving and blocking are still developing."
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "fpct"
+      ],
+      "position": "1B",
+      "fit": "solid",
+      "reason": "Good hands make him a safe target and fielder."
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ],
+      "position": "2B",
+      "fit": "solid",
+      "reason": "Reliable hands and accurate throws."
+     },
+     {
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_hands"
+      ],
+      "position": "3B",
+      "fit": "solid",
+      "reason": "Arm strength and hands play well at the hot corner."
+     },
+     {
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy",
+       "fpct"
+      ],
+      "position": "SS",
+      "fit": "solid",
+      "reason": "Sure hands, accurate throws and a strong arm suit the infield."
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ],
+      "position": "RF",
+      "fit": "solid",
+      "reason": "The strong arm helps, with average fly ball ability being acceptable in right."
+     },
+     {
+      "evidence": [
+       "p.k_rate",
+       "p.bb_rate",
+       "p.whip"
+      ],
+      "position": "P",
+      "fit": "developing",
+      "reason": "Misses a lot of bats but walks too many; control has to improve first."
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability"
+      ],
+      "position": "LF",
+      "fit": "developing",
+      "reason": "Fly ball ability is only average and there is no range rating."
+     },
+     {
+      "evidence": [
+       "rating.fly_ball_ability"
+      ],
+      "position": "CF",
+      "fit": "developing",
+      "reason": "Average fly ball ability and no range data; the arm is a plus."
+     }
+    ],
+    "battingZone": "top",
+    "snapshot": "Hayden is an on-base machine with a patient approach, sure hands and a strong, accurate arm, and the coach's top defensive spot for him is catcher. Pitching control and catching blocking and receiving are the clear areas to develop.",
+    "model": "Sample · Claude Sonnet 5.5",
+    "assessedAt": 814489533.722763,
+    "facts": {
+     "facts": [
+      {
+       "label": "Plate appearances",
+       "id": "pa",
+       "value": "23"
+      },
+      {
+       "label": "AVG",
+       "id": "avg",
+       "value": ".600"
+      },
+      {
+       "label": "OBP",
+       "id": "obp",
+       "value": ".826"
+      },
+      {
+       "label": "SLG",
+       "id": "slg",
+       "value": ".900"
+      },
+      {
+       "label": "K%",
+       "id": "k_rate",
+       "value": "17%"
+      },
+      {
+       "label": "BB%",
+       "id": "bb_rate",
+       "value": "52%"
+      },
+      {
+       "label": "Extra-base hits",
+       "id": "xbh",
+       "value": "2"
+      },
+      {
+       "label": "RBI",
+       "id": "rbi",
+       "value": "5"
+      },
+      {
+       "label": "Stolen bases",
+       "id": "sb",
+       "value": "4 of 4"
+      },
+      {
+       "label": "Total chances",
+       "id": "tc",
+       "value": "33"
+      },
+      {
+       "label": "Fielding %",
+       "id": "fpct",
+       "value": "1.000"
+      },
+      {
+       "label": "Errors",
+       "id": "errors",
+       "value": "0"
+      },
+      {
+       "label": "Innings caught",
+       "id": "c.innings",
+       "value": "15.3"
+      },
+      {
+       "label": "Passed balls",
+       "id": "c.pb",
+       "value": "6"
+      },
+      {
+       "label": "Runners caught stealing",
+       "id": "c.cs",
+       "value": "0 of 33"
+      },
+      {
+       "label": "Innings pitched",
+       "id": "p.ip",
+       "value": "6.0"
+      },
+      {
+       "label": "ERA",
+       "id": "p.era",
+       "value": "10.50"
+      },
+      {
+       "label": "WHIP",
+       "id": "p.whip",
+       "value": "2.83"
+      },
+      {
+       "label": "Pitching K%",
+       "id": "p.k_rate",
+       "value": "42%"
+      },
+      {
+       "label": "Pitching BB%",
+       "id": "p.bb_rate",
+       "value": "42%"
+      },
+      {
+       "label": "Fielding Hands",
+       "id": "rating.fielding_hands",
+       "value": "5/5"
+      },
+      {
+       "label": "Throw Accuracy",
+       "id": "rating.fielding_throw_accuracy",
+       "value": "5/5"
+      },
+      {
+       "label": "Arm Strength",
+       "id": "rating.fielding_arm_strength",
+       "value": "4/5"
+      },
+      {
+       "label": "Fly Ball Ability",
+       "id": "rating.fly_ball_ability",
+       "value": "3/5"
+      },
+      {
+       "label": "P",
+       "id": "pos.p",
+       "value": "plays"
+      },
+      {
+       "label": "C",
+       "id": "pos.c",
+       "value": "best"
+      },
+      {
+       "label": "1B",
+       "id": "pos.1b",
+       "value": "plays"
+      },
+      {
+       "label": "2B",
+       "id": "pos.2b",
+       "value": "plays"
+      },
+      {
+       "label": "3B",
+       "id": "pos.3b",
+       "value": "plays"
+      },
+      {
+       "label": "SS",
+       "id": "pos.ss",
+       "value": "plays"
+      },
+      {
+       "label": "LF",
+       "id": "pos.lf",
+       "value": "plays"
+      },
+      {
+       "label": "CF",
+       "id": "pos.cf",
+       "value": "plays"
+      },
+      {
+       "label": "RF",
+       "id": "pos.rf",
+       "value": "plays"
+      }
+     ]
+    },
+    "confidence": "low",
+    "eyeVsData": "The coach's arm and hands ratings are strong, and the perfect fielding percentage agrees. But the catching stats (passed balls, no runners caught) don't show that arm yet. Those come from 15 innings and have much to do with blocking and footwork. Trust the ratings for raw tools and the stats for what needs work, with caution because the sample is small.",
+    "strengths": [
+     {
+      "evidence": [
+       "avg",
+       "slg",
+       "k_rate"
+      ],
+      "title": "Contact",
+      "detail": "Hits for a very high average and drives the ball for extra bases, with a modest strikeout rate for the level."
+     },
+     {
+      "evidence": [
+       "bb_rate",
+       "obp",
+       "pa"
+      ],
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a very high rate, which pushes his on-base percentage far above his average. Pitchers are struggling to find the zone against him, and he is also selective."
+     },
+     {
+      "evidence": [
+       "sb"
+      ],
+      "title": "Baserunning",
+      "detail": "Steals bases successfully and turns his times on base into pressure on the defense."
+     },
+     {
+      "evidence": [
+       "fpct",
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ],
+      "title": "Fielding",
+      "detail": "Clean with the glove: no errors across a lot of chances, backed by top marks for hands and throw accuracy and a strong arm."
+     }
+    ],
+    "effort": "medium",
+    "confidenceReason": "Only 23 plate appearances, 6 innings pitched and about 15 innings caught. Rates like the .600 average and 52% walk rate are very likely to settle down over a larger sample.",
+    "battingRole": "table-setter"
+   }
+  },
+  {
+   "name": "Indy Player09",
+   "id": "B959CE63-61CC-4088-B3BD-E3808E5F8978",
+   "assessment": {
+    "model": "Sample · Claude Sonnet 5.5",
+    "snapshot": "Indy gets on base at a high rate through walks and is a real threat on the bases. Next steps are making more contact, improving glove work, and driving the ball for extra bases.",
+    "battingZone": "top",
+    "battingRole": "table-setter",
+    "confidenceReason": "Only 20 plate appearances, so rates like walk, strikeout and steals can swing a lot. There are no fielding stats, so defensive views rest on four coach ratings, with hands and fly ball ability the only low-rated skills and range not rated.",
+    "weaknesses": [
+     {
+      "title": "Contact",
+      "detail": "Strikes out in about a third of plate appearances. Some of that may be patience, but it also limits how often he puts the ball in play.",
+      "evidence": [
+       "k_rate"
+      ]
+     },
+     {
+      "title": "Power",
+      "detail": "All hits so far are singles, so he has not yet shown the ability to drive the ball into gaps.",
+      "evidence": [
+       "xbh",
+       "slg"
+      ]
+     },
+     {
+      "title": "Fielding",
+      "detail": "Coach rates his glove work and fly ball tracking as below average, which matters at the infield spots and in the outfield.",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fly_ball_ability"
+      ]
+     }
+    ],
+    "eyeVsData": "The coach rates his fielding as modest, and the stats show a strong on-base and baserunning profile. They measure different skills, so they do not really conflict. Fielding has no stats here, so lean on the coach's ratings. The batting numbers come from only 20 plate appearances, and the high walk and strikeout rates and the perfect steal record could shift with more games.",
+    "defense": [
+     {
+      "fit": "solid",
+      "position": "RF",
+      "reason": "The coach's best spot for him. Average arm suits right field and it has fewer demands on the glove, though fly balls are still a work in progress.",
+      "evidence": [
+       "pos.rf",
+       "rating.fielding_arm_strength"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "1B",
+      "reason": "Hands are a concern at a position that needs scooping and catching throws. Arm is not a factor here.",
+      "evidence": [
+       "rating.fielding_hands"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "2B",
+      "reason": "Average accuracy and arm help, but hands are rated below average.",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "3B",
+      "reason": "Arm is average, but below-average hands make hard-hit balls a challenge.",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_arm_strength"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "SS",
+      "reason": "Arm and accuracy are average, but the position demands the most from hands, so it is a stretch right now.",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "LF",
+      "reason": "Fly ball ability is below average, so balls hit in the air are a risk.",
+      "evidence": [
+       "rating.fly_ball_ability"
+      ]
+     },
+     {
+      "fit": "not_recommended",
+      "position": "CF",
+      "reason": "Center field has the most ground and fly balls to cover, and fly ball ability is rated low. Speed on the bases may help his range, but tracking needs work first.",
+      "evidence": [
+       "rating.fly_ball_ability",
+       "sb"
+      ]
+     }
+    ],
+    "assessedAt": 814489533.631254,
+    "battingReason": "Gets on base at a high rate, steals bases without getting caught, and the walks give him a good OBP. A leadoff or second spot suits him.",
+    "development": [
+     {
+      "drill": "Short-hop and ground ball reps off a coach's feed, working on getting in front of the ball with the glove out and low.",
+      "focus": "Fielding fundamentals and soft hands"
+     },
+     {
+      "drill": "Drop-step and first-step drill with fly balls tossed or hit over the head, then to either side, focusing on reading the ball off the bat.",
+      "focus": "Tracking fly balls"
+     },
+     {
+      "drill": "Front toss with a focus on swinging at hittable pitches early in the count, then tee work on line drives to build extra-base ability.",
+      "focus": "Making contact on strikes"
+     }
+    ],
+    "effort": "medium",
+    "strengths": [
+     {
+      "title": "Plate Discipline",
+      "detail": "Draws a lot of walks and reaches base far more often than the batting average alone suggests, which makes him a useful table-setter.",
+      "evidence": [
+       "bb_rate",
+       "obp"
+      ]
+     },
+     {
+      "title": "Baserunning",
+      "detail": "Steals bases successfully every time he tries. He turns walks and singles into scoring chances.",
+      "evidence": [
+       "sb"
+      ]
+     },
+     {
+      "title": "Contact",
+      "detail": "Hits for a solid average when he puts the ball in play.",
+      "evidence": [
+       "avg",
+       "pa"
+      ]
+     },
+     {
+      "title": "Run Production",
+      "detail": "Drives in runs at a good pace for the number of plate appearances.",
+      "evidence": [
+       "rbi",
+       "pa"
+      ]
+     }
+    ],
+    "confidence": "low",
+    "facts": {
+     "facts": [
+      {
+       "id": "pa",
+       "label": "Plate appearances",
+       "value": "20"
+      },
+      {
+       "id": "avg",
+       "label": "AVG",
+       "value": ".385"
+      },
+      {
+       "id": "obp",
+       "label": "OBP",
+       "value": ".600"
+      },
+      {
+       "id": "slg",
+       "label": "SLG",
+       "value": ".385"
+      },
+      {
+       "id": "k_rate",
+       "label": "K%",
+       "value": "35%"
+      },
+      {
+       "id": "bb_rate",
+       "label": "BB%",
+       "value": "35%"
+      },
+      {
+       "id": "xbh",
+       "label": "Extra-base hits",
+       "value": "0"
+      },
+      {
+       "id": "rbi",
+       "label": "RBI",
+       "value": "5"
+      },
+      {
+       "id": "sb",
+       "label": "Stolen bases",
+       "value": "8 of 8"
+      },
+      {
+       "id": "rating.fielding_hands",
+       "label": "Fielding Hands",
+       "value": "2/5"
+      },
+      {
+       "id": "rating.fielding_throw_accuracy",
+       "label": "Throw Accuracy",
+       "value": "3/5"
+      },
+      {
+       "id": "rating.fielding_arm_strength",
+       "label": "Arm Strength",
+       "value": "3/5"
+      },
+      {
+       "id": "rating.fly_ball_ability",
+       "label": "Fly Ball Ability",
+       "value": "2/5"
+      },
+      {
+       "id": "pos.p",
+       "label": "P",
+       "value": "doesn't play"
+      },
+      {
+       "id": "pos.c",
+       "label": "C",
+       "value": "doesn't play"
+      },
+      {
+       "id": "pos.1b",
+       "label": "1B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.2b",
+       "label": "2B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.3b",
+       "label": "3B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.ss",
+       "label": "SS",
+       "value": "plays"
+      },
+      {
+       "id": "pos.lf",
+       "label": "LF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.cf",
+       "label": "CF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.rf",
+       "label": "RF",
+       "value": "best"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Jules Player10",
+   "id": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
+   "assessment": {
+    "eyeVsData": "The stats show a very strong hitter, but the coach has no batting ratings to confirm it, and 20 plate appearances is a small sample, so trust the on-base and speed signals more than the power numbers. Defensively, the perfect fielding percentage comes from only 4 chances, so trust the coach's ratings over it, especially the below-average throwing marks.",
+    "weaknesses": [
+     {
+      "title": "Pitching Control",
+      "detail": "Walks too many batters on the mound, which drives up baserunners and runs, even though he misses bats",
+      "evidence": [
+       "p.bb_rate",
+       "p.whip",
+       "p.era"
+      ]
+     },
+     {
+      "title": "Arm Strength and Accuracy",
+      "detail": "Coach rates throwing accuracy and arm strength as below average, which limits infield and pitching roles",
+      "evidence": [
+       "rating.fielding_throw_accuracy",
+       "rating.fielding_arm_strength"
+      ]
+     }
+    ],
+    "model": "Sample · Claude Sonnet 5.5",
+    "facts": {
+     "facts": [
+      {
+       "id": "pa",
+       "label": "Plate appearances",
+       "value": "20"
+      },
+      {
+       "id": "avg",
+       "label": "AVG",
+       "value": ".538"
+      },
+      {
+       "id": "obp",
+       "label": "OBP",
+       "value": ".700"
+      },
+      {
+       "id": "slg",
+       "label": "SLG",
+       "value": ".923"
+      },
+      {
+       "id": "k_rate",
+       "label": "K%",
+       "value": "15%"
+      },
+      {
+       "id": "bb_rate",
+       "label": "BB%",
+       "value": "30%"
+      },
+      {
+       "id": "xbh",
+       "label": "Extra-base hits",
+       "value": "2"
+      },
+      {
+       "id": "rbi",
+       "label": "RBI",
+       "value": "12"
+      },
+      {
+       "id": "sb",
+       "label": "Stolen bases",
+       "value": "6 of 6"
+      },
+      {
+       "id": "tc",
+       "label": "Total chances",
+       "value": "4"
+      },
+      {
+       "id": "fpct",
+       "label": "Fielding %",
+       "value": "1.000"
+      },
+      {
+       "id": "errors",
+       "label": "Errors",
+       "value": "0"
+      },
+      {
+       "id": "p.ip",
+       "label": "Innings pitched",
+       "value": "6.2"
+      },
+      {
+       "id": "p.era",
+       "label": "ERA",
+       "value": "12.15"
+      },
+      {
+       "id": "p.whip",
+       "label": "WHIP",
+       "value": "3.45"
+      },
+      {
+       "id": "p.k_rate",
+       "label": "Pitching K%",
+       "value": "27%"
+      },
+      {
+       "id": "p.bb_rate",
+       "label": "Pitching BB%",
+       "value": "39%"
+      },
+      {
+       "id": "rating.fielding_hands",
+       "label": "Fielding Hands",
+       "value": "3/5"
+      },
+      {
+       "id": "rating.fielding_throw_accuracy",
+       "label": "Throw Accuracy",
+       "value": "2/5"
+      },
+      {
+       "id": "rating.fielding_arm_strength",
+       "label": "Arm Strength",
+       "value": "2/5"
+      },
+      {
+       "id": "rating.fly_ball_ability",
+       "label": "Fly Ball Ability",
+       "value": "4/5"
+      },
+      {
+       "id": "pos.p",
+       "label": "P",
+       "value": "plays"
+      },
+      {
+       "id": "pos.c",
+       "label": "C",
+       "value": "doesn't play"
+      },
+      {
+       "id": "pos.1b",
+       "label": "1B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.2b",
+       "label": "2B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.3b",
+       "label": "3B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.ss",
+       "label": "SS",
+       "value": "plays"
+      },
+      {
+       "id": "pos.lf",
+       "label": "LF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.cf",
+       "label": "CF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.rf",
+       "label": "RF",
+       "value": "plays"
+      }
+     ]
+    },
+    "development": [
+     {
+      "focus": "Throwing strikes on the mound",
+      "drill": "Bucket or target drill: 20 pitches a session at a catcher's mitt, tracking strikes, then add a first-pitch-strike goal in bullpens"
+     },
+     {
+      "focus": "Throw accuracy and arm strength",
+      "drill": "Long toss progression with a partner, then crow-hop throws at a target to build mechanics and accuracy"
+     },
+     {
+      "focus": "Keep a patient approach while hunting a good pitch",
+      "drill": "Live batting practice with a count-based game, swinging only at strikes in the zone to keep walks high but attack hittable pitches"
+     }
+    ],
+    "battingZone": "top",
+    "effort": "medium",
+    "battingRole": "table-setter",
+    "defense": [
+     {
+      "fit": "strong",
+      "position": "LF",
+      "reason": "Good fly ball skills fit the corner and the weaker arm is less exposed",
+      "evidence": [
+       "rating.fly_ball_ability"
+      ]
+     },
+     {
+      "fit": "strong",
+      "position": "CF",
+      "reason": "Coach rates fly ball ability highly and the range suits the outfield; the arm matters less there",
+      "evidence": [
+       "rating.fly_ball_ability",
+       "fpct"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "1B",
+      "reason": "Little arm demand and the hands are average, so this is a safe spot",
+      "evidence": [
+       "rating.fielding_hands"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "RF",
+      "reason": "Fly ball ability works, but RF needs a longer throw, and the arm is rated below average",
+      "evidence": [
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "P",
+      "reason": "Misses bats, but the walk rate and WHIP show control is not there yet. Use in short outings while he builds strike-throwing",
+      "evidence": [
+       "p.k_rate",
+       "p.bb_rate",
+       "p.whip"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "2B",
+      "reason": "Hands are average, but throw accuracy and arm strength are below average",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "3B",
+      "reason": "Long throws across the diamond are a challenge with the current arm",
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "SS",
+      "reason": "Throw accuracy and arm strength are the weakest parts of the profile for the longest infield throw",
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy"
+      ]
+     }
+    ],
+    "assessedAt": 814489546.170864,
+    "snapshot": "Jules has been very productive at the plate, getting on base, running well and driving in runs, though the sample is small. On the mound, walks are a big issue, and the arm is still developing for throwing.",
+    "confidence": "low",
+    "strengths": [
+     {
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a high rate while keeping strikeouts low, which leads to a very high on-base percentage",
+      "evidence": [
+       "bb_rate",
+       "k_rate",
+       "obp"
+      ]
+     },
+     {
+      "title": "Contact",
+      "detail": "Has hit the ball well when putting it in play, with results well above what is typical at this level",
+      "evidence": [
+       "avg",
+       "pa"
+      ]
+     },
+     {
+      "title": "Speed",
+      "detail": "Steals bases successfully and turns time on base into pressure on the defense",
+      "evidence": [
+       "sb"
+      ]
+     },
+     {
+      "title": "Run Production",
+      "detail": "Drives in runs and has some extra-base power",
+      "evidence": [
+       "rbi",
+       "xbh",
+       "slg"
+      ]
+     }
+    ],
+    "battingReason": "Gets on base at a high rate, rarely strikes out and steals bases successfully. The small sample means the power numbers may be inflated.",
+    "confidenceReason": "Only 20 plate appearances, 4 fielding chances and under 7 innings pitched, with the coach providing fielding ratings but no hitting ratings"
+   }
+  },
+  {
+   "name": "Kai Player11",
+   "id": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F",
+   "assessment": {
+    "eyeVsData": "The coach's best-position choice of CF sits oddly beside a low fly ball rating, and only 3 chances give no stats to settle it, so trust the coach's eye. On the mound, the coach rates the arm highly while the results are poor. With only 3.1 innings, the walks may reflect control that is still developing rather than a true level, though the walk rate is worth working on. The hitting numbers are very high for a small sample and will likely settle lower.",
+    "weaknesses": [
+     {
+      "title": "Pitching Control",
+      "detail": "Walks too many batters on the mound, which drives up baserunners and runs allowed. Throwing strikes is the top priority.",
+      "evidence": [
+       "p.bb_rate",
+       "p.whip",
+       "p.era"
+      ]
+     },
+     {
+      "title": "Fly Balls",
+      "detail": "Coach sees fly ball tracking as a weak spot, which matters because center field is his best position",
+      "evidence": [
+       "rating.fly_ball_ability",
+       "pos.cf"
+      ]
+     }
+    ],
+    "model": "Sample · Claude Sonnet 5.5",
+    "facts": {
+     "facts": [
+      {
+       "id": "pa",
+       "label": "Plate appearances",
+       "value": "17"
+      },
+      {
+       "id": "avg",
+       "label": "AVG",
+       "value": ".750"
+      },
+      {
+       "id": "obp",
+       "label": "OBP",
+       "value": ".824"
+      },
+      {
+       "id": "slg",
+       "label": "SLG",
+       "value": ".917"
+      },
+      {
+       "id": "k_rate",
+       "label": "K%",
+       "value": "12%"
+      },
+      {
+       "id": "bb_rate",
+       "label": "BB%",
+       "value": "29%"
+      },
+      {
+       "id": "xbh",
+       "label": "Extra-base hits",
+       "value": "2"
+      },
+      {
+       "id": "rbi",
+       "label": "RBI",
+       "value": "3"
+      },
+      {
+       "id": "sb",
+       "label": "Stolen bases",
+       "value": "7 of 7"
+      },
+      {
+       "id": "tc",
+       "label": "Total chances",
+       "value": "3"
+      },
+      {
+       "id": "fpct",
+       "label": "Fielding %",
+       "value": "1.000"
+      },
+      {
+       "id": "errors",
+       "label": "Errors",
+       "value": "0"
+      },
+      {
+       "id": "p.ip",
+       "label": "Innings pitched",
+       "value": "3.1"
+      },
+      {
+       "id": "p.era",
+       "label": "ERA",
+       "value": "32.40"
+      },
+      {
+       "id": "p.whip",
+       "label": "WHIP",
+       "value": "5.40"
+      },
+      {
+       "id": "p.k_rate",
+       "label": "Pitching K%",
+       "value": "16%"
+      },
+      {
+       "id": "p.bb_rate",
+       "label": "Pitching BB%",
+       "value": "39%"
+      },
+      {
+       "id": "rating.fielding_hands",
+       "label": "Fielding Hands",
+       "value": "4/5"
+      },
+      {
+       "id": "rating.fielding_throw_accuracy",
+       "label": "Throw Accuracy",
+       "value": "4/5"
+      },
+      {
+       "id": "rating.fielding_arm_strength",
+       "label": "Arm Strength",
+       "value": "4/5"
+      },
+      {
+       "id": "rating.fly_ball_ability",
+       "label": "Fly Ball Ability",
+       "value": "2/5"
+      },
+      {
+       "id": "pos.p",
+       "label": "P",
+       "value": "plays"
+      },
+      {
+       "id": "pos.c",
+       "label": "C",
+       "value": "doesn't play"
+      },
+      {
+       "id": "pos.1b",
+       "label": "1B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.2b",
+       "label": "2B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.3b",
+       "label": "3B",
+       "value": "plays"
+      },
+      {
+       "id": "pos.ss",
+       "label": "SS",
+       "value": "plays"
+      },
+      {
+       "id": "pos.lf",
+       "label": "LF",
+       "value": "plays"
+      },
+      {
+       "id": "pos.cf",
+       "label": "CF",
+       "value": "best"
+      },
+      {
+       "id": "pos.rf",
+       "label": "RF",
+       "value": "plays"
+      }
+     ]
+    },
+    "development": [
+     {
+      "drill": "Bullpen sessions throwing to a catcher with a target, aiming for strikes on the first pitch to each batter. Track strikes out of 20 pitches.",
+      "focus": "Throwing strikes"
+     },
+     {
+      "drill": "Partner-tossed or coach-hit fly balls with a first step back, practicing reading the ball off the bat and drop-step routes.",
+      "focus": "Fly ball tracking"
+     },
+     {
+      "drill": "Live batting practice, staying patient on pitches off the plate while attacking strikes in the zone.",
+      "focus": "Sustain hitting approach"
+     }
+    ],
+    "battingZone": "top",
+    "effort": "medium",
+    "battingRole": "table-setter",
+    "defense": [
+     {
+      "fit": "strong",
+      "position": "3B",
+      "reason": "Arm strength and accuracy are good matches for the long throw",
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "1B",
+      "reason": "Reliable hands help, with no clear concerns",
+      "evidence": [
+       "rating.fielding_hands"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "2B",
+      "reason": "Hands and accuracy translate well",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "SS",
+      "reason": "Good hands, accurate and strong arm suit the infield",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy",
+       "rating.fielding_arm_strength"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "CF",
+      "reason": "Coach's top spot, and the arm and speed fit. Fly ball ability is rated low, so tracking balls is the thing to improve.",
+      "evidence": [
+       "pos.cf",
+       "rating.fly_ball_ability",
+       "rating.fielding_arm_strength"
+      ]
+     },
+     {
+      "fit": "solid",
+      "position": "RF",
+      "reason": "Strong arm is useful here, though fly balls need work",
+      "evidence": [
+       "rating.fielding_arm_strength",
+       "rating.fly_ball_ability"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "P",
+      "reason": "Arm tools are good, but walks are high and results so far have been rough",
+      "evidence": [
+       "p.bb_rate",
+       "p.whip",
+       "rating.fielding_arm_strength"
+      ]
+     },
+     {
+      "fit": "developing",
+      "position": "LF",
+      "reason": "Arm is an asset but fly ball ability is rated low",
+      "evidence": [
+       "rating.fly_ball_ability"
+      ]
+     }
+    ],
+    "assessedAt": 814489546.222524,
+    "snapshot": "Kai has had a very strong start at the plate and is a standout on the bases, with patience and 7-for-7 stealing. Pitching control is the clear area to build, and the batting numbers come from a small sample.",
+    "confidence": "low",
+    "strengths": [
+     {
+      "title": "Contact",
+      "detail": "Putting the ball in play and rarely striking out, with strong results on contact so far",
+      "evidence": [
+       "avg",
+       "k_rate",
+       "pa"
+      ]
+     },
+     {
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a high rate and gets on base, showing patience and a good eye",
+      "evidence": [
+       "bb_rate",
+       "obp"
+      ]
+     },
+     {
+      "title": "Speed",
+      "detail": "Perfect on stolen base attempts, showing good jumps and baserunning instincts that turn walks and hits into scoring chances",
+      "evidence": [
+       "sb"
+      ]
+     },
+     {
+      "title": "Arm and Hands",
+      "detail": "Coach rates hands, throw accuracy and arm strength all well above average, and he has been clean on the chances he has had",
+      "evidence": [
+       "rating.fielding_hands",
+       "rating.fielding_throw_accuracy",
+       "rating.fielding_arm_strength"
+      ]
+     }
+    ],
+    "battingReason": "Gets on base through hits and walks, rarely strikes out, and steals bases at will. Extra-base ability is a bonus.",
+    "confidenceReason": "Only 17 plate appearances, 3 fielding chances and 3.1 innings pitched, so the numbers can change a lot. Ratings for hitting and some fielding skills are missing."
+   }
+  },
+  {
+   "name": "Lane Player12",
+   "id": "12063BCB-2DAB-4953-81FA-3AF2C8557519",
+   "assessment": {
+    "weaknesses": [
+     {
+      "evidence": [
+       "xbh",
+       "slg"
+      ],
+      "title": "Power",
+      "detail": "All hits are singles, so slugging equals batting average. He needs to drive the ball into gaps with more authority."
+     },
+     {
+      "evidence": [
+       "c.pb",
+       "c.cs",
+       "c.innings"
+      ],
+      "title": "Catching",
+      "detail": "Passed balls are a concern for the innings caught, and few runners are thrown out, so blocking and throwing need work."
+     }
+    ],
+    "model": "Sample · Claude Sonnet 5.5",
+    "facts": {
+     "facts": [
+      {
+       "label": "Plate appearances",
+       "id": "pa",
+       "value": "19"
+      },
+      {
+       "label": "AVG",
+       "id": "avg",
+       "value": ".267"
+      },
+      {
+       "label": "OBP",
+       "id": "obp",
+       "value": ".421"
+      },
+      {
+       "label": "SLG",
+       "id": "slg",
+       "value": ".267"
+      },
+      {
+       "label": "K%",
+       "id": "k_rate",
+       "value": "21%"
+      },
+      {
+       "label": "BB%",
+       "id": "bb_rate",
+       "value": "21%"
+      },
+      {
+       "label": "Extra-base hits",
+       "id": "xbh",
+       "value": "0"
+      },
+      {
+       "label": "RBI",
+       "id": "rbi",
+       "value": "11"
+      },
+      {
+       "label": "Stolen bases",
+       "id": "sb",
+       "value": "5 of 5"
+      },
+      {
+       "label": "Total chances",
+       "id": "tc",
+       "value": "43"
+      },
+      {
+       "label": "Fielding %",
+       "id": "fpct",
+       "value": "1.000"
+      },
+      {
+       "label": "Errors",
+       "id": "errors",
+       "value": "0"
+      },
+      {
+       "label": "Innings caught",
+       "id": "c.innings",
+       "value": "16.7"
+      },
+      {
+       "label": "Passed balls",
+       "id": "c.pb",
+       "value": "3"
+      },
+      {
+       "label": "Runners caught stealing",
+       "id": "c.cs",
+       "value": "2 of 36"
+      },
+      {
+       "label": "P",
+       "id": "pos.p",
+       "value": "doesn't play"
+      },
+      {
+       "label": "C",
+       "id": "pos.c",
+       "value": "plays"
+      },
+      {
+       "label": "1B",
+       "id": "pos.1b",
+       "value": "plays"
+      },
+      {
+       "label": "2B",
+       "id": "pos.2b",
+       "value": "plays"
+      },
+      {
+       "label": "3B",
+       "id": "pos.3b",
+       "value": "plays"
+      },
+      {
+       "label": "SS",
+       "id": "pos.ss",
+       "value": "plays"
+      },
+      {
+       "label": "LF",
+       "id": "pos.lf",
+       "value": "plays"
+      },
+      {
+       "label": "CF",
+       "id": "pos.cf",
+       "value": "plays"
+      },
+      {
+       "label": "RF",
+       "id": "pos.rf",
+       "value": "plays"
+      }
+     ]
+    },
+    "development": [
+     {
+      "focus": "Catcher blocking",
+      "drill": "Knee-drop blocking drill: a partner or coach throws tennis balls in the dirt, and he focuses on dropping to his knees, chin down, glove between his legs, and keeping the ball in front."
+     },
+     {
+      "focus": "Catcher throwing",
+      "drill": "Pop-time drill: catch, transfer and throw to second base from a squat, working on a quick exchange and footwork."
+     },
+     {
+      "focus": "Drive the ball",
+      "drill": "Tee work on line drives to the gaps, then front toss aiming for hard contact in the air or on a line."
+     }
+    ],
+    "battingZone": "top",
+    "effort": "medium",
+    "battingRole": "table-setter",
+    "defense": [
+     {
+      "evidence": [
+       "fpct"
+      ],
+      "position": "1B",
+      "fit": "solid",
+      "reason": "Clean fielding record overall; no position-specific data is available."
+     },
+     {
+      "evidence": [
+       "fpct"
+      ],
+      "position": "2B",
+      "fit": "solid",
+      "reason": "Clean fielding record overall; no position-specific data is available."
+     },
+     {
+      "evidence": [
+       "fpct",
+       "errors"
+      ],
+      "position": "3B",
+      "fit": "solid",
+      "reason": "Clean fielding record overall; arm strength is unrated."
+     },
+     {
+      "evidence": [
+       "fpct",
+       "tc"
+      ],
+      "position": "SS",
+      "fit": "solid",
+      "reason": "Error-free across all chances, but no position split or arm rating is available."
+     },
+     {
+      "evidence": [
+       "fpct"
+      ],
+      "position": "LF",
+      "fit": "solid",
+      "reason": "Reliable with the glove overall; no position-specific data is available."
+     },
+     {
+      "evidence": [
+       "fpct"
+      ],
+      "position": "CF",
+      "fit": "solid",
+      "reason": "Reliable with the glove overall; range is unrated."
+     },
+     {
+      "evidence": [
+       "fpct"
+      ],
+      "position": "RF",
+      "fit": "solid",
+      "reason": "Reliable with the glove overall; no position-specific data is available."
+     },
+     {
+      "evidence": [
+       "c.pb",
+       "c.cs",
+       "c.innings"
+      ],
+      "position": "C",
+      "fit": "developing",
+      "reason": "Passed balls are a concern and few runners are caught stealing, though many runners have tested him. The sample is under 17 innings."
+     }
+    ],
+    "assessedAt": 814489544.600662,
+    "snapshot": "Lane gets on base by drawing walks, runs the bases well and drives in runs, while handling every defensive chance cleanly. Catching is the main area to polish, especially blocking pitches, and the bat needs more hard contact for extra bases.",
+    "confidence": "low",
+    "strengths": [
+     {
+      "evidence": [
+       "bb_rate",
+       "obp",
+       "k_rate"
+      ],
+      "title": "Plate Discipline",
+      "detail": "Draws walks at a high rate, so on-base percentage is well above batting average. Strikeouts stay at a manageable level for this age."
+     },
+     {
+      "evidence": [
+       "sb"
+      ],
+      "title": "Baserunning",
+      "detail": "Steals bases successfully every time he tries, showing good instincts and the ability to take the extra base."
+     },
+     {
+      "evidence": [
+       "rbi",
+       "pa"
+      ],
+      "title": "Run Production",
+      "detail": "Drives in a lot of runs for the number of plate appearances, so he is coming through with runners on."
+     },
+     {
+      "evidence": [
+       "fpct",
+       "errors",
+       "tc"
+      ],
+      "title": "Fielding",
+      "detail": "Handles every chance cleanly, with no errors across a good number of chances."
+     }
+    ],
+    "battingReason": "Walks often, reaches base at a high rate and steals bases successfully. Singles-only contact fits a lead-off or second spot, though the sample is small.",
+    "confidenceReason": "Only 19 plate appearances and under 17 innings caught, so rates like AVG, BB% and K% can swing a lot. No coach ratings were provided to compare, and fielding is not split by position."
+   }
+  }
+ ],
+ "team": {
+  "practice": [
+   {
+    "focus": "Pitching strike throwing",
+    "priority": "high",
+    "drills": "Target-based bullpens with a catcher's mitt or strike-zone net, 'ladder' drills that track strikes out of 10 pitches, short side sessions for all seven pitchers, first-pitch strike challenges, and a basic repeatable-delivery routine."
+   },
+   {
+    "focus": "Catcher development and run prevention",
+    "priority": "high",
+    "drills": "Blocking drills with balls in the dirt, receiving and framing work, quick transfer and pop-time drills from the crouch, and pitcher-catcher work on holding runners and varying looks. Cross-train a third catcher, such as a strong-armed infielder like Eli or Casey."
+   },
+   {
+    "focus": "Contact hitting for bottom of the order",
+    "priority": "medium",
+    "drills": "Tee work and soft toss focused on bat-to-ball contact, front toss with a short compact swing, two-strike approach drills, and tracking drills to cut down swinging strikeouts for Alex and Drew."
+   },
+   {
+    "focus": "Infield and outfield fundamentals",
+    "priority": "medium",
+    "drills": "Ground ball reps with a focus on glove position and fielding through the ball, throwing accuracy to a target, and fly ball drills with drop-step and route practice for players with lower glove ratings."
+   },
+   {
+    "focus": "Driving the ball",
+    "priority": "low",
+    "drills": "Hitters who walk often can work on attacking pitches in the zone with batting practice rounds that reward line drives and gap hits, plus a count-based approach that stays selective but aggressive on good pitches."
+   }
+  ],
+  "summary": "This team has an excellent offense built on patience, speed and clean baserunning, and its fielding is steady. The priorities are pitching control and catcher depth and run prevention, since walks and free stolen bases are giving back much of what the lineup earns. Smaller goals are better contact from the bottom of the order and building extra-base power.",
+  "players": [
+   "39529C2D-5415-436B-92D1-D483A7CBDAB8",
+   "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+   "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+   "70588014-989D-445C-B5E0-A5EBD18C08D4",
+   "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+   "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+   "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+   "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+   "B959CE63-61CC-4088-B3BD-E3808E5F8978",
+   "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
+   "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F",
+   "12063BCB-2DAB-4953-81FA-3AF2C8557519"
+  ],
+  "middleOrder": [
+   "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+   "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+   "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
+   "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6"
+  ],
+  "defensiveConcerns": [
+   "Only two players can catch, and opponents are running on them almost freely",
+   "Pitching staff has little control, even with seven pitchers available",
+   "Drew and Indy have limited defensive range, with few safe positions",
+   "Primary catcher Hayden also pitches, which could be a workload concern"
+  ],
+  "leadoff": [
+   "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+   "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F",
+   "B4731280-8C88-4C2C-BC37-235EC0B1D667"
+  ],
+  "defensiveCore": [
+   "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+   "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+   "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+   "A7AE1B0F-F841-4164-B652-4DB1E4D394C5"
+  ],
+  "weaknesses": [
+   {
+    "title": "Pitching Control",
+    "evidence": [
+     "team.p.whip",
+     "P7.p.bb_rate",
+     "P11.p.whip"
+    ],
+    "detail": "Pitching is the biggest gap. The staff issues too many walks and allows far too many baserunners. Strikeout stuff exists (Casey, Eli, Hayden), but strikes are not being thrown consistently. Every pitcher needs to work on the strike zone."
+   },
+   {
+    "title": "Catcher Depth and Run Prevention",
+    "evidence": [
+     "team.catchers",
+     "P8.c.cs",
+     "P8.c.pb"
+    ],
+    "detail": "Only two players can catch, and opponents run freely, with almost no runners thrown out. Passed balls are also a problem for the primary catcher, so blocking and receiving need work. Any injury or fatigue at catcher would leave a real hole."
+   },
+   {
+    "title": "Strikeouts for Bottom of the Order",
+    "evidence": [
+     "P1.k_rate",
+     "P4.k_rate",
+     "team.k_rate"
+    ],
+    "detail": "Contact is a clear issue for a few hitters. Alex and Drew strike out often and have not recorded a hit, relying on walks to reach base."
+   },
+   {
+    "title": "Defensive Weak Spots",
+    "evidence": [
+     "P4.rating.fielding_hands",
+     "P9.rating.fielding_hands",
+     "P10.rating.fielding_arm_strength"
+    ],
+    "detail": "Some players have low glove and arm ratings, which limits where they can be placed safely. Drew and Indy are the clearest examples, with Jules's arm also a concern."
+   },
+   {
+    "title": "Extra-Base Power",
+    "evidence": [
+     "P7.xbh",
+     "P9.xbh",
+     "P12.xbh"
+    ],
+    "detail": "Many hitters are slap or walk-first types without extra-base hits. Added hard contact would turn more baserunners into runs."
+   }
+  ],
+  "assessedAt": 814489562.465222,
+  "effort": "medium",
+  "facts": {
+   "facts": [
+    {
+     "id": "team.players",
+     "label": "Players",
+     "value": "12"
+    },
+    {
+     "id": "team.pa",
+     "label": "Team plate appearances",
+     "value": "244"
+    },
+    {
+     "id": "team.avg",
+     "label": "Team AVG",
+     "value": ".450"
+    },
+    {
+     "id": "team.obp",
+     "label": "Team OBP",
+     "value": ".639"
+    },
+    {
+     "id": "team.slg",
+     "label": "Team SLG",
+     "value": ".569"
+    },
+    {
+     "id": "team.k_rate",
+     "label": "Team K%",
+     "value": "24%"
+    },
+    {
+     "id": "team.bb_rate",
+     "label": "Team BB%",
+     "value": "32%"
+    },
+    {
+     "id": "team.sb",
+     "label": "Team stolen bases",
+     "value": "80 of 80"
+    },
+    {
+     "id": "team.fpct",
+     "label": "Team fielding %",
+     "value": ".981"
+    },
+    {
+     "id": "team.errors",
+     "label": "Team errors",
+     "value": "2"
+    },
+    {
+     "id": "team.p.ip",
+     "label": "Team innings pitched",
+     "value": "32.0"
+    },
+    {
+     "id": "team.p.whip",
+     "label": "Team WHIP",
+     "value": "3.66"
+    },
+    {
+     "id": "team.pitchers",
+     "label": "Players who can pitch",
+     "value": "7"
+    },
+    {
+     "id": "team.catchers",
+     "label": "Players who can catch",
+     "value": "2"
+    },
+    {
+     "id": "P1.pa",
+     "label": "Alex Plate appearances",
+     "value": "21"
+    },
+    {
+     "id": "P1.avg",
+     "label": "Alex AVG",
+     "value": ".000"
+    },
+    {
+     "id": "P1.obp",
+     "label": "Alex OBP",
+     "value": ".429"
+    },
+    {
+     "id": "P1.slg",
+     "label": "Alex SLG",
+     "value": ".000"
+    },
+    {
+     "id": "P1.k_rate",
+     "label": "Alex K%",
+     "value": "52%"
+    },
+    {
+     "id": "P1.bb_rate",
+     "label": "Alex BB%",
+     "value": "38%"
+    },
+    {
+     "id": "P1.xbh",
+     "label": "Alex Extra-base hits",
+     "value": "0"
+    },
+    {
+     "id": "P1.rbi",
+     "label": "Alex RBI",
+     "value": "6"
+    },
+    {
+     "id": "P1.sb",
+     "label": "Alex Stolen bases",
+     "value": "2 of 2"
+    },
+    {
+     "id": "P1.rating.fielding_hands",
+     "label": "Alex Fielding Hands",
+     "value": "4/5"
+    },
+    {
+     "id": "P1.rating.fielding_throw_accuracy",
+     "label": "Alex Throw Accuracy",
+     "value": "4/5"
+    },
+    {
+     "id": "P1.rating.fielding_arm_strength",
+     "label": "Alex Arm Strength",
+     "value": "3/5"
+    },
+    {
+     "id": "P1.rating.fly_ball_ability",
+     "label": "Alex Fly Ball Ability",
+     "value": "3/5"
+    },
+    {
+     "id": "P1.pos.p",
+     "label": "Alex P",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P1.pos.c",
+     "label": "Alex C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P1.pos.1b",
+     "label": "Alex 1B",
+     "value": "best"
+    },
+    {
+     "id": "P1.pos.2b",
+     "label": "Alex 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P1.pos.3b",
+     "label": "Alex 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P1.pos.ss",
+     "label": "Alex SS",
+     "value": "plays"
+    },
+    {
+     "id": "P1.pos.lf",
+     "label": "Alex LF",
+     "value": "plays"
+    },
+    {
+     "id": "P1.pos.cf",
+     "label": "Alex CF",
+     "value": "plays"
+    },
+    {
+     "id": "P1.pos.rf",
+     "label": "Alex RF",
+     "value": "plays"
+    },
+    {
+     "id": "P2.pa",
+     "label": "Blake Plate appearances",
+     "value": "14"
+    },
+    {
+     "id": "P2.avg",
+     "label": "Blake AVG",
+     "value": ".222"
+    },
+    {
+     "id": "P2.obp",
+     "label": "Blake OBP",
+     "value": ".500"
+    },
+    {
+     "id": "P2.slg",
+     "label": "Blake SLG",
+     "value": ".222"
+    },
+    {
+     "id": "P2.k_rate",
+     "label": "Blake K%",
+     "value": "21%"
+    },
+    {
+     "id": "P2.bb_rate",
+     "label": "Blake BB%",
+     "value": "36%"
+    },
+    {
+     "id": "P2.xbh",
+     "label": "Blake Extra-base hits",
+     "value": "0"
+    },
+    {
+     "id": "P2.rbi",
+     "label": "Blake RBI",
+     "value": "2"
+    },
+    {
+     "id": "P2.sb",
+     "label": "Blake Stolen bases",
+     "value": "7 of 7"
+    },
+    {
+     "id": "P2.tc",
+     "label": "Blake Total chances",
+     "value": "3"
+    },
+    {
+     "id": "P2.fpct",
+     "label": "Blake Fielding %",
+     "value": "1.000"
+    },
+    {
+     "id": "P2.errors",
+     "label": "Blake Errors",
+     "value": "0"
+    },
+    {
+     "id": "P2.p.ip",
+     "label": "Blake Innings pitched",
+     "value": "3.1"
+    },
+    {
+     "id": "P2.p.era",
+     "label": "Blake ERA",
+     "value": "13.50"
+    },
+    {
+     "id": "P2.p.whip",
+     "label": "Blake WHIP",
+     "value": "4.20"
+    },
+    {
+     "id": "P2.p.k_rate",
+     "label": "Blake Pitching K%",
+     "value": "24%"
+    },
+    {
+     "id": "P2.p.bb_rate",
+     "label": "Blake Pitching BB%",
+     "value": "32%"
+    },
+    {
+     "id": "P2.rating.fielding_hands",
+     "label": "Blake Fielding Hands",
+     "value": "3/5"
+    },
+    {
+     "id": "P2.rating.fielding_throw_accuracy",
+     "label": "Blake Throw Accuracy",
+     "value": "3/5"
+    },
+    {
+     "id": "P2.rating.fielding_arm_strength",
+     "label": "Blake Arm Strength",
+     "value": "4/5"
+    },
+    {
+     "id": "P2.rating.fly_ball_ability",
+     "label": "Blake Fly Ball Ability",
+     "value": "2/5"
+    },
+    {
+     "id": "P2.pos.p",
+     "label": "Blake P",
+     "value": "best"
+    },
+    {
+     "id": "P2.pos.c",
+     "label": "Blake C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P2.pos.1b",
+     "label": "Blake 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P2.pos.2b",
+     "label": "Blake 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P2.pos.3b",
+     "label": "Blake 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P2.pos.ss",
+     "label": "Blake SS",
+     "value": "plays"
+    },
+    {
+     "id": "P2.pos.lf",
+     "label": "Blake LF",
+     "value": "plays"
+    },
+    {
+     "id": "P2.pos.cf",
+     "label": "Blake CF",
+     "value": "plays"
+    },
+    {
+     "id": "P2.pos.rf",
+     "label": "Blake RF",
+     "value": "plays"
+    },
+    {
+     "id": "P3.pa",
+     "label": "Casey Plate appearances",
+     "value": "20"
+    },
+    {
+     "id": "P3.avg",
+     "label": "Casey AVG",
+     "value": ".500"
+    },
+    {
+     "id": "P3.obp",
+     "label": "Casey OBP",
+     "value": ".600"
+    },
+    {
+     "id": "P3.slg",
+     "label": "Casey SLG",
+     "value": ".562"
+    },
+    {
+     "id": "P3.k_rate",
+     "label": "Casey K%",
+     "value": "15%"
+    },
+    {
+     "id": "P3.bb_rate",
+     "label": "Casey BB%",
+     "value": "20%"
+    },
+    {
+     "id": "P3.xbh",
+     "label": "Casey Extra-base hits",
+     "value": "1"
+    },
+    {
+     "id": "P3.rbi",
+     "label": "Casey RBI",
+     "value": "10"
+    },
+    {
+     "id": "P3.sb",
+     "label": "Casey Stolen bases",
+     "value": "8 of 8"
+    },
+    {
+     "id": "P3.tc",
+     "label": "Casey Total chances",
+     "value": "6"
+    },
+    {
+     "id": "P3.fpct",
+     "label": "Casey Fielding %",
+     "value": ".833"
+    },
+    {
+     "id": "P3.errors",
+     "label": "Casey Errors",
+     "value": "1"
+    },
+    {
+     "id": "P3.p.ip",
+     "label": "Casey Innings pitched",
+     "value": "2.2"
+    },
+    {
+     "id": "P3.p.era",
+     "label": "Casey ERA",
+     "value": "13.50"
+    },
+    {
+     "id": "P3.p.whip",
+     "label": "Casey WHIP",
+     "value": "3.38"
+    },
+    {
+     "id": "P3.p.k_rate",
+     "label": "Casey Pitching K%",
+     "value": "47%"
+    },
+    {
+     "id": "P3.p.bb_rate",
+     "label": "Casey Pitching BB%",
+     "value": "29%"
+    },
+    {
+     "id": "P3.rating.fielding_hands",
+     "label": "Casey Fielding Hands",
+     "value": "5/5"
+    },
+    {
+     "id": "P3.rating.fielding_throw_accuracy",
+     "label": "Casey Throw Accuracy",
+     "value": "4/5"
+    },
+    {
+     "id": "P3.rating.fielding_arm_strength",
+     "label": "Casey Arm Strength",
+     "value": "4/5"
+    },
+    {
+     "id": "P3.rating.fly_ball_ability",
+     "label": "Casey Fly Ball Ability",
+     "value": "3/5"
+    },
+    {
+     "id": "P3.pos.p",
+     "label": "Casey P",
+     "value": "plays"
+    },
+    {
+     "id": "P3.pos.c",
+     "label": "Casey C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P3.pos.1b",
+     "label": "Casey 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P3.pos.2b",
+     "label": "Casey 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P3.pos.3b",
+     "label": "Casey 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P3.pos.ss",
+     "label": "Casey SS",
+     "value": "best"
+    },
+    {
+     "id": "P3.pos.lf",
+     "label": "Casey LF",
+     "value": "plays"
+    },
+    {
+     "id": "P3.pos.cf",
+     "label": "Casey CF",
+     "value": "plays"
+    },
+    {
+     "id": "P3.pos.rf",
+     "label": "Casey RF",
+     "value": "plays"
+    },
+    {
+     "id": "P4.pa",
+     "label": "Drew Plate appearances",
+     "value": "19"
+    },
+    {
+     "id": "P4.avg",
+     "label": "Drew AVG",
+     "value": ".000"
+    },
+    {
+     "id": "P4.obp",
+     "label": "Drew OBP",
+     "value": ".368"
+    },
+    {
+     "id": "P4.slg",
+     "label": "Drew SLG",
+     "value": ".000"
+    },
+    {
+     "id": "P4.k_rate",
+     "label": "Drew K%",
+     "value": "58%"
+    },
+    {
+     "id": "P4.bb_rate",
+     "label": "Drew BB%",
+     "value": "37%"
+    },
+    {
+     "id": "P4.xbh",
+     "label": "Drew Extra-base hits",
+     "value": "0"
+    },
+    {
+     "id": "P4.rbi",
+     "label": "Drew RBI",
+     "value": "1"
+    },
+    {
+     "id": "P4.sb",
+     "label": "Drew Stolen bases",
+     "value": "5 of 5"
+    },
+    {
+     "id": "P4.rating.fielding_hands",
+     "label": "Drew Fielding Hands",
+     "value": "2/5"
+    },
+    {
+     "id": "P4.rating.fielding_throw_accuracy",
+     "label": "Drew Throw Accuracy",
+     "value": "2/5"
+    },
+    {
+     "id": "P4.rating.fielding_arm_strength",
+     "label": "Drew Arm Strength",
+     "value": "2/5"
+    },
+    {
+     "id": "P4.rating.fly_ball_ability",
+     "label": "Drew Fly Ball Ability",
+     "value": "3/5"
+    },
+    {
+     "id": "P4.pos.p",
+     "label": "Drew P",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P4.pos.c",
+     "label": "Drew C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P4.pos.1b",
+     "label": "Drew 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P4.pos.2b",
+     "label": "Drew 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P4.pos.3b",
+     "label": "Drew 3B",
+     "value": "best"
+    },
+    {
+     "id": "P4.pos.ss",
+     "label": "Drew SS",
+     "value": "plays"
+    },
+    {
+     "id": "P4.pos.lf",
+     "label": "Drew LF",
+     "value": "plays"
+    },
+    {
+     "id": "P4.pos.cf",
+     "label": "Drew CF",
+     "value": "plays"
+    },
+    {
+     "id": "P4.pos.rf",
+     "label": "Drew RF",
+     "value": "plays"
+    },
+    {
+     "id": "P5.pa",
+     "label": "Eli Plate appearances",
+     "value": "22"
+    },
+    {
+     "id": "P5.avg",
+     "label": "Eli AVG",
+     "value": ".667"
+    },
+    {
+     "id": "P5.obp",
+     "label": "Eli OBP",
+     "value": ".727"
+    },
+    {
+     "id": "P5.slg",
+     "label": "Eli SLG",
+     "value": ".889"
+    },
+    {
+     "id": "P5.k_rate",
+     "label": "Eli K%",
+     "value": "14%"
+    },
+    {
+     "id": "P5.bb_rate",
+     "label": "Eli BB%",
+     "value": "14%"
+    },
+    {
+     "id": "P5.xbh",
+     "label": "Eli Extra-base hits",
+     "value": "4"
+    },
+    {
+     "id": "P5.rbi",
+     "label": "Eli RBI",
+     "value": "15"
+    },
+    {
+     "id": "P5.sb",
+     "label": "Eli Stolen bases",
+     "value": "8 of 8"
+    },
+    {
+     "id": "P5.tc",
+     "label": "Eli Total chances",
+     "value": "7"
+    },
+    {
+     "id": "P5.fpct",
+     "label": "Eli Fielding %",
+     "value": "1.000"
+    },
+    {
+     "id": "P5.errors",
+     "label": "Eli Errors",
+     "value": "0"
+    },
+    {
+     "id": "P5.p.ip",
+     "label": "Eli Innings pitched",
+     "value": "4.0"
+    },
+    {
+     "id": "P5.p.era",
+     "label": "Eli ERA",
+     "value": "15.75"
+    },
+    {
+     "id": "P5.p.whip",
+     "label": "Eli WHIP",
+     "value": "2.25"
+    },
+    {
+     "id": "P5.p.k_rate",
+     "label": "Eli Pitching K%",
+     "value": "42%"
+    },
+    {
+     "id": "P5.p.bb_rate",
+     "label": "Eli Pitching BB%",
+     "value": "19%"
+    },
+    {
+     "id": "P5.rating.fielding_hands",
+     "label": "Eli Fielding Hands",
+     "value": "4/5"
+    },
+    {
+     "id": "P5.rating.fielding_throw_accuracy",
+     "label": "Eli Throw Accuracy",
+     "value": "3/5"
+    },
+    {
+     "id": "P5.rating.fielding_arm_strength",
+     "label": "Eli Arm Strength",
+     "value": "5/5"
+    },
+    {
+     "id": "P5.rating.fly_ball_ability",
+     "label": "Eli Fly Ball Ability",
+     "value": "4/5"
+    },
+    {
+     "id": "P5.pos.p",
+     "label": "Eli P",
+     "value": "plays"
+    },
+    {
+     "id": "P5.pos.c",
+     "label": "Eli C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P5.pos.1b",
+     "label": "Eli 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P5.pos.2b",
+     "label": "Eli 2B",
+     "value": "best"
+    },
+    {
+     "id": "P5.pos.3b",
+     "label": "Eli 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P5.pos.ss",
+     "label": "Eli SS",
+     "value": "plays"
+    },
+    {
+     "id": "P5.pos.lf",
+     "label": "Eli LF",
+     "value": "plays"
+    },
+    {
+     "id": "P5.pos.cf",
+     "label": "Eli CF",
+     "value": "plays"
+    },
+    {
+     "id": "P5.pos.rf",
+     "label": "Eli RF",
+     "value": "plays"
+    },
+    {
+     "id": "P6.pa",
+     "label": "Finn Plate appearances",
+     "value": "23"
+    },
+    {
+     "id": "P6.avg",
+     "label": "Finn AVG",
+     "value": ".533"
+    },
+    {
+     "id": "P6.obp",
+     "label": "Finn OBP",
+     "value": ".696"
+    },
+    {
+     "id": "P6.slg",
+     "label": "Finn SLG",
+     "value": ".800"
+    },
+    {
+     "id": "P6.k_rate",
+     "label": "Finn K%",
+     "value": "17%"
+    },
+    {
+     "id": "P6.bb_rate",
+     "label": "Finn BB%",
+     "value": "35%"
+    },
+    {
+     "id": "P6.xbh",
+     "label": "Finn Extra-base hits",
+     "value": "2"
+    },
+    {
+     "id": "P6.rbi",
+     "label": "Finn RBI",
+     "value": "14"
+    },
+    {
+     "id": "P6.sb",
+     "label": "Finn Stolen bases",
+     "value": "6 of 6"
+    },
+    {
+     "id": "P6.tc",
+     "label": "Finn Total chances",
+     "value": "7"
+    },
+    {
+     "id": "P6.fpct",
+     "label": "Finn Fielding %",
+     "value": ".857"
+    },
+    {
+     "id": "P6.errors",
+     "label": "Finn Errors",
+     "value": "1"
+    },
+    {
+     "id": "P6.rating.fielding_hands",
+     "label": "Finn Fielding Hands",
+     "value": "3/5"
+    },
+    {
+     "id": "P6.rating.fielding_throw_accuracy",
+     "label": "Finn Throw Accuracy",
+     "value": "4/5"
+    },
+    {
+     "id": "P6.rating.fielding_arm_strength",
+     "label": "Finn Arm Strength",
+     "value": "3/5"
+    },
+    {
+     "id": "P6.rating.fly_ball_ability",
+     "label": "Finn Fly Ball Ability",
+     "value": "5/5"
+    },
+    {
+     "id": "P6.pos.p",
+     "label": "Finn P",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P6.pos.c",
+     "label": "Finn C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P6.pos.1b",
+     "label": "Finn 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P6.pos.2b",
+     "label": "Finn 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P6.pos.3b",
+     "label": "Finn 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P6.pos.ss",
+     "label": "Finn SS",
+     "value": "plays"
+    },
+    {
+     "id": "P6.pos.lf",
+     "label": "Finn LF",
+     "value": "best"
+    },
+    {
+     "id": "P6.pos.cf",
+     "label": "Finn CF",
+     "value": "plays"
+    },
+    {
+     "id": "P6.pos.rf",
+     "label": "Finn RF",
+     "value": "plays"
+    },
+    {
+     "id": "P7.pa",
+     "label": "Gray Plate appearances",
+     "value": "26"
+    },
+    {
+     "id": "P7.avg",
+     "label": "Gray AVG",
+     "value": ".733"
+    },
+    {
+     "id": "P7.obp",
+     "label": "Gray OBP",
+     "value": ".846"
+    },
+    {
+     "id": "P7.slg",
+     "label": "Gray SLG",
+     "value": ".733"
+    },
+    {
+     "id": "P7.k_rate",
+     "label": "Gray K%",
+     "value": "15%"
+    },
+    {
+     "id": "P7.bb_rate",
+     "label": "Gray BB%",
+     "value": "38%"
+    },
+    {
+     "id": "P7.xbh",
+     "label": "Gray Extra-base hits",
+     "value": "0"
+    },
+    {
+     "id": "P7.rbi",
+     "label": "Gray RBI",
+     "value": "7"
+    },
+    {
+     "id": "P7.sb",
+     "label": "Gray Stolen bases",
+     "value": "14 of 14"
+    },
+    {
+     "id": "P7.tc",
+     "label": "Gray Total chances",
+     "value": "2"
+    },
+    {
+     "id": "P7.fpct",
+     "label": "Gray Fielding %",
+     "value": "1.000"
+    },
+    {
+     "id": "P7.errors",
+     "label": "Gray Errors",
+     "value": "0"
+    },
+    {
+     "id": "P7.p.ip",
+     "label": "Gray Innings pitched",
+     "value": "6.0"
+    },
+    {
+     "id": "P7.p.era",
+     "label": "Gray ERA",
+     "value": "22.50"
+    },
+    {
+     "id": "P7.p.whip",
+     "label": "Gray WHIP",
+     "value": "4.50"
+    },
+    {
+     "id": "P7.p.k_rate",
+     "label": "Gray Pitching K%",
+     "value": "29%"
+    },
+    {
+     "id": "P7.p.bb_rate",
+     "label": "Gray Pitching BB%",
+     "value": "44%"
+    },
+    {
+     "id": "P7.rating.fielding_hands",
+     "label": "Gray Fielding Hands",
+     "value": "4/5"
+    },
+    {
+     "id": "P7.rating.fielding_throw_accuracy",
+     "label": "Gray Throw Accuracy",
+     "value": "5/5"
+    },
+    {
+     "id": "P7.rating.fielding_arm_strength",
+     "label": "Gray Arm Strength",
+     "value": "4/5"
+    },
+    {
+     "id": "P7.rating.fly_ball_ability",
+     "label": "Gray Fly Ball Ability",
+     "value": "4/5"
+    },
+    {
+     "id": "P7.pos.p",
+     "label": "Gray P",
+     "value": "plays"
+    },
+    {
+     "id": "P7.pos.c",
+     "label": "Gray C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P7.pos.1b",
+     "label": "Gray 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P7.pos.2b",
+     "label": "Gray 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P7.pos.3b",
+     "label": "Gray 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P7.pos.ss",
+     "label": "Gray SS",
+     "value": "plays"
+    },
+    {
+     "id": "P7.pos.lf",
+     "label": "Gray LF",
+     "value": "plays"
+    },
+    {
+     "id": "P7.pos.cf",
+     "label": "Gray CF",
+     "value": "best"
+    },
+    {
+     "id": "P7.pos.rf",
+     "label": "Gray RF",
+     "value": "plays"
+    },
+    {
+     "id": "P8.pa",
+     "label": "Hayden Plate appearances",
+     "value": "23"
+    },
+    {
+     "id": "P8.avg",
+     "label": "Hayden AVG",
+     "value": ".600"
+    },
+    {
+     "id": "P8.obp",
+     "label": "Hayden OBP",
+     "value": ".826"
+    },
+    {
+     "id": "P8.slg",
+     "label": "Hayden SLG",
+     "value": ".900"
+    },
+    {
+     "id": "P8.k_rate",
+     "label": "Hayden K%",
+     "value": "17%"
+    },
+    {
+     "id": "P8.bb_rate",
+     "label": "Hayden BB%",
+     "value": "52%"
+    },
+    {
+     "id": "P8.xbh",
+     "label": "Hayden Extra-base hits",
+     "value": "2"
+    },
+    {
+     "id": "P8.rbi",
+     "label": "Hayden RBI",
+     "value": "5"
+    },
+    {
+     "id": "P8.sb",
+     "label": "Hayden Stolen bases",
+     "value": "4 of 4"
+    },
+    {
+     "id": "P8.tc",
+     "label": "Hayden Total chances",
+     "value": "33"
+    },
+    {
+     "id": "P8.fpct",
+     "label": "Hayden Fielding %",
+     "value": "1.000"
+    },
+    {
+     "id": "P8.errors",
+     "label": "Hayden Errors",
+     "value": "0"
+    },
+    {
+     "id": "P8.c.innings",
+     "label": "Hayden Innings caught",
+     "value": "15.3"
+    },
+    {
+     "id": "P8.c.pb",
+     "label": "Hayden Passed balls",
+     "value": "6"
+    },
+    {
+     "id": "P8.c.cs",
+     "label": "Hayden Runners caught stealing",
+     "value": "0 of 33"
+    },
+    {
+     "id": "P8.p.ip",
+     "label": "Hayden Innings pitched",
+     "value": "6.0"
+    },
+    {
+     "id": "P8.p.era",
+     "label": "Hayden ERA",
+     "value": "10.50"
+    },
+    {
+     "id": "P8.p.whip",
+     "label": "Hayden WHIP",
+     "value": "2.83"
+    },
+    {
+     "id": "P8.p.k_rate",
+     "label": "Hayden Pitching K%",
+     "value": "42%"
+    },
+    {
+     "id": "P8.p.bb_rate",
+     "label": "Hayden Pitching BB%",
+     "value": "42%"
+    },
+    {
+     "id": "P8.rating.fielding_hands",
+     "label": "Hayden Fielding Hands",
+     "value": "5/5"
+    },
+    {
+     "id": "P8.rating.fielding_throw_accuracy",
+     "label": "Hayden Throw Accuracy",
+     "value": "5/5"
+    },
+    {
+     "id": "P8.rating.fielding_arm_strength",
+     "label": "Hayden Arm Strength",
+     "value": "4/5"
+    },
+    {
+     "id": "P8.rating.fly_ball_ability",
+     "label": "Hayden Fly Ball Ability",
+     "value": "3/5"
+    },
+    {
+     "id": "P8.pos.p",
+     "label": "Hayden P",
+     "value": "plays"
+    },
+    {
+     "id": "P8.pos.c",
+     "label": "Hayden C",
+     "value": "best"
+    },
+    {
+     "id": "P8.pos.1b",
+     "label": "Hayden 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P8.pos.2b",
+     "label": "Hayden 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P8.pos.3b",
+     "label": "Hayden 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P8.pos.ss",
+     "label": "Hayden SS",
+     "value": "plays"
+    },
+    {
+     "id": "P8.pos.lf",
+     "label": "Hayden LF",
+     "value": "plays"
+    },
+    {
+     "id": "P8.pos.cf",
+     "label": "Hayden CF",
+     "value": "plays"
+    },
+    {
+     "id": "P8.pos.rf",
+     "label": "Hayden RF",
+     "value": "plays"
+    },
+    {
+     "id": "P9.pa",
+     "label": "Indy Plate appearances",
+     "value": "20"
+    },
+    {
+     "id": "P9.avg",
+     "label": "Indy AVG",
+     "value": ".385"
+    },
+    {
+     "id": "P9.obp",
+     "label": "Indy OBP",
+     "value": ".600"
+    },
+    {
+     "id": "P9.slg",
+     "label": "Indy SLG",
+     "value": ".385"
+    },
+    {
+     "id": "P9.k_rate",
+     "label": "Indy K%",
+     "value": "35%"
+    },
+    {
+     "id": "P9.bb_rate",
+     "label": "Indy BB%",
+     "value": "35%"
+    },
+    {
+     "id": "P9.xbh",
+     "label": "Indy Extra-base hits",
+     "value": "0"
+    },
+    {
+     "id": "P9.rbi",
+     "label": "Indy RBI",
+     "value": "5"
+    },
+    {
+     "id": "P9.sb",
+     "label": "Indy Stolen bases",
+     "value": "8 of 8"
+    },
+    {
+     "id": "P9.rating.fielding_hands",
+     "label": "Indy Fielding Hands",
+     "value": "2/5"
+    },
+    {
+     "id": "P9.rating.fielding_throw_accuracy",
+     "label": "Indy Throw Accuracy",
+     "value": "3/5"
+    },
+    {
+     "id": "P9.rating.fielding_arm_strength",
+     "label": "Indy Arm Strength",
+     "value": "3/5"
+    },
+    {
+     "id": "P9.rating.fly_ball_ability",
+     "label": "Indy Fly Ball Ability",
+     "value": "2/5"
+    },
+    {
+     "id": "P9.pos.p",
+     "label": "Indy P",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P9.pos.c",
+     "label": "Indy C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P9.pos.1b",
+     "label": "Indy 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P9.pos.2b",
+     "label": "Indy 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P9.pos.3b",
+     "label": "Indy 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P9.pos.ss",
+     "label": "Indy SS",
+     "value": "plays"
+    },
+    {
+     "id": "P9.pos.lf",
+     "label": "Indy LF",
+     "value": "plays"
+    },
+    {
+     "id": "P9.pos.cf",
+     "label": "Indy CF",
+     "value": "plays"
+    },
+    {
+     "id": "P9.pos.rf",
+     "label": "Indy RF",
+     "value": "best"
+    },
+    {
+     "id": "P10.pa",
+     "label": "Jules Plate appearances",
+     "value": "20"
+    },
+    {
+     "id": "P10.avg",
+     "label": "Jules AVG",
+     "value": ".538"
+    },
+    {
+     "id": "P10.obp",
+     "label": "Jules OBP",
+     "value": ".700"
+    },
+    {
+     "id": "P10.slg",
+     "label": "Jules SLG",
+     "value": ".923"
+    },
+    {
+     "id": "P10.k_rate",
+     "label": "Jules K%",
+     "value": "15%"
+    },
+    {
+     "id": "P10.bb_rate",
+     "label": "Jules BB%",
+     "value": "30%"
+    },
+    {
+     "id": "P10.xbh",
+     "label": "Jules Extra-base hits",
+     "value": "2"
+    },
+    {
+     "id": "P10.rbi",
+     "label": "Jules RBI",
+     "value": "12"
+    },
+    {
+     "id": "P10.sb",
+     "label": "Jules Stolen bases",
+     "value": "6 of 6"
+    },
+    {
+     "id": "P10.tc",
+     "label": "Jules Total chances",
+     "value": "4"
+    },
+    {
+     "id": "P10.fpct",
+     "label": "Jules Fielding %",
+     "value": "1.000"
+    },
+    {
+     "id": "P10.errors",
+     "label": "Jules Errors",
+     "value": "0"
+    },
+    {
+     "id": "P10.p.ip",
+     "label": "Jules Innings pitched",
+     "value": "6.2"
+    },
+    {
+     "id": "P10.p.era",
+     "label": "Jules ERA",
+     "value": "12.15"
+    },
+    {
+     "id": "P10.p.whip",
+     "label": "Jules WHIP",
+     "value": "3.45"
+    },
+    {
+     "id": "P10.p.k_rate",
+     "label": "Jules Pitching K%",
+     "value": "27%"
+    },
+    {
+     "id": "P10.p.bb_rate",
+     "label": "Jules Pitching BB%",
+     "value": "39%"
+    },
+    {
+     "id": "P10.rating.fielding_hands",
+     "label": "Jules Fielding Hands",
+     "value": "3/5"
+    },
+    {
+     "id": "P10.rating.fielding_throw_accuracy",
+     "label": "Jules Throw Accuracy",
+     "value": "2/5"
+    },
+    {
+     "id": "P10.rating.fielding_arm_strength",
+     "label": "Jules Arm Strength",
+     "value": "2/5"
+    },
+    {
+     "id": "P10.rating.fly_ball_ability",
+     "label": "Jules Fly Ball Ability",
+     "value": "4/5"
+    },
+    {
+     "id": "P10.pos.p",
+     "label": "Jules P",
+     "value": "plays"
+    },
+    {
+     "id": "P10.pos.c",
+     "label": "Jules C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P10.pos.1b",
+     "label": "Jules 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P10.pos.2b",
+     "label": "Jules 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P10.pos.3b",
+     "label": "Jules 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P10.pos.ss",
+     "label": "Jules SS",
+     "value": "plays"
+    },
+    {
+     "id": "P10.pos.lf",
+     "label": "Jules LF",
+     "value": "plays"
+    },
+    {
+     "id": "P10.pos.cf",
+     "label": "Jules CF",
+     "value": "plays"
+    },
+    {
+     "id": "P10.pos.rf",
+     "label": "Jules RF",
+     "value": "plays"
+    },
+    {
+     "id": "P11.pa",
+     "label": "Kai Plate appearances",
+     "value": "17"
+    },
+    {
+     "id": "P11.avg",
+     "label": "Kai AVG",
+     "value": ".750"
+    },
+    {
+     "id": "P11.obp",
+     "label": "Kai OBP",
+     "value": ".824"
+    },
+    {
+     "id": "P11.slg",
+     "label": "Kai SLG",
+     "value": ".917"
+    },
+    {
+     "id": "P11.k_rate",
+     "label": "Kai K%",
+     "value": "12%"
+    },
+    {
+     "id": "P11.bb_rate",
+     "label": "Kai BB%",
+     "value": "29%"
+    },
+    {
+     "id": "P11.xbh",
+     "label": "Kai Extra-base hits",
+     "value": "2"
+    },
+    {
+     "id": "P11.rbi",
+     "label": "Kai RBI",
+     "value": "3"
+    },
+    {
+     "id": "P11.sb",
+     "label": "Kai Stolen bases",
+     "value": "7 of 7"
+    },
+    {
+     "id": "P11.tc",
+     "label": "Kai Total chances",
+     "value": "3"
+    },
+    {
+     "id": "P11.fpct",
+     "label": "Kai Fielding %",
+     "value": "1.000"
+    },
+    {
+     "id": "P11.errors",
+     "label": "Kai Errors",
+     "value": "0"
+    },
+    {
+     "id": "P11.p.ip",
+     "label": "Kai Innings pitched",
+     "value": "3.1"
+    },
+    {
+     "id": "P11.p.era",
+     "label": "Kai ERA",
+     "value": "32.40"
+    },
+    {
+     "id": "P11.p.whip",
+     "label": "Kai WHIP",
+     "value": "5.40"
+    },
+    {
+     "id": "P11.p.k_rate",
+     "label": "Kai Pitching K%",
+     "value": "16%"
+    },
+    {
+     "id": "P11.p.bb_rate",
+     "label": "Kai Pitching BB%",
+     "value": "39%"
+    },
+    {
+     "id": "P11.rating.fielding_hands",
+     "label": "Kai Fielding Hands",
+     "value": "4/5"
+    },
+    {
+     "id": "P11.rating.fielding_throw_accuracy",
+     "label": "Kai Throw Accuracy",
+     "value": "4/5"
+    },
+    {
+     "id": "P11.rating.fielding_arm_strength",
+     "label": "Kai Arm Strength",
+     "value": "4/5"
+    },
+    {
+     "id": "P11.rating.fly_ball_ability",
+     "label": "Kai Fly Ball Ability",
+     "value": "2/5"
+    },
+    {
+     "id": "P11.pos.p",
+     "label": "Kai P",
+     "value": "plays"
+    },
+    {
+     "id": "P11.pos.c",
+     "label": "Kai C",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P11.pos.1b",
+     "label": "Kai 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P11.pos.2b",
+     "label": "Kai 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P11.pos.3b",
+     "label": "Kai 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P11.pos.ss",
+     "label": "Kai SS",
+     "value": "plays"
+    },
+    {
+     "id": "P11.pos.lf",
+     "label": "Kai LF",
+     "value": "plays"
+    },
+    {
+     "id": "P11.pos.cf",
+     "label": "Kai CF",
+     "value": "best"
+    },
+    {
+     "id": "P11.pos.rf",
+     "label": "Kai RF",
+     "value": "plays"
+    },
+    {
+     "id": "P12.pa",
+     "label": "Lane Plate appearances",
+     "value": "19"
+    },
+    {
+     "id": "P12.avg",
+     "label": "Lane AVG",
+     "value": ".267"
+    },
+    {
+     "id": "P12.obp",
+     "label": "Lane OBP",
+     "value": ".421"
+    },
+    {
+     "id": "P12.slg",
+     "label": "Lane SLG",
+     "value": ".267"
+    },
+    {
+     "id": "P12.k_rate",
+     "label": "Lane K%",
+     "value": "21%"
+    },
+    {
+     "id": "P12.bb_rate",
+     "label": "Lane BB%",
+     "value": "21%"
+    },
+    {
+     "id": "P12.xbh",
+     "label": "Lane Extra-base hits",
+     "value": "0"
+    },
+    {
+     "id": "P12.rbi",
+     "label": "Lane RBI",
+     "value": "11"
+    },
+    {
+     "id": "P12.sb",
+     "label": "Lane Stolen bases",
+     "value": "5 of 5"
+    },
+    {
+     "id": "P12.tc",
+     "label": "Lane Total chances",
+     "value": "43"
+    },
+    {
+     "id": "P12.fpct",
+     "label": "Lane Fielding %",
+     "value": "1.000"
+    },
+    {
+     "id": "P12.errors",
+     "label": "Lane Errors",
+     "value": "0"
+    },
+    {
+     "id": "P12.c.innings",
+     "label": "Lane Innings caught",
+     "value": "16.7"
+    },
+    {
+     "id": "P12.c.pb",
+     "label": "Lane Passed balls",
+     "value": "3"
+    },
+    {
+     "id": "P12.c.cs",
+     "label": "Lane Runners caught stealing",
+     "value": "2 of 36"
+    },
+    {
+     "id": "P12.pos.p",
+     "label": "Lane P",
+     "value": "doesn't play"
+    },
+    {
+     "id": "P12.pos.c",
+     "label": "Lane C",
+     "value": "plays"
+    },
+    {
+     "id": "P12.pos.1b",
+     "label": "Lane 1B",
+     "value": "plays"
+    },
+    {
+     "id": "P12.pos.2b",
+     "label": "Lane 2B",
+     "value": "plays"
+    },
+    {
+     "id": "P12.pos.3b",
+     "label": "Lane 3B",
+     "value": "plays"
+    },
+    {
+     "id": "P12.pos.ss",
+     "label": "Lane SS",
+     "value": "plays"
+    },
+    {
+     "id": "P12.pos.lf",
+     "label": "Lane LF",
+     "value": "plays"
+    },
+    {
+     "id": "P12.pos.cf",
+     "label": "Lane CF",
+     "value": "plays"
+    },
+    {
+     "id": "P12.pos.rf",
+     "label": "Lane RF",
+     "value": "plays"
+    }
+   ]
+  },
+  "strengths": [
+   {
+    "title": "On-Base Ability",
+    "evidence": [
+     "team.obp",
+     "team.bb_rate",
+     "team.avg"
+    ],
+    "detail": "The lineup gets on base at a very high rate, driven by patience at the plate. Walks are a major part of the offense and keep pressure on opposing pitchers."
+   },
+   {
+    "title": "Baserunning",
+    "evidence": [
+     "team.sb",
+     "P7.sb",
+     "P3.sb"
+    ],
+    "detail": "The team steals bases aggressively and has not been caught. Speed and good reads on the bases create extra scoring chances. Many players contribute, with Gray leading the way."
+   },
+   {
+    "title": "Fielding Consistency",
+    "evidence": [
+     "team.fpct",
+     "team.errors",
+     "P12.fpct"
+    ],
+    "detail": "The team fields the ball cleanly with very few errors. Sure hands in the infield and at catcher keep innings from extending."
+   },
+   {
+    "title": "Run Production",
+    "evidence": [
+     "P5.rbi",
+     "P6.rbi",
+     "P10.slg"
+    ],
+    "detail": "Several hitters at the top of the order combine contact with extra-base power and drive in runs. Eli, Finn and Jules are the standouts."
+   },
+   {
+    "title": "Positional Flexibility",
+    "evidence": [
+     "team.pitchers",
+     "P5.pos.2b",
+     "P7.pos.cf"
+    ],
+    "detail": "Most players can handle several infield and outfield spots, which gives the coach many ways to build the defensive alignment. Seven players can pitch."
+   }
+  ],
+  "model": "Sample · Claude Sonnet 5.5"
+ },
+ "lineup": {
+  "effort": "medium",
+  "lineup": {
+   "innings": [
+    {
+     "positions": {
+      "2B": "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+      "SS": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+      "RF": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F",
+      "P": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+      "1B": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
+      "CF": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+      "LF": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+      "C": "12063BCB-2DAB-4953-81FA-3AF2C8557519",
+      "3B": "B4731280-8C88-4C2C-BC37-235EC0B1D667"
+     },
+     "sitting": [
+      "39529C2D-5415-436B-92D1-D483A7CBDAB8",
+      "70588014-989D-445C-B5E0-A5EBD18C08D4",
+      "B959CE63-61CC-4088-B3BD-E3808E5F8978"
+     ]
+    },
+    {
+     "positions": {
+      "2B": "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+      "SS": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+      "RF": "B959CE63-61CC-4088-B3BD-E3808E5F8978",
+      "P": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+      "1B": "39529C2D-5415-436B-92D1-D483A7CBDAB8",
+      "CF": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F",
+      "LF": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+      "C": "12063BCB-2DAB-4953-81FA-3AF2C8557519",
+      "3B": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+     },
+     "sitting": [
+      "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+      "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+      "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C"
+     ]
+    },
+    {
+     "positions": {
+      "2B": "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+      "SS": "39529C2D-5415-436B-92D1-D483A7CBDAB8",
+      "RF": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
+      "1B": "B959CE63-61CC-4088-B3BD-E3808E5F8978",
+      "P": "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+      "CF": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+      "LF": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+      "C": "12063BCB-2DAB-4953-81FA-3AF2C8557519",
+      "3B": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+     },
+     "sitting": [
+      "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+      "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+      "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F"
+     ]
+    },
+    {
+     "positions": {
+      "2B": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+      "SS": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+      "RF": "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+      "1B": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+      "P": "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+      "C": "12063BCB-2DAB-4953-81FA-3AF2C8557519",
+      "LF": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+      "CF": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
+      "3B": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F"
+     },
+     "sitting": [
+      "39529C2D-5415-436B-92D1-D483A7CBDAB8",
+      "70588014-989D-445C-B5E0-A5EBD18C08D4",
+      "B959CE63-61CC-4088-B3BD-E3808E5F8978"
+     ]
+    },
+    {
+     "positions": {
+      "2B": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+      "SS": "39529C2D-5415-436B-92D1-D483A7CBDAB8",
+      "RF": "B959CE63-61CC-4088-B3BD-E3808E5F8978",
+      "1B": "12063BCB-2DAB-4953-81FA-3AF2C8557519",
+      "P": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+      "CF": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F",
+      "C": "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+      "LF": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+      "3B": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+     },
+     "sitting": [
+      "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+      "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+      "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C"
+     ]
+    },
+    {
+     "positions": {
+      "2B": "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+      "SS": "39529C2D-5415-436B-92D1-D483A7CBDAB8",
+      "RF": "B959CE63-61CC-4088-B3BD-E3808E5F8978",
+      "1B": "12063BCB-2DAB-4953-81FA-3AF2C8557519",
+      "P": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+      "C": "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+      "LF": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+      "CF": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
+      "3B": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+     },
+     "sitting": [
+      "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+      "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+      "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F"
+     ]
+    }
+   ],
+   "battingOrder": [
+    "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+    "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+    "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F",
+    "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
+    "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+    "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+    "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+    "B959CE63-61CC-4088-B3BD-E3808E5F8978",
+    "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+    "12063BCB-2DAB-4953-81FA-3AF2C8557519",
+    "70588014-989D-445C-B5E0-A5EBD18C08D4",
+    "39529C2D-5415-436B-92D1-D483A7CBDAB8"
+   ]
+  },
+  "generatedAt": 814488993.77649,
+  "aiRuleNotes": [
+   {
+    "rule": "Locked positions maintained",
+    "satisfied": true,
+    "details": "No positions were locked."
+   },
+   {
+    "rule": "Every player plays at least 3 innings",
+    "satisfied": true,
+    "details": "Each player fields at least 4 innings."
+   },
+   {
+    "rule": "No more than 1 inning sat in a row",
+    "satisfied": true,
+    "details": "No player sits in consecutive innings."
+   },
+   {
+    "rule": "Every player plays an infield position by the end of the 4th inning",
+    "satisfied": true,
+    "details": "All 12 players have played P, C, 1B, 2B, 3B or SS by inning 4."
+   },
+   {
+    "rule": "No player pitches more than 2 innings",
+    "satisfied": true,
+    "details": "Eli pitches innings 1-2, Hayden 3-4, and Casey 5-6. No one returns to pitch."
+   }
+  ],
+  "appAdjustedCount": 0,
+  "inningReasons": [
+   "Eli starts on the mound with Lane catching, and the strongest gloves go up the middle.",
+   "Eli finishes his 2 innings and Drew plays his primary 3B.",
+   "Hayden takes over pitching, Indy gets his infield inning at 1B, and Eli moves to CF for his arm and fly ball ability.",
+   "Gray, Kai and Finn get their required infield innings by the end of the 4th.",
+   "Casey pitches, Hayden returns to catch, and Lane moves to 1B.",
+   "Casey finishes his 2 innings and Finn and Jules play the outfield."
+  ],
+  "battingReasons": [
+   "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
+   "Casey hits .500 with a .600 OBP and 8 steals, a good table-setter to turn the order over.",
+   "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
+   "Jules has the top slugging (.923) with a .700 OBP, ideal for driving in runs.",
+   "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
+   "Eli hits .667 with .889 SLG and only 13.6% strikeouts, a strong secondary power bat.",
+   "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
+   "Finn offers .696 OBP and .800 SLG, keeping the lineup strong in the middle.",
+   "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
+   "Blake has a .500 OBP and 7 steals with a modest strikeout rate, a useful bottom-order runner.",
+   "12063BCB-2DAB-4953-81FA-3AF2C8557519",
+   "Lane has a .421 OBP with 21% strikeouts and 5 steals, solid contact for the lower third.",
+   "70588014-989D-445C-B5E0-A5EBD18C08D4",
+   "Drew reaches via walks (.368 OBP) and has 5 steals but strikes out often (57.9%).",
+   "B959CE63-61CC-4088-B3BD-E3808E5F8978",
+   "Indy gets on base (.600 OBP) and steals (8 SB), though strikeouts are high at 35%.",
+   "39529C2D-5415-436B-92D1-D483A7CBDAB8",
+   "Alex has a .429 OBP from walks and 2 steals, but a 52.4% strikeout rate and no hits so far.",
+   "B4731280-8C88-4C2C-BC37-235EC0B1D667",
+   "Hayden gets on base constantly (.826 OBP, 52% walks) and has power to drive in Gray.",
+   "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F",
+   "Kai has a .750 average, .917 SLG and the lowest strikeout rate (11.8%), making him the best all-around hitter.",
+   "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
+   "Gray has the best OBP (.846) and a team-high 14 steals, a true lead-off profile."
+  ],
+  "model": "Sample · Claude Sonnet 5.5",
+  "battingRationale": "The order is sorted by on-base and slugging production from GameChanger, since no coach ratings or notes were provided. Top hitters get the most plate appearances, with speed and OBP at the top and power in the 3-5 spots. Tradeoff: Alex and Drew bat last to favor winning, but they still get regular at-bats for development, and their high walk rates show real patience to build on.",
+  "warnings": [
+   "Lane catches innings 1-4 and Hayden catches innings 5-6. Hayden pitches in innings 3-4 and then catches, which is legal.",
+   "Several players are at positions where they are not rated strongest, such as Blake in RF and Indy at 1B, because the rotation and the infield rule require it."
+  ],
+  "provenance": [
+   {
+    "inning": 3,
+    "player": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "B4731280-8C88-4C2C-BC37-235EC0B1D667"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "B959CE63-61CC-4088-B3BD-E3808E5F8978"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "B4731280-8C88-4C2C-BC37-235EC0B1D667"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "39529C2D-5415-436B-92D1-D483A7CBDAB8"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "B4731280-8C88-4C2C-BC37-235EC0B1D667"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "12063BCB-2DAB-4953-81FA-3AF2C8557519"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "B959CE63-61CC-4088-B3BD-E3808E5F8978"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "12063BCB-2DAB-4953-81FA-3AF2C8557519"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "B4731280-8C88-4C2C-BC37-235EC0B1D667"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "B959CE63-61CC-4088-B3BD-E3808E5F8978"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "2EB639FA-B9E1-4BE0-AC69-478201E222D5"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "39529C2D-5415-436B-92D1-D483A7CBDAB8"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "12063BCB-2DAB-4953-81FA-3AF2C8557519"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "2EB639FA-B9E1-4BE0-AC69-478201E222D5"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "2EB639FA-B9E1-4BE0-AC69-478201E222D5"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "B4731280-8C88-4C2C-BC37-235EC0B1D667"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "12063BCB-2DAB-4953-81FA-3AF2C8557519"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "39529C2D-5415-436B-92D1-D483A7CBDAB8"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "B959CE63-61CC-4088-B3BD-E3808E5F8978"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "39529C2D-5415-436B-92D1-D483A7CBDAB8"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "B959CE63-61CC-4088-B3BD-E3808E5F8978"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "B4731280-8C88-4C2C-BC37-235EC0B1D667"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "2EB639FA-B9E1-4BE0-AC69-478201E222D5"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "12063BCB-2DAB-4953-81FA-3AF2C8557519"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "12063BCB-2DAB-4953-81FA-3AF2C8557519"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "B959CE63-61CC-4088-B3BD-E3808E5F8978"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "70588014-989D-445C-B5E0-A5EBD18C08D4"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1"
+   },
+   "ai",
+   {
+    "inning": 6,
+    "player": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "39529C2D-5415-436B-92D1-D483A7CBDAB8"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "39529C2D-5415-436B-92D1-D483A7CBDAB8"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "2EB639FA-B9E1-4BE0-AC69-478201E222D5"
+   },
+   "ai",
+   {
+    "inning": 1,
+    "player": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6"
+   },
+   "ai",
+   {
+    "inning": 4,
+    "player": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "2EB639FA-B9E1-4BE0-AC69-478201E222D5"
+   },
+   "ai",
+   {
+    "inning": 3,
+    "player": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F"
+   },
+   "ai",
+   {
+    "inning": 5,
+    "player": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1"
+   },
+   "ai",
+   {
+    "inning": 2,
+    "player": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C"
+   },
+   "ai"
+  ],
+  "revisions": 0,
+  "defenseRationale": "Pitching goes to Eli, Hayden and Casey for 2 innings each, using the strongest pitching stats among eligible players. Lane and Hayden split catching, and the best gloves stay at SS and 2B. Sitting is spread so each player sits at most twice, never in consecutive innings. Everyone gets an infield inning by the 4th. The tradeoff is that development rotations put a few players out of their primary positions in some innings.",
+  "locks": []
+ }
+}

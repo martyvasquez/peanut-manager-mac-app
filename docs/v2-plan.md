@@ -90,7 +90,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Privacy: `PrivacyInfo.xcprivacy` done (no tracking, nothing collected by us, UserDefaults reason CA92.1). Left: privacy policy URL, App Privacy answers.
    - ~~`ITSAppUsesNonExemptEncryption = NO`~~ Done (Oct 23).
    - ~~Debug code~~ Checked (Oct 23): the Release binary has no `-PM…` flags, `EvalRunner`, `DebugSupport`, `CloudKitCheck` or fake AI.
-   - App Review: the app already works without AI. Add a sample team with recorded AI results (a lineup and insights), labeled as a sample, and say how to try it in the review notes.
+   - ~~App Review sample~~ Done (Oct 23): "Try a Sample" comes with AI results recorded once with Claude Sonnet 5.5 on the sample team (`Resources/sample-ai.json`: the lineup, 12 scouting reports, the team summary; $0.36), labeled "Sample · Claude Sonnet 5.5" and dated when loaded; player IDs are swapped for the new team's. Debug runs with `-PMFakeAI` or `-PMAutoGenerate` start from the plain sample. Review notes in `docs/app-store.md`. To re-record after a prompt or model change: run the real AI on a test library with the sample, then export from its store.
    - Listing: screenshots, description (don't imply a GameChanger affiliation), age rating.
    - TestFlight for testers.
 2. **iCloud sync (SwiftData + CloudKit).**

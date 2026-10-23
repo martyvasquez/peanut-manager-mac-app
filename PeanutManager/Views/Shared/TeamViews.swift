@@ -189,6 +189,46 @@ enum SampleData {
         context.insert(game)
         game.team = team
         game.ruleSet = team.sortedRuleSets.first
+        addRecordedAI(to: team, game: game)
         return team
+    }
+
+    /// AI results recorded once on this team with Claude Sonnet 5.5 (a lineup, every scouting report, the team
+    /// summary), so a coach without AI, and App Review, can see what AI adds. Labeled "Sample" wherever the model
+    /// shows. Stored by player name; the recorded player IDs are swapped for this team's.
+    private static func addRecordedAI(to team: Team, game: Game) {
+        #if DEBUG
+        // Test runs that make their own lineup start from the plain sample.
+        if DebugSupport.fakeAI || DebugSupport.autoGenerate { return }
+        #endif
+        struct Recorded: Decodable {
+            struct Entry: Decodable { let name: String; let id: String; let assessment: PlayerAssessment? }
+            let players: [Entry]
+            let team: TeamAssessment?
+            let lineup: LineupDocument?
+        }
+        guard let url = Bundle.main.url(forResource: "sample-ai", withExtension: "json"),
+              var text = try? String(contentsOf: url, encoding: .utf8),
+              let ids = try? JSONDecoder().decode(Recorded.self, from: Data(text.utf8)) else { return }
+        let byName = Dictionary(team.players.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+        for entry in ids.players {
+            if let player = byName[entry.name] { text = text.replacingOccurrences(of: entry.id, with: player.uid.uuidString) }
+        }
+        guard let recorded = try? JSONDecoder().decode(Recorded.self, from: Data(text.utf8)) else { return }
+        // Dated now, players before the team, so everything reads as current.
+        let now = Date.now
+        for entry in recorded.players {
+            guard var assessment = entry.assessment else { continue }
+            assessment.assessedAt = now
+            byName[entry.name]?.assessment = assessment
+        }
+        if var summary = recorded.team {
+            summary.assessedAt = now.addingTimeInterval(1)
+            team.assessment = summary
+        }
+        if var lineup = recorded.lineup {
+            lineup.generatedAt = now
+            game.document = lineup
+        }
     }
 }

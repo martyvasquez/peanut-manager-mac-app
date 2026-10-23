@@ -81,10 +81,12 @@ Answer **None / No** to every content question (violence, profanity, mature them
 
 Expected rating: **4+**.
 
-## App Review notes (draft; finish once the sample is in)
+## App Review notes
 
 > Peanut Manager works fully without signing in. On first launch, click "Try a Sample" to load a sample team with season stats, rules and a game.
 >
 > To try lineups: open the game, drag players into the batting order (or "Add All"), click Positions, and click spots on the grid to assign positions.
 >
-> AI features need the user's own ChatGPT account or Anthropic API key, so the sample team includes a lineup and scouting reports made earlier by AI, labeled as a sample, to show what they look like. AI requests go directly from the device to OpenAI or Anthropic; the app asks permission before the first one.
+> To see the AI features without an account: the sample team comes with a lineup and scouting reports made earlier by Claude Sonnet 5.5, labeled "Sample · Claude Sonnet 5.5". Open the game for the AI lineup and its plan; Stats & Insights for the team summary and practice plan; Roster → any player → Scouting Report.
+>
+> Making new AI lineups needs the user's own ChatGPT account (Sign in with ChatGPT) or Anthropic API key, set in Settings. Requests go directly from the device to OpenAI or Anthropic; the app asks permission, naming the company, before the first one. There is no server of our own and no account to create.
