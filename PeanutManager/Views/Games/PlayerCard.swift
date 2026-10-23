@@ -7,6 +7,8 @@ import LineupKit
 struct PlayerCard: View {
     let model: GameModel
     let player: PlayerSnapshot
+    /// Opens the kid's roster page over the game, so the coach never leaves the lineup.
+    var onEdit: ((Player) -> Void)?
 
     private static let scale: CGFloat = 0.66
 
@@ -34,8 +36,8 @@ struct PlayerCard: View {
                     section("Notes") { Text(player.notes).lineLimit(4).fixedSize(horizontal: false, vertical: true) }
                 }
                 Spacer(minLength: 0)
-                if let stored = model.game.team?.players.first(where: { $0.uid == player.id }) {
-                    Button("Open in Roster") { Navigator.shared.open(stored, tab: .evaluation) }
+                if let onEdit, let stored = model.game.team?.players.first(where: { $0.uid == player.id }) {
+                    Button("Edit Player…") { onEdit(stored) }
                         .buttonStyle(.link)
                 }
             }

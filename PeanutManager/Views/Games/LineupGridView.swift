@@ -26,6 +26,7 @@ struct LineupGridView: View {
     @State private var hoveredRow: PlayerID?
     @State private var diamondInning: Int?
     @State private var cardPlayer: PlayerID?
+    @State private var editingPlayer: Player?
 
     // Sized to fill the available width, within comfortable limits.
     private var nameWidth: CGFloat { min(max(width * 0.26, 200), 280) }
@@ -82,6 +83,14 @@ struct LineupGridView: View {
         .focusEffectDisabled()
         .focused($focused)
         .onKeyPress(phases: .down, action: handleKey)
+        // A kid's roster page over the game; Done comes straight back to the lineup.
+        .sheet(item: $editingPlayer) { player in
+            PlayerEditorView(player: player, showsManagement: false)
+                .frame(width: 860, height: 700)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button("Done") { editingPlayer = nil } }
+                }
+        }
         // A drag dropped outside any target never reports back; the next plain mouse move ends it.
         .onContinuousHover { _ in
             guard NSEvent.pressedMouseButtons == 0, dragging != nil || draggingCell != nil || draggingInning != nil else { return }
@@ -255,7 +264,11 @@ struct LineupGridView: View {
         }
         .onTapGesture { cardPlayer = player.id }
         .popover(isPresented: Binding(get: { cardPlayer == player.id }, set: { if !$0 { cardPlayer = nil } }), arrowEdge: .trailing) {
-            PlayerCard(model: model, player: player)
+            PlayerCard(model: model, player: player) { stored in
+                cardPlayer = nil
+                UserDefaults.standard.set(PlayerTab.evaluation.rawValue, forKey: "playerTab")
+                editingPlayer = stored
+            }
         }
         .help(model.document.battingReasons[player.id] ?? "Click for \(player.name.components(separatedBy: " ").first ?? player.name)'s positions and stats")
         .contextMenu {

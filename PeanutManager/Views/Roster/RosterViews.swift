@@ -89,6 +89,8 @@ struct PlayerRow: View {
 struct PlayerEditorView: View {
     @Environment(\.modelContext) private var context
     @Bindable var player: Player
+    /// Off when opened over a game: deactivating or deleting a kid belongs in Roster.
+    var showsManagement = true
     @State private var confirmDelete = false
     @AppStorage("playerTab") private var tab: PlayerTab = .evaluation
 
@@ -119,12 +121,14 @@ struct PlayerEditorView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .toolbar {
-            Menu {
-                Button(player.active ? "Mark Inactive" : "Mark Active") { player.active.toggle() }
-                Divider()
-                Button("Delete Player…", role: .destructive) { confirmDelete = true }
-            } label: {
-                Label("More", systemImage: "ellipsis")
+            if showsManagement {
+                Menu {
+                    Button(player.active ? "Mark Inactive" : "Mark Active") { player.active.toggle() }
+                    Divider()
+                    Button("Delete Player…", role: .destructive) { confirmDelete = true }
+                } label: {
+                    Label("More", systemImage: "ellipsis")
+                }
             }
         }
         .confirmationDialog("Delete \(player.name)?", isPresented: $confirmDelete) {
