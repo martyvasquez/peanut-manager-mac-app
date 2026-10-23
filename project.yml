@@ -39,10 +39,12 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.martyvasquez.PeanutManager
         SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
         SWIFT_APPROACHABLE_CONCURRENCY: YES
-        # One certificate for every local build, so macOS sees each new build as the same app and keeps the
-        # keychain's Always Allow.
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "Developer ID Application"
+        # Automatic signing on Marty's team: Apple Development for local builds (one certificate, so macOS sees
+        # each build as the same app and keeps the keychain's Always Allow), Apple Distribution when archiving
+        # for the App Store, and the provisioning profiles iCloud needs. Set it here, not in Xcode: XcodeGen
+        # regenerates the project.
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
         DEVELOPMENT_TEAM: G88C7HMHUJ
         ENABLE_HARDENED_RUNTIME: NO
         ENABLE_APP_SANDBOX: NO

@@ -53,13 +53,13 @@ Requires Xcode 26+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen). Target
 ```sh
 cd Packages/LineupKit && swift test && cd ../..
 xcodegen generate
-xcodebuild -project PeanutManager.xcodeproj -scheme PeanutManager -derivedDataPath build build
+xcodebuild -project PeanutManager.xcodeproj -scheme PeanutManager -derivedDataPath build -allowProvisioningUpdates build
 open "build/Build/Products/Debug/Peanut Manager.app"
 ```
 
 Sign in with ChatGPT under **Peanut Manager → Settings** (⌘,).
 
-Local builds are signed with the owner's Developer ID (team `G88C7HMHUJ`) so the keychain remembers the app across builds. Without that certificate, build ad-hoc: add `CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=` to the `xcodebuild` line.
+Signing is automatic on the owner's team (`G88C7HMHUJ`): Apple Development locally, so the keychain remembers the app across builds, and Apple Distribution when archiving for the App Store. Add `-allowProvisioningUpdates` to `xcodebuild` the first time, or after adding a capability. Change signing in `project.yml`, never in Xcode (XcodeGen regenerates the project). Without access to that team, build ad-hoc: add `CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=` to the `xcodebuild` line.
 
 ### Debug launch flags (Debug builds only)
 
