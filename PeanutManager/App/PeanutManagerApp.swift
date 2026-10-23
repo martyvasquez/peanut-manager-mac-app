@@ -8,6 +8,7 @@ struct PeanutManagerApp: App {
     init() {
         #if DEBUG
         if CloudKitCheck.requested { CloudKitCheck.run() }
+        if CloudKitCheck.initSchemaRequested { CloudKitCheck.initializeSchema() }
         #endif
         container = Self.makeContainer()
         #if DEBUG

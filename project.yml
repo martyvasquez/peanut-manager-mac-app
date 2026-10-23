@@ -47,6 +47,11 @@ targets:
         # GameChanger CSV import.
         com.apple.security.files.user-selected.read-only: true
         com.apple.security.print: true
+        # iCloud sync of the library (CloudKit) and the pushes that tell it something changed. Xcode signs
+        # App Store builds with the production push environment.
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.martyvasquez.PeanutManager]
+        com.apple.developer.icloud-services: [CloudKit]
+        com.apple.developer.aps-environment: development
     settings:
       base:
         PRODUCT_NAME: Peanut Manager

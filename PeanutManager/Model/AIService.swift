@@ -90,9 +90,12 @@ final class AIService {
         if DebugSupport.fakeClaudeKey && !DebugSupport.noAI { anthropicKey = "sk-ant-debug-0000" }
         if DebugSupport.noAI || DebugSupport.fakeAI { return }
         #endif
+        // Secrets saved by older builds move out of the login keychain, which asked for the password per item:
+        // the Claude key to iCloud Keychain (it follows the coach), the ChatGPT sign-in to this device only.
+        Keychain.move(Keys.anthropic, synced: CloudSync.enabled)
+        Keychain.move(Keys.vault, synced: false)
+        Keychain.move(Keys.host, synced: false)
         if anthropicKey == nil {
-            // The Claude key follows the coach to every device; a key saved before iCloud sync moves there once.
-            if CloudSync.enabled { Keychain.moveToICloud(Keys.anthropic) }
             anthropicKey = Keychain.data(Keys.anthropic).flatMap { String(data: $0, encoding: .utf8) }
         }
         #if DEBUG

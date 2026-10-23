@@ -31,6 +31,8 @@ import LineupKit
 ///   -PMAutoAllow YES     with -PMFakeAI: ask for consent like a real provider, then press Allow a moment later
 ///   -PMAutoRemake YES    once the batting order exists, open Remake… and submit it ("Test remake")
 ///   -PMModel id          use this model instead of the pinned one (needs its service connected), e.g. claude-opus-5-5
+///   -PMSync YES          sync this test library with iCloud (development environment); never the real library
+///   -PMInitCloudKitSchema YES create the CloudKit schema in the development environment, then quit
 ///   -PMICloudWait YES    with an empty library, show the new-device wait for iCloud instead of the welcome screen
 ///   -PMCheckCloudKit YES check the schema against CloudKit's rules (and kids' data is encrypted), print, quit
 enum DebugSupport {

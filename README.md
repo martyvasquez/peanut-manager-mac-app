@@ -105,6 +105,8 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMAutoAllow YES` | With `-PMFakeAI`: ask for consent like a real provider, then press Allow a moment later (remembered for that run only) |
 | `-PMAutoRemake YES` | Once the batting order exists, open Remake… and submit it |
 | `-PMModel id` | Use this model instead of the pinned one, to try a new model before it ships (its service must be connected) |
+| `-PMSync YES` | Sync this test library with iCloud (CloudKit development environment). Debug builds never sync the real library |
+| `-PMInitCloudKitSchema YES` | Create every record type and field in the development environment (run after a model change, then deploy to production in the CloudKit Console) |
 | `-PMICloudWait YES` | With an empty library, show the new-device "Looking for your teams in iCloud…" wait instead of the welcome screen |
 
 ## Model eval

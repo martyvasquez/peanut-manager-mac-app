@@ -8,6 +8,39 @@ import SwiftData
 /// nothing may be unique, and anything about a kid must be encrypted. Also reports where a synced keychain item lands.
 enum CloudKitCheck {
     static var requested: Bool { UserDefaults.standard.bool(forKey: "PMCheckCloudKit") }
+    static var initSchemaRequested: Bool { UserDefaults.standard.bool(forKey: "PMInitCloudKitSchema") }
+
+    /// `-PMInitCloudKitSchema YES`: creates every record type and field (encrypted ones included) in the container's
+    /// development environment, ready to deploy to production in the CloudKit Console. Prints the outcome and quits.
+    /// Apple's way for SwiftData: the same model, loaded once into a Core Data CloudKit container.
+    static func initializeSchema() -> Never {
+        let folder = PeanutManagerApp.libraryFolder
+        let url = folder.appending(path: "CloudKitSchema.store")
+        var failure: String?
+        autoreleasepool {
+            guard let model = NSManagedObjectModel.makeManagedObjectModel(for: LibrarySchemaV1.models) else {
+                failure = "couldn't build the model"; return
+            }
+            let description = NSPersistentStoreDescription(url: url)
+            description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudSync.containerID)
+            description.shouldAddStoreAsynchronously = false
+            let container = NSPersistentCloudKitContainer(name: "CloudKitSchema", managedObjectModel: model)
+            container.persistentStoreDescriptions = [description]
+            container.loadPersistentStores { _, error in if let error { failure = "load: \(error)" } }
+            guard failure == nil else { return }
+            do {
+                try container.initializeCloudKitSchema()
+            } catch {
+                failure = "initialize: \(error)"
+            }
+            if let store = container.persistentStoreCoordinator.persistentStores.first {
+                try? container.persistentStoreCoordinator.remove(store)
+            }
+        }
+        for suffix in ["", "-shm", "-wal"] { try? FileManager.default.removeItem(at: folder.appending(path: "CloudKitSchema.store" + suffix)) }
+        print(failure.map { "CloudKitSchema: failed, \($0)" } ?? "CloudKitSchema: OK, development schema created for \(CloudSync.containerID)")
+        exit(failure == nil ? 0 : 1)
+    }
 
     static func run() -> Never {
         guard let model = NSManagedObjectModel.makeManagedObjectModel(for: LibrarySchemaV1.models) else {
