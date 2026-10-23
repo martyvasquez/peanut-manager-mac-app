@@ -565,29 +565,64 @@ struct BattingOrderList: View {
     @Environment(\.undoManager) private var undoManager
     @State private var dragging: PlayerID?
     @State private var dropTarget: DropSpot?
+    /// The stat columns show team ranks, or the numbers themselves.
+    @AppStorage("battingOrderShowsNumbers") private var showsNumbers = false
 
     private let rowHeight: CGFloat = 46
-    private let chipWidth: CGFloat = 240
     private let chipHeight: CGFloat = 38
     private let headerHeight: CGFloat = 34
+    private let statWidth: CGFloat = 46
+    private let handleWidth: CGFloat = 16
+    private static let metrics: [Metric] = [.avg, .obp, .slg]
 
     enum DropSpot: Hashable { case slot(Int), players }
+
+    /// Team ranks on AVG, OBP and SLG, from season stats; nil when nobody here has batting stats.
+    private struct Stats {
+        let ranks: TeamRanks
+        let lines: [PlayerID: BattingLine]
+    }
 
     var body: some View {
         let ctx = model.context
         let slots = model.battingSlots
-        let unplaced = model.unplacedBatters
+        let lines = Dictionary(ctx.players.compactMap { p in p.stats?.batting.flatMap { $0.pa > 0 ? (p.id, $0) : nil } }, uniquingKeysWith: { a, _ in a })
+        let stats = lines.isEmpty ? nil : model.game.team.map { Stats(ranks: $0.ranks, lines: lines) }
+        let unplaced = sortedByAverage(model.unplacedBatters, stats)
         let ids = PromptIDs(players: ctx.players)
+        let width = chipWidth(stats)
 
         HStack(alignment: .top, spacing: 36) {
             VStack(alignment: .leading, spacing: 0) {
                 // Level with the players' header, so chips and open spots line up across.
-                if !unplaced.isEmpty { Color.clear.frame(width: 1, height: headerHeight) }
+                if stats != nil {
+                    HStack(spacing: 14) {
+                        Color.clear.frame(width: 26, height: 1)
+                        HStack(spacing: 0) {
+                            Picker("Show", selection: $showsNumbers) {
+                                Text("Rank").tag(false)
+                                Text("Stat").tag(true)
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                            .controlSize(.small)
+                            .fixedSize()
+                            .help("Team rank, or the season numbers")
+                            Spacer(minLength: 0)
+                            statLabels
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(width: width)
+                    }
+                    .frame(height: headerHeight, alignment: .top)
+                } else if !unplaced.isEmpty {
+                    Color.clear.frame(width: 1, height: headerHeight)
+                }
                 ForEach(Array(slots.enumerated()), id: \.offset) { index, id in
                     if let id, let player = ctx.player(id) {
-                        batterRow(index, player, reason: model.document.battingReasons[id].map { ids.humanize($0, players: ctx.players) })
+                        batterRow(index, player, reason: model.document.battingReasons[id].map { ids.humanize($0, players: ctx.players) }, stats: stats)
                     } else {
-                        openRow(index)
+                        openRow(index, width: width)
                     }
                 }
                 if !model.document.battingRationale.isEmpty && unplaced.isEmpty {
@@ -600,7 +635,7 @@ struct BattingOrderList: View {
             .frame(maxWidth: unplaced.isEmpty ? .infinity : nil, alignment: .leading)
 
             if !unplaced.isEmpty {
-                playerTray(unplaced)
+                playerTray(unplaced, stats: stats)
             }
         }
         // A drag dropped outside any target never reports back; the next plain mouse move ends it.
@@ -609,17 +644,79 @@ struct BattingOrderList: View {
         }
     }
 
-    /// The one shape every kid takes here, in a spot or waiting.
-    private func chip(_ player: PlayerSnapshot, handle: Bool) -> some View {
+    private func chipWidth(_ stats: Stats?) -> CGFloat {
+        stats == nil ? 240 : 230 + CGFloat(Self.metrics.count) * statWidth
+    }
+
+    /// The one shape every kid takes here, in a spot or waiting. With stats, their AVG, OBP and SLG ride along.
+    private func chip(_ player: PlayerSnapshot, handle: Bool, stats: Stats?) -> some View {
         HStack(spacing: 8) {
             Text(player.name).font(.title3).lineLimit(1)
             Spacer(minLength: 0)
-            if handle { Image(systemName: "line.3.horizontal").font(.callout).foregroundStyle(.tertiary) }
+            if let stats {
+                HStack(spacing: 0) {
+                    ForEach(Self.metrics, id: \.self) { metric in statCell(stats.ranks.standing(player.id, metric), metric) }
+                }
+            }
+            Image(systemName: "line.3.horizontal").font(.callout).foregroundStyle(.tertiary)
+                .frame(width: handleWidth)
+                .opacity(handle ? 1 : 0)
         }
         .padding(.horizontal, 12)
-        .frame(width: chipWidth, height: chipHeight)
+        .frame(width: chipWidth(stats), height: chipHeight)
         .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
         .opacity(dragging == player.id ? 0.35 : 1)
+        .help(stats.flatMap { statLine(player.id, $0) } ?? "")
+    }
+
+    /// A team rank (top three in orange) or the number itself. "–" when they haven't batted enough to rank.
+    private func statCell(_ standing: Standing?, _ metric: Metric) -> some View {
+        let rank = standing?.rank
+        let text = showsNumbers ? standing.map { metric.format($0.value) } ?? "–" : standing?.rankText ?? "–"
+        return Text(text)
+            .font(.callout.monospacedDigit())
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .foregroundStyle(rank.map { $0 <= 3 } == true ? AnyShapeStyle(Color.accentColor)
+                             : rank == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+            .frame(width: statWidth, alignment: .trailing)
+    }
+
+    private var statLabels: some View {
+        HStack(spacing: 0) {
+            ForEach(Self.metrics, id: \.self) { metric in
+                Text(metric.label).font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                    .frame(width: statWidth, alignment: .trailing)
+            }
+            Color.clear.frame(width: handleWidth + 8, height: 1)
+        }
+    }
+
+    /// The season line on hover: ".412 AVG (1st) · .500 OBP (2nd) · .588 SLG (4th)" and the counts behind it.
+    private func statLine(_ player: PlayerID, _ stats: Stats) -> String? {
+        guard let line = stats.lines[player] else { return nil }
+        let rates = Self.metrics.compactMap { metric in
+            stats.ranks.standing(player, metric).map { "\(metric.format($0.value)) \(metric.label)" + ($0.rankText.map { " (\($0))" } ?? "") }
+        }.joined(separator: " · ")
+        var counts = ["\(line.pa) PA", "\(line.h) H"]
+        if line.doubles > 0 { counts.append("\(line.doubles) 2B") }
+        if line.triples > 0 { counts.append("\(line.triples) 3B") }
+        if line.hr > 0 { counts.append("\(line.hr) HR") }
+        counts += ["\(line.bb) BB", "\(line.so) K"]
+        if line.sb > 0 { counts.append("\(line.sb) SB") }
+        let ranked = stats.ranks.standing(player, .avg)?.rank != nil
+        return rates + "\n" + counts.joined(separator: " · ") + (ranked ? "" : "\nToo few plate appearances to rank")
+    }
+
+    /// Ranked batting averages first (best first), then kids too new to rank (by average), then kids without stats.
+    private func sortedByAverage(_ players: [PlayerSnapshot], _ stats: Stats?) -> [PlayerSnapshot] {
+        guard let stats else { return players }
+        func key(_ index: Int, _ player: PlayerSnapshot) -> (Int, Double, Int) {
+            guard let standing = stats.ranks.standing(player.id, .avg) else { return (2, 0, index) }
+            if let rank = standing.rank { return (0, Double(rank), index) }
+            return (1, -standing.value, index)
+        }
+        return players.enumerated().sorted { key($0.offset, $0.element) < key($1.offset, $1.element) }.map(\.element)
     }
 
     private func number(_ n: Int, open: Bool) -> some View {
@@ -630,11 +727,11 @@ struct BattingOrderList: View {
     }
 
     /// A filled spot. Dropping a kid here puts them in this spot; the others shift toward the nearest gap.
-    private func batterRow(_ index: Int, _ player: PlayerSnapshot, reason: String?) -> some View {
+    private func batterRow(_ index: Int, _ player: PlayerSnapshot, reason: String?, stats: Stats?) -> some View {
         let lit = dropTarget == .slot(index) && dragging != nil && dragging != player.id
         return HStack(spacing: 14) {
             number(index + 1, open: false)
-            chip(player, handle: true)
+            chip(player, handle: true, stats: stats)
                 .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(lit ? Color.accentColor : Color.clear, lineWidth: 2))
                 .onDrag { drag(player) } preview: { preview(player) }
                 .contextMenu {
@@ -653,44 +750,49 @@ struct BattingOrderList: View {
     }
 
     /// An empty spot, the exact shape of a chip. A kid dropped here takes this spot.
-    private func openRow(_ index: Int) -> some View {
+    private func openRow(_ index: Int, width: CGFloat) -> some View {
         let lit = dropTarget == .slot(index) && dragging != nil
         return HStack(spacing: 14) {
             number(index + 1, open: true)
             RoundedRectangle(cornerRadius: 8)
                 .fill(lit ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(Color.clear))
                 .strokeBorder(lit ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                .frame(width: chipWidth, height: chipHeight)
+                .frame(width: width, height: chipHeight)
         }
         .frame(height: rowHeight)
         .contentShape(Rectangle())
         .onDrop(of: [.plainText], isTargeted: targeted(.slot(index))) { _ in drop(on: .slot(index)) }
     }
 
-    private func playerTray(_ unplaced: [PlayerSnapshot]) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
+    /// Waiting kids, best batting average first when there are stats. With stats the header carries the
+    /// column labels, so Add All moves below the list.
+    private func playerTray(_ unplaced: [PlayerSnapshot], stats: Stats?) -> some View {
+        let addAll = Button("Add All") {
+            withAnimation(.snappy) { for player in unplaced { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) } }
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .help("Add everyone in this order, then drag to reorder")
+
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 0) {
                 Text("Players").font(.headline)
                 Spacer()
-                Button("Add All") {
-                    withAnimation(.snappy) { for player in unplaced { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) } }
-                }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
-                .help("Add everyone in roster order, then drag to reorder")
+                if stats != nil { statLabels } else { addAll }
             }
-            .frame(width: chipWidth, height: headerHeight, alignment: .top)
+            .padding(.trailing, stats == nil ? 0 : 12)
+            .frame(width: chipWidth(stats), height: headerHeight, alignment: .top)
             ForEach(unplaced) { player in
-                chip(player, handle: false)
+                chip(player, handle: false, stats: stats)
                     .contentShape(Rectangle())
                     .onTapGesture(count: 2) { withAnimation(.snappy) { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) } }
                     .onDrag { drag(player) } preview: { preview(player) }
                     .contextMenu {
                         Button("Add to Batting Order") { withAnimation(.snappy) { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) } }
                     }
-                    .help("Drag into the batting order, or double-click to add")
                     .frame(height: rowHeight)
             }
+            if stats != nil { addAll.padding(.top, 6) }
         }
         .padding(.horizontal, 8)
         .background(dropTarget == .players ? AnyShapeStyle(Color.accentColor.opacity(0.1)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 12))
@@ -706,7 +808,7 @@ struct BattingOrderList: View {
 
     private func preview(_ player: PlayerSnapshot) -> some View {
         Text(player.name).font(.title3).lineLimit(1).padding(.horizontal, 12)
-            .frame(width: chipWidth, height: chipHeight, alignment: .leading)
+            .frame(width: 240, height: chipHeight, alignment: .leading)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 
