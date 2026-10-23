@@ -37,6 +37,7 @@ struct ContentView: View {
     @State private var editingTeam: Team?
     @State private var deletingTeam: Team?
     @State private var showingSignIn = false
+    @State private var ai = AIService.shared
     @Environment(\.openSettings) private var openSettings
 
     private var team: Team? {
@@ -87,6 +88,9 @@ struct ContentView: View {
             if let added = DebugSupport.addGameIfRequested(to: team, context: context) { selectedGame = added }
             if UserDefaults.standard.bool(forKey: "PMOpenSettings") { openSettings() }
             if DebugSupport.showSignIn { showingSignIn = true }
+            if let company = DebugSupport.showConsent {
+                ai.consentRequest = .init(provider: company == "anthropic" ? .anthropic : .openAI) {}
+            }
             if let open = UserDefaults.standard.string(forKey: "PMSection"),
                let target = SidebarSection(rawValue: ["stats": "team", "insights": "team"][open] ?? open) {
                 navigator.section = target
@@ -96,6 +100,7 @@ struct ContentView: View {
             #endif
         }
         .sheet(isPresented: $showingSignIn) { SignInSheet() }
+        .sheet(item: $ai.consentRequest) { request in ConsentSheet(request: request) }
         .sheet(item: $editingTeam) { team in
             TeamSheet(team: team)
         }

@@ -63,6 +63,7 @@ final class ScoutRunner {
 
     func assess(_ player: Player) {
         guard !isBusy(player) else { return }
+        if AIService.shared.needsConsent { return AIService.shared.askConsent { [weak self] in self?.assess(player) } }
         let snapshot = player.snapshot
         let ageGroup = player.team?.ageGroup
         let scout = scout
@@ -81,6 +82,7 @@ final class ScoutRunner {
     /// Retries timeouts and rate limits by itself; stops at once on problems a retry can't fix.
     func assessTeam(_ team: Team) {
         guard teamRuns[team.uid] == nil else { return }
+        if AIService.shared.needsConsent { return AIService.shared.askConsent { [weak self] in self?.assessTeam(team) } }
         let queue = needingAssessment(team)
         let snapshots = queue.map(\.snapshot)
         let ageGroup = team.ageGroup

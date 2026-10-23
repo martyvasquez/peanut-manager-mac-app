@@ -491,6 +491,11 @@ final class GameModel {
             return
         }
         blockedByPositions = false
+        // Nothing about the team leaves the Mac until the coach agrees to share it with the AI company.
+        if AIService.shared.needsConsent {
+            AIService.shared.askConsent { [weak self] in self?.run(step, undoManager: undoManager, work) }
+            return
+        }
         let ai = AIService.shared.client()
         let engine = LineupEngine(client: ai.client, model: ai.model)
         effort = ai.effort

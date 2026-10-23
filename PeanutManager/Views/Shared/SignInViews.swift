@@ -176,3 +176,36 @@ struct SignInSheet: View {
         .onChange(of: ai.isReady) { _, ready in if ready { dismiss() } }
     }
 }
+
+/// Asked once per company before anything about the team is sent to it (App Review 5.1.2(i)).
+struct ConsentSheet: View {
+    let request: AIService.ConsentRequest
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .frame(width: 96, height: 96)
+            Text("Share Your Team with \(request.provider.company)?").font(.title2.weight(.semibold))
+            Text("AI suggestions come from \(request.provider.company)’s \(request.provider.product). When you use them, Peanut Manager sends \(request.provider.company) your players’ names, stats, ratings and notes, and your notes for the game.")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            Link("\(request.provider.company) Privacy Policy", destination: request.provider.privacyPolicy)
+                .font(.callout)
+            HStack(spacing: 12) {
+                Button("Not Now") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Allow") { AIService.shared.allow(request) }
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+            }
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
+            .padding(.top, 4)
+        }
+        .padding(36)
+        .frame(width: 420)
+    }
+}

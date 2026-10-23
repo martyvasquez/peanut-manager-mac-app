@@ -76,6 +76,7 @@ final class AIService {
         static let vault = "chatgpt-session"
         static let host = "chatgpt-host-id"
         static let anthropic = "anthropic-api-key"
+        static let consent = "aiSharingAllowed."
     }
 
     private init() {
@@ -179,6 +180,55 @@ final class AIService {
     /// "Medium", or the model's own default when it has no Medium.
     var defaultEffortName: String? {
         (effortChoices.contains(Self.defaultEffort) ? Self.defaultEffort : currentModel?.defaultEffort)?.capitalized
+    }
+
+    // MARK: - Sharing with the AI company
+
+    /// The company a request goes to, which the coach agrees to once before anything about the team is sent.
+    enum Provider: String {
+        case openAI, anthropic
+
+        var company: String { self == .openAI ? "OpenAI" : "Anthropic" }
+        var product: String { self == .openAI ? "ChatGPT" : "Claude" }
+        var privacyPolicy: URL {
+            URL(string: self == .openAI ? "https://openai.com/policies/privacy-policy" : "https://www.anthropic.com/legal/privacy")!
+        }
+    }
+
+    /// An AI action waiting for the coach to agree to share with `provider`.
+    struct ConsentRequest: Identifiable {
+        let id = UUID()
+        let provider: Provider
+        let proceed: () -> Void
+    }
+
+    /// Shown as a sheet over the main window; the action runs only after Allow.
+    var consentRequest: ConsentRequest?
+
+    /// Where the next request goes; nil when nothing leaves the Mac (the debug fake AI).
+    var provider: Provider? {
+        #if DEBUG
+        if DebugSupport.fakeAI { return nil }
+        #endif
+        return usesClaude ? .anthropic : .openAI
+    }
+
+    /// Whether the next AI action must ask first.
+    var needsConsent: Bool {
+        guard let provider else { return false }
+        return !UserDefaults.standard.bool(forKey: Keys.consent + provider.rawValue)
+    }
+
+    /// Asks before `action` runs; the coach's Allow is remembered for that company.
+    func askConsent(then action: @escaping () -> Void) {
+        guard let provider else { return action() }
+        consentRequest = ConsentRequest(provider: provider, proceed: action)
+    }
+
+    func allow(_ request: ConsentRequest) {
+        UserDefaults.standard.set(true, forKey: Keys.consent + request.provider.rawValue)
+        consentRequest = nil
+        request.proceed()
     }
 
     // MARK: - Sign in / out

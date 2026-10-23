@@ -101,6 +101,7 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMRunEval YES` | Run the model eval on this library (see **Model eval** below) |
 | `-PMCheckCloudKit YES` | Check the schema against CloudKit's rules, list which fields are encrypted, report where a synced keychain item lands, then quit |
 | `-PMLibraryFolder Name` | Use another Application Support folder instead of `Peanut Manager` (to test the sandbox migration with a re-signed copy under another bundle ID) |
+| `-PMShowConsent openai\|anthropic` | Show the one-time "Share Your Team with OpenAI/Anthropic?" sheet |
 | `-PMICloudWait YES` | With an empty library, show the new-device "Looking for your teams in iCloud…" wait instead of the welcome screen |
 
 ## Model eval
