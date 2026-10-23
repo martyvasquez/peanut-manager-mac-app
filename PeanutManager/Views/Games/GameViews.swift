@@ -234,7 +234,6 @@ struct GameDetailView: View {
             HStack(spacing: 6) {
                 AttendanceButton(game: game)
                 ruleSetMenu
-                inningsMenu
                 if AIService.shared.isReady {
                     priorityMenu
                     trustMenu
@@ -269,18 +268,6 @@ struct GameDetailView: View {
             .pickerStyle(.inline)
         } label: {
             Chip(game.ruleSet?.name ?? "No Rules", symbol: "list.bullet")
-        }
-        .menuStyle(.button).buttonStyle(.plain).fixedSize()
-    }
-
-    private var inningsMenu: some View {
-        Menu {
-            Picker("Innings", selection: Binding(get: { game.innings }, set: { model.setInnings($0, undoManager: undoManager) })) {
-                ForEach([3, 4, 5, 6, 7, 9], id: \.self) { Text("\($0) Innings").tag($0) }
-            }
-            .pickerStyle(.inline)
-        } label: {
-            Chip("\(game.innings) Innings", symbol: "number")
         }
         .menuStyle(.button).buttonStyle(.plain).fixedSize()
     }

@@ -1,9 +1,11 @@
 import SwiftUI
+import AppKit
 import LineupKit
 
 /// The hero view: batting order down the side, innings across the top.
 /// Click a cell to pick a position. Keyboard: arrows move · 1–9 assign by scorebook number (1 = P … 9 = RF) · 0 or B = bench ·
-/// Space = lock/unlock · ⌥↑/⌥↓ = move in batting order. Drag a name to reorder.
+/// Space = lock/unlock · ⌥↑/⌥↓ = move in batting order. Drag a name to reorder, a spot onto another in the same inning to swap,
+/// an inning number to move the inning. + adds an inning; the inning's menu copies, adds, locks or deletes.
 struct LineupGridView: View {
     @Bindable var model: GameModel
     @Environment(\.undoManager) private var undoManager
@@ -14,13 +16,20 @@ struct LineupGridView: View {
     @State private var dragging: PlayerID?
     @State private var dropTarget: PlayerID?
     @State private var hovered: CellKey?
+    @State private var draggingCell: CellKey?
+    @State private var cellTarget: CellKey?
+    @State private var draggingInning: Int?
+    @State private var inningTarget: Int?
+    @State private var hoveredInning: Int?
 
     // Sized to fill the available width, within comfortable limits.
     private var nameWidth: CGFloat { min(max(width * 0.26, 200), 280) }
-    private let sitWidth: CGFloat = 52
+    private let addWidth: CGFloat = 40
+    /// Room for one mark per inning.
+    private var fairWidth: CGFloat { max(CGFloat(model.game.innings) * 9 + 16, 64) }
     private var cellWidth: CGFloat {
         let innings = CGFloat(max(model.game.innings, 1))
-        return min(max((width - nameWidth - sitWidth) / innings, 54), 120)
+        return min(max((width - nameWidth - addWidth - fairWidth) / innings, 54), 120)
     }
     private let rowHeight: CGFloat = 46
     /// Locks tell the AI what to keep; without AI there's nothing to keep them from.
@@ -31,6 +40,7 @@ struct LineupGridView: View {
         let innings = model.game.innings
         let problems = problemCells
         let ctx = model.context
+        let flagged = Set(model.findings.filter { $0.severity == .violation }.compactMap(\.player))
 
         VStack(alignment: .leading, spacing: 0) {
             header(innings: innings)
@@ -41,7 +51,8 @@ struct LineupGridView: View {
                     ForEach(1...max(innings, 1), id: \.self) { inning in
                         cell(player: player, inning: inning, problem: problems.contains(CellKey(inning: inning, player: player.id)), ctx: ctx)
                     }
-                    tally(player, innings: innings)
+                    Color.clear.frame(width: addWidth)
+                    fairness(player, innings: innings, flagged: flagged.contains(player.id))
                 }
                 .frame(height: rowHeight)
                 .overlay(alignment: .bottom) { Rectangle().fill(.separator.opacity(0.5)).frame(height: 0.5) }
@@ -59,7 +70,7 @@ struct LineupGridView: View {
                 }
             }
         }
-        .frame(width: nameWidth + cellWidth * CGFloat(max(innings, 1)) + sitWidth, alignment: .leading)
+        .frame(width: nameWidth + cellWidth * CGFloat(max(innings, 1)) + addWidth + fairWidth, alignment: .leading)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .focusable()
@@ -72,6 +83,8 @@ struct LineupGridView: View {
                 try? await Task.sleep(for: .milliseconds(400))
                 editing = CellKey(inning: 1, player: rows[2].id)
             }
+            let hover = UserDefaults.standard.integer(forKey: "PMHoverInning")
+            if hover > 0 { hoveredInning = hover }
         }
         #endif
         .onTapGesture { focused = true }
@@ -83,35 +96,106 @@ struct LineupGridView: View {
         HStack(spacing: 0) {
             Color.clear.frame(width: nameWidth, height: 1)
             ForEach(1...max(innings, 1), id: \.self) { inning in
-                let locked = showsLocks && model.isInningLocked(inning)
-                VStack(spacing: 0) {
-                    Button {
-                        model.toggleInningLock(inning, undoManager: undoManager)
-                    } label: {
-                        HStack(spacing: 3) {
-                            Text("\(inning)")
-                            if locked { Image(systemName: "lock.fill").font(.system(size: 8)) }
-                        }
-                        .font(.callout.monospacedDigit())
-                        .frame(width: cellWidth, height: 30)
-                        .foregroundStyle(locked ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
+                inningHeader(inning, innings: innings)
+            }
+            Button { withAnimation(.snappy) { model.insertInning(at: innings + 1, undoManager: undoManager) } } label: {
+                Image(systemName: "plus")
+                    .font(.callout)
+                    .foregroundStyle(.tertiary)
+                    .frame(width: addWidth, height: 30)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!model.hasGrid || innings >= 12)
+            .help("Add an inning")
+            Color.clear.frame(width: fairWidth, height: 1)
+        }
+    }
+
+    /// The inning's number: drag it to move the inning, or open its menu (hover, or right-click).
+    private func inningHeader(_ inning: Int, innings: Int) -> some View {
+        let locked = showsLocks && model.isInningLocked(inning)
+        let edge: Alignment = (draggingInning ?? 0) < inning ? .trailing : .leading
+        return VStack(spacing: 0) {
+            HStack(spacing: 3) {
+                Text("\(inning)")
+                if locked { Image(systemName: "lock.fill").font(.system(size: 8)) }
+            }
+            .font(.callout.monospacedDigit())
+            .foregroundStyle(locked ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
+            .frame(width: cellWidth, height: 30)
+            .overlay(alignment: .trailing) {
+                if hoveredInning == inning && draggingInning == nil {
+                    Menu { inningMenu(inning, innings: innings, locked: locked) } label: {
+                        Image(systemName: "ellipsis.circle").foregroundStyle(.secondary)
                     }
+                    .menuStyle(.button)
                     .buttonStyle(.plain)
-                    .disabled(!model.isFilled)
-                    .help(inningHelp(inning, locked: locked))
-                    if model.hasGrid && !model.isFilled {
-                        Text(openLabel(inning))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                            .frame(width: cellWidth - 4, height: 16)
-                    }
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .padding(.trailing, 6)
                 }
             }
-            Text("Sit").font(.callout).foregroundStyle(.tertiary)
-                .frame(width: sitWidth)
+            .contentShape(Rectangle())
+            .onHover { inside in hoveredInning = inside ? inning : (hoveredInning == inning ? nil : hoveredInning) }
+            .onDrag {
+                dragging = nil; draggingCell = nil
+                draggingInning = inning
+                return NSItemProvider(object: "inning \(inning)" as NSString)
+            } preview: {
+                Text("Inning \(inning)").font(.title3).padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(.regularMaterial, in: Capsule())
+            }
+            .onDrop(of: [.plainText], isTargeted: Binding(
+                get: { inningTarget == inning },
+                set: { inside in if draggingInning != nil { inningTarget = inside ? inning : (inningTarget == inning ? nil : inningTarget) } }
+            )) { _ in dropInning(on: inning) }
+            .overlay(alignment: edge) {
+                if inningTarget == inning, let from = draggingInning, from != inning {
+                    Capsule().fill(Color.accentColor).frame(width: 3, height: 22)
+                }
+            }
+            .contextMenu { inningMenu(inning, innings: innings, locked: locked) }
+            .help(inningHelp(inning))
+            if model.hasGrid && !model.isFilled {
+                Text(openLabel(inning))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(width: cellWidth - 4, height: 16)
+            }
         }
+    }
+
+    @ViewBuilder
+    private func inningMenu(_ inning: Int, innings: Int, locked: Bool) -> some View {
+        if inning < innings {
+            Button("Copy to Inning \(inning + 1)") { withAnimation(.snappy) { model.copyInningForward(inning, undoManager: undoManager) } }
+        }
+        Button("Add Inning Before") { withAnimation(.snappy) { model.insertInning(at: inning, undoManager: undoManager) } }
+        Button("Add Inning After") { withAnimation(.snappy) { model.insertInning(at: inning + 1, undoManager: undoManager) } }
+        if showsLocks && model.isFilled {
+            Divider()
+            Button(locked ? "Unlock Inning" : "Lock Inning") { model.toggleInningLock(inning, undoManager: undoManager) }
+        }
+        if innings > 1 {
+            Divider()
+            Button("Delete Inning \(inning)", role: .destructive) { withAnimation(.snappy) { model.removeInning(inning, undoManager: undoManager) } }
+        }
+    }
+
+    private func dropInning(on target: Int) -> Bool {
+        defer { draggingInning = nil; inningTarget = nil }
+        guard let from = draggingInning, from != target else { return false }
+        withAnimation(.snappy) { model.moveInning(from, to: target, undoManager: undoManager) }
+        Self.snap()
+        return true
+    }
+
+    /// A light tap on the trackpad when a drop lands.
+    static func snap() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
     }
 
     /// What's still open this inning: the positions themselves when only a few are left.
@@ -132,9 +216,9 @@ struct LineupGridView: View {
         return from < to ? .bottom : .top
     }
 
-    private func inningHelp(_ inning: Int, locked: Bool) -> String {
+    private func inningHelp(_ inning: Int) -> String {
         let reason = model.document.inningReasons.indices.contains(inning - 1) ? model.document.inningReasons[inning - 1] : ""
-        let action = locked ? "Click to unlock inning \(inning)." : "Click to lock inning \(inning) so regenerating keeps it."
+        let action = "Drag to move inning \(inning)"
         return reason.isEmpty ? action : "\(reason)\n\n\(action)"
     }
 
@@ -148,6 +232,7 @@ struct LineupGridView: View {
         .frame(width: nameWidth, height: rowHeight, alignment: .leading)
         .contentShape(Rectangle())
         .onDrag {
+            draggingCell = nil; draggingInning = nil
             dragging = player.id
             return NSItemProvider(object: player.id.uuidString as NSString)
         } preview: {
@@ -169,9 +254,11 @@ struct LineupGridView: View {
         let provenance = model.document.provenance[key]
         let isSelected = selected == key
 
+        let swapTarget = cellTarget == key && draggingCell?.inning == inning && draggingCell != key
         return ZStack(alignment: .topTrailing) {
             RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.18))
+                .fill(swapTarget ? AnyShapeStyle(Color.accentColor.opacity(0.3))
+                      : isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.18))
                       : problem ? AnyShapeStyle(Color.red.opacity(0.12))
                       : (!model.isFilled && model.hasGrid && available) ? AnyShapeStyle(.quaternary.opacity(hovered == key ? 0.8 : 0.35))
                       : AnyShapeStyle(Color.clear))
@@ -191,9 +278,31 @@ struct LineupGridView: View {
             }
         }
         .frame(width: cellWidth - 6, height: rowHeight - 8)
+        .scaleEffect(swapTarget ? 1.06 : 1)
+        .opacity(draggingCell == key ? 0.35 : 1)
         .frame(width: cellWidth, height: rowHeight)
         .contentShape(Rectangle())
         .onHover { inside in hovered = inside ? key : (hovered == key ? nil : hovered) }
+        .onDrag {
+            dragging = nil; draggingInning = nil
+            draggingCell = key
+            return NSItemProvider(object: "\(player.id.uuidString) \(inning)" as NSString)
+        } preview: {
+            Text("\(label(slot: slot, available: available)) · \(player.name.components(separatedBy: " ").first ?? "")")
+                .font(.title3).padding(.horizontal, 12).padding(.vertical, 6)
+                .background(.regularMaterial, in: Capsule())
+        }
+        .onDrop(of: [.plainText], isTargeted: Binding(
+            get: { cellTarget == key },
+            set: { inside in
+                if draggingCell != nil {
+                    cellTarget = inside ? key : (cellTarget == key ? nil : cellTarget)
+                } else if dragging != nil {
+                    dropTarget = inside ? player.id : (dropTarget == player.id ? nil : dropTarget)
+                }
+            }
+        )) { _ in dropOnCell(key, available: available, ctx: ctx) }
+        .animation(.snappy(duration: 0.18), value: swapTarget)
         .onTapGesture {
             selected = key
             focused = true
@@ -220,15 +329,39 @@ struct LineupGridView: View {
         .help(cellHelp(provenance: provenance, locked: locked))
     }
 
-    private func tally(_ player: PlayerSnapshot, innings: Int) -> some View {
-        let slots = (1...max(innings, 1)).map { model.lineup.slot(of: player.id, inning: $0) }
-        let field = slots.filter { if case .field = $0 { true } else { false } }.count
-        let sit = slots.filter { $0 == .bench }.count
-        _ = field
-        return Text(model.isFilled ? "\(sit)" : "")
-            .font(.title3.monospacedDigit())
-            .foregroundStyle(.tertiary)
-            .frame(width: sitWidth)
+    /// Drops on a spot: another spot in the same inning swaps the two kids; a name moves that batter here.
+    private func dropOnCell(_ key: CellKey, available: Bool, ctx: GameContext) -> Bool {
+        defer { draggingCell = nil; cellTarget = nil; dragging = nil; dropTarget = nil }
+        if let from = draggingCell {
+            guard from.inning == key.inning, from.player != key.player, available,
+                  ctx.availability(of: from.player).isAvailable(inning: from.inning) else { return false }
+            withAnimation(.snappy) { model.swap(from.player, key.player, inning: key.inning, undoManager: undoManager) }
+            Self.snap()
+            return true
+        }
+        if let dragging, dragging != key.player {
+            withAnimation(.snappy) { model.moveBatter(dragging, to: key.player, undoManager: undoManager) }
+            return true
+        }
+        return false
+    }
+
+    /// The kid's game at a glance: ● infield, ○ outfield, – sat. Red when a rule flags them.
+    private func fairness(_ player: PlayerSnapshot, innings: Int, flagged: Bool) -> some View {
+        let slots = (1...max(innings, 1)).compactMap { model.lineup.slot(of: player.id, inning: $0) }
+        let infield = slots.filter { if case .field(let p) = $0 { p.isInfield } else { false } }.count
+        let outfield = slots.filter { if case .field(let p) = $0 { p.isOutfield } else { false } }.count
+        let sat = slots.filter { $0 == .bench }.count
+        let tint: Color = flagged ? .red : .secondary
+        return HStack(spacing: 3) {
+            ForEach(0..<infield, id: \.self) { _ in Circle().fill(tint).frame(width: 6, height: 6) }
+            ForEach(0..<outfield, id: \.self) { _ in Circle().strokeBorder(tint, lineWidth: 1.2).frame(width: 6, height: 6) }
+            ForEach(0..<sat, id: \.self) { _ in Capsule().fill(tint.opacity(0.6)).frame(width: 6, height: 2) }
+        }
+        .padding(.leading, 10)
+        .frame(width: fairWidth, height: rowHeight, alignment: .leading)
+        .contentShape(Rectangle())
+        .help(slots.isEmpty ? "" : "\(infield) infield · \(outfield) outfield · \(sat) sitting")
     }
 
     private func label(slot: Slot?, available: Bool) -> String {

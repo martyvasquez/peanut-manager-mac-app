@@ -41,6 +41,23 @@ public struct InningAssignment: Codable, Sendable, Hashable {
         sitting.removeAll { $0 == player }
     }
 
+    /// `a` and `b` trade places this inning, wherever each one is (a position, the bench, or nowhere yet).
+    public mutating func swap(_ a: PlayerID, _ b: PlayerID) {
+        guard a != b else { return }
+        let slotA = slot(of: a), slotB = slot(of: b)
+        remove(a); remove(b)
+        place(a, in: slotB)
+        place(b, in: slotA)
+    }
+
+    private mutating func place(_ player: PlayerID, in slot: Slot?) {
+        switch slot {
+        case .field(let position): positions[position] = player
+        case .bench: sitting.append(player)
+        case nil: break
+        }
+    }
+
     /// Positions nobody holds yet, in scorebook order.
     public var openPositions: [Position] { Position.allCases.filter { positions[$0] == nil } }
 
@@ -78,6 +95,35 @@ public struct Lineup: Codable, Sendable, Hashable {
     }
 
     public var hasDefense: Bool { innings.contains { !$0.positions.isEmpty } }
+
+    /// Where each inning goes when innings are inserted, removed or moved: old inning number → new (nil = removed).
+    /// Used to carry locks and other per-inning notes along with the lineup.
+    public typealias InningMap = (Int) -> Int?
+
+    /// Adds an empty inning so it becomes inning `number` (1-based); later innings shift up.
+    public mutating func insertInning(at number: Int) -> InningMap {
+        let index = min(max(number - 1, 0), innings.count)
+        innings.insert(InningAssignment(), at: index)
+        return { $0 >= number ? $0 + 1 : $0 }
+    }
+
+    public mutating func removeInning(_ number: Int) -> InningMap {
+        guard innings.indices.contains(number - 1) else { return { $0 } }
+        innings.remove(at: number - 1)
+        return { $0 == number ? nil : ($0 > number ? $0 - 1 : $0) }
+    }
+
+    /// Moves inning `from` so it becomes inning `to`; the ones between shift over.
+    public mutating func moveInning(_ from: Int, to: Int) -> InningMap {
+        guard innings.indices.contains(from - 1), innings.indices.contains(to - 1), from != to else { return { $0 } }
+        innings.insert(innings.remove(at: from - 1), at: to - 1)
+        return { inning in
+            if inning == from { return to }
+            if from < to, (from + 1...to).contains(inning) { return inning - 1 }
+            if to < from, (to..<from).contains(inning) { return inning + 1 }
+            return inning
+        }
+    }
 
     /// Every position is taken in every inning.
     public var isFullyPositioned: Bool { !innings.isEmpty && innings.allSatisfy { $0.openPositions.isEmpty } }

@@ -122,13 +122,17 @@ final class GameModel {
 
     /// `change` must only use its `doc` argument. Reading `document` (or anything derived from it, like
     /// `context` or `rows`) inside the closure is a Swift exclusivity violation and aborts the app.
+    /// The game's inning count is undone with the lineup, since adding or removing an inning changes both.
     func mutate(_ actionName: String, undoManager: UndoManager?, _ change: (inout LineupDocument) -> Void) {
         let before = document
+        let inningsBefore = game.innings
         change(&document)
-        guard document != before else { return }
+        guard document != before || game.innings != inningsBefore else { return }
         save()
         undoManager?.registerUndo(withTarget: self) { target in
+            // Mutate first so the redo it registers captures today's inning count, then put the old one back.
             target.mutate(actionName, undoManager: undoManager) { $0 = before }
+            target.game.innings = inningsBefore
         }
         undoManager?.setActionName(actionName)
     }
@@ -146,6 +150,80 @@ final class GameModel {
             doc.provenance[CellKey(inning: inning, player: player)] = .coach
             if let displaced { doc.provenance[CellKey(inning: inning, player: displaced)] = .coach }
         }
+    }
+
+    /// Dragging one kid's spot onto another's in the same inning: they trade places, and both become the coach's picks.
+    func swap(_ a: PlayerID, _ b: PlayerID, inning: Int, undoManager: UndoManager?) {
+        guard a != b, document.lineup.innings.indices.contains(inning - 1) else { return }
+        let available = context.availablePlayers(inning: inning).map(\.id)
+        mutate("Swap", undoManager: undoManager) { doc in
+            doc.lineup.innings[inning - 1].swap(a, b)
+            doc.lineup.innings[inning - 1].seatRest(available: available)
+            doc.locks.removeAll { $0.inning == inning && ($0.player == a || $0.player == b) }
+            for id in [a, b] {
+                guard let slot = doc.lineup.slot(of: id, inning: inning) else { continue }
+                doc.locks.append(Lock(inning: inning, player: id, slot: slot))
+                doc.provenance[CellKey(inning: inning, player: id)] = .coach
+            }
+        }
+    }
+
+    // MARK: - Innings
+
+    /// Adds an empty inning so it becomes inning `number`.
+    /// The game's count changes inside `mutate` so undo puts both back.
+    func insertInning(at number: Int, undoManager: UndoManager?) {
+        let game = game
+        mutate("Add Inning", undoManager: undoManager) { doc in
+            doc.lineup.resize(innings: game.innings)
+            Self.carry(&doc, along: doc.lineup.insertInning(at: number))
+            game.innings += 1
+        }
+    }
+
+    func removeInning(_ number: Int, undoManager: UndoManager?) {
+        let game = game
+        guard game.innings > 1 else { return }
+        mutate("Delete Inning", undoManager: undoManager) { doc in
+            doc.lineup.resize(innings: game.innings)
+            Self.carry(&doc, along: doc.lineup.removeInning(number))
+            game.innings -= 1
+        }
+    }
+
+    func moveInning(_ from: Int, to: Int, undoManager: UndoManager?) {
+        mutate("Move Inning", undoManager: undoManager) { doc in
+            Self.carry(&doc, along: doc.lineup.moveInning(from, to: to))
+        }
+    }
+
+    /// The next inning starts as a copy of this one (for whoever's available then), ready for a few swaps.
+    func copyInningForward(_ number: Int, undoManager: UndoManager?) {
+        guard document.lineup.innings.indices.contains(number) else { return }
+        let available = context.availablePlayers(inning: number + 1).map(\.id)
+        mutate("Copy Inning", undoManager: undoManager) { doc in
+            var next = doc.lineup.innings[number - 1]
+            for (position, id) in next.positions where !available.contains(id) { next.positions[position] = nil }
+            next.sitting.removeAll { !available.contains($0) }
+            next.seatRest(available: available)
+            doc.lineup.innings[number] = next
+            doc.locks.removeAll { $0.inning == number + 1 }
+            doc.provenance = doc.provenance.filter { $0.key.inning != number + 1 }
+            for (position, id) in next.positions { doc.locks.append(Lock(inning: number + 1, player: id, slot: .field(position))) }
+            for id in next.sitting { doc.locks.append(Lock(inning: number + 1, player: id, slot: .bench)) }
+            for lock in doc.locks where lock.inning == number + 1 { doc.provenance[CellKey(inning: lock.inning, player: lock.player)] = .coach }
+        }
+    }
+
+    /// Locks, provenance and the AI's per-inning notes follow their inning when innings move.
+    private static func carry(_ doc: inout LineupDocument, along map: Lineup.InningMap) {
+        doc.locks = doc.locks.compactMap { lock in map(lock.inning).map { Lock(inning: $0, player: lock.player, slot: lock.slot) } }
+        doc.provenance = Dictionary(doc.provenance.compactMap { key, value in map(key.inning).map { (CellKey(inning: $0, player: key.player), value) } }, uniquingKeysWith: { a, _ in a })
+        var reasons = Array(repeating: "", count: doc.lineup.innings.count)
+        for (index, reason) in doc.inningReasons.enumerated() {
+            if let to = map(index + 1), reasons.indices.contains(to - 1) { reasons[to - 1] = reason }
+        }
+        doc.inningReasons = doc.inningReasons.isEmpty ? [] : reasons
     }
 
     func toggleLock(_ cell: CellKey, undoManager: UndoManager?) {
@@ -281,14 +359,6 @@ final class GameModel {
         order.remove(at: from)
         order.insert(player, at: to)
         mutate("Move in Batting Order", undoManager: undoManager) { $0.lineup.battingOrder = order }
-    }
-
-    func setInnings(_ innings: Int, undoManager: UndoManager?) {
-        game.innings = innings
-        mutate("Change Innings", undoManager: undoManager) { doc in
-            if doc.lineup.innings.count > 0 { doc.lineup.resize(innings: innings) }
-            doc.locks.removeAll { $0.inning > innings }
-        }
     }
 
     func startOver(undoManager: UndoManager?) {

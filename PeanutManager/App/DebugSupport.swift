@@ -20,6 +20,7 @@ import LineupKit
 ///   -PMNoAI YES          act as if no AI is set up: signed out of ChatGPT and no Claude key (the keychain is untouched)
 ///   -PMAddGame YES       add a game after the team's last one, with the sixth player out, and open it (to try Copy Last Game)
 ///   -PMCopyLastGame YES  copy the last game's lineup into an empty game when it opens
+///   -PMHoverInning N     show inning N's header as if hovered (its menu button)
 ///   -PMRunEval YES       run the model eval on this (copied) library; see EvalRunner
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }
