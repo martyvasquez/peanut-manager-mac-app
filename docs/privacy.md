@@ -59,4 +59,4 @@ If this policy changes, we'll update this page and its effective date.
 
 ## Contact
 
-Questions about privacy: CONTACT_EMAIL
+Questions about privacy: apps@bytelaunch.com

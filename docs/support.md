@@ -4,7 +4,7 @@ title: Peanut Manager Support
 
 # Peanut Manager Support
 
-Questions, problems or ideas: email CONTACT_EMAIL, or open an issue at https://github.com/martyvasquez/peanut-manager-mac-app/issues.
+Questions, problems or ideas: email apps@bytelaunch.com, or open an issue at https://github.com/martyvasquez/peanut-manager-mac-app/issues.
 
 ## Common questions
 
