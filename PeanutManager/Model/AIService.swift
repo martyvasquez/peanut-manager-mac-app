@@ -88,11 +88,14 @@ final class AIService {
         }
         chosenModelID = defaults.string(forKey: Keys.choice)
         reasoningEffort = defaults.string(forKey: Keys.effort)
-        anthropicKey = Keychain.data(Keys.anthropic).flatMap { String(data: $0, encoding: .utf8) }
         #if DEBUG
-        if DebugSupport.fakeClaudeKey { anthropicKey = "sk-ant-debug-0000" }
-        if DebugSupport.noAI { anthropicKey = nil }
-        if DebugSupport.signedOut || DebugSupport.noAI { return }
+        // Test runs that don't use the real AI never touch the keychain, so they never ask for the password.
+        if DebugSupport.fakeClaudeKey && !DebugSupport.noAI { anthropicKey = "sk-ant-debug-0000" }
+        if DebugSupport.noAI || DebugSupport.fakeAI { return }
+        #endif
+        if anthropicKey == nil { anthropicKey = Keychain.data(Keys.anthropic).flatMap { String(data: $0, encoding: .utf8) } }
+        #if DEBUG
+        if DebugSupport.signedOut { return }
         #endif
         if let record = Self.loadRecord() {
             account = record.account

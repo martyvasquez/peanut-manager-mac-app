@@ -61,6 +61,8 @@ open "build/Build/Products/Debug/Peanut Manager.app"
 
 Sign in with ChatGPT under **Peanut Manager → Settings** (⌘,).
 
+Local builds are signed with the owner's Developer ID (team `G88C7HMHUJ`) so the keychain remembers the app across builds. Without that certificate, build ad-hoc: add `CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=` to the `xcodebuild` line.
+
 ### Debug launch flags (Debug builds only)
 
 Always pass `-PMStore <Name>` so your real library is untouched.

@@ -49,9 +49,11 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.martyvasquez.PeanutManager
         SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
         SWIFT_APPROACHABLE_CONCURRENCY: YES
+        # One certificate for every local build, so macOS sees each new build as the same app and keeps the
+        # keychain's Always Allow. CI overrides this with ad-hoc signing (release-mac.yml) until it has the cert.
         CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
-        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_IDENTITY: "Developer ID Application"
+        DEVELOPMENT_TEAM: G88C7HMHUJ
         ENABLE_HARDENED_RUNTIME: NO
         ENABLE_APP_SANDBOX: NO
         COMBINE_HIDPI_IMAGES: YES
