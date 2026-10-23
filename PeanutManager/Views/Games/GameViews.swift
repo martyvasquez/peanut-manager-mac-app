@@ -201,6 +201,8 @@ struct GameDetailView: View {
         }
         .task {
             #if DEBUG
+            // Only the first game opened after launch, so a game made while testing starts empty.
+            guard DebugSupport.autoFills(game) else { return }
             if DebugSupport.copyLastGame && !model.hasBattingOrder, let last = model.lastGame { model.copyLineup(from: last, undoManager: undoManager) }
             if DebugSupport.autoGenerate && !model.hasBattingOrder { model.makeBattingOrder(undoManager: undoManager) }
             if DebugSupport.autoPositions && model.hasBattingOrder && !model.isFilled { model.setPositions(undoManager: undoManager) }
@@ -208,7 +210,7 @@ struct GameDetailView: View {
         }
         #if DEBUG
         .onChange(of: model.hasBattingOrder) {
-            if DebugSupport.autoPositions && model.hasBattingOrder && !model.isFilled { model.setPositions(undoManager: undoManager) }
+            if DebugSupport.autoPositions && DebugSupport.autoFills(game) && model.hasBattingOrder && !model.isFilled { model.setPositions(undoManager: undoManager) }
             if UserDefaults.standard.bool(forKey: "PMOpenPositions") && model.hasBattingOrder {
                 model.preparePositions()
                 // Lock one spot the way a coach would, to show the state before Fill the Rest.

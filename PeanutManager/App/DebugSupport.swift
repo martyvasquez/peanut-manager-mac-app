@@ -8,7 +8,7 @@ import LineupKit
 ///   -PMStore Name        use a separate library file (keeps your real library untouched)
 ///   -PMSeedSample YES    create the sample team on launch if there are no teams, and open its game
 ///   -PMFakeAI YES        use a scripted local "AI" instead of ChatGPT
-///   -PMAutoGenerate YES  make the batting order as soon as a game opens
+///   -PMAutoGenerate YES  make the batting order as soon as the first game opens (later games start empty)
 ///   -PMAutoPositions YES then set positions automatically
 ///   -PMOpenPicker YES    open the position picker on the third batter, inning 1
 ///   -PMScrollToChecks YES scroll to the game plan and checks once a lineup exists
@@ -38,6 +38,15 @@ enum DebugSupport {
     static var noAI: Bool { UserDefaults.standard.bool(forKey: "PMNoAI") }
     static var copyLastGame: Bool { UserDefaults.standard.bool(forKey: "PMCopyLastGame") }
     nonisolated static var flakyScout: Bool { UserDefaults.standard.bool(forKey: "PMFlakyScout") }
+
+    /// The first game opened this run; the auto flags (generate, positions, copy) act on it alone.
+    @MainActor private static var autoGame: PersistentIdentifier?
+
+    @MainActor
+    static func autoFills(_ game: Game) -> Bool {
+        if autoGame == nil { autoGame = game.persistentModelID }
+        return autoGame == game.persistentModelID
+    }
 
     @MainActor
     static func seedIfRequested(teams: [Team], context: ModelContext) -> Team? {

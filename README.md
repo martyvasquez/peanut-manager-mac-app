@@ -75,7 +75,7 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMStore Name` | Use a separate library file (`Name.store`) |
 | `-PMSeedSample YES` | Create the sample team (anonymized real GameChanger stats) if the library is empty |
 | `-PMFakeAI YES` | Scripted local "AI" (no key, no cost); its first defense is deliberately invalid so check → revise runs |
-| `-PMAutoGenerate YES` | Make the batting order as soon as the game opens |
+| `-PMAutoGenerate YES` | Make the batting order as soon as the first game opens (games you add later start empty) |
 | `-PMAutoPositions YES` | Then fill positions |
 | `-PMOpenPositions YES` | Go to the Positions step and lock one spot |
 | `-PMNoAI YES` | Act as if no AI is set up (no ChatGPT sign-in, no Claude key); the keychain is untouched |
