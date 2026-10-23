@@ -565,19 +565,17 @@ struct BattingOrderList: View {
     @Environment(\.undoManager) private var undoManager
     @State private var dragging: PlayerID?
     @State private var dropTarget: DropSpot?
-    /// A kid's chip flies between the players and their spot.
-    @Namespace private var chips
 
     private let rowHeight: CGFloat = 46
     private let chipWidth: CGFloat = 240
     private let chipHeight: CGFloat = 38
     private let headerHeight: CGFloat = 34
 
-    enum DropSpot: Hashable { case batter(PlayerID), end, players }
+    enum DropSpot: Hashable { case slot(Int), players }
 
     var body: some View {
         let ctx = model.context
-        let placed = model.placedBatters.compactMap { ctx.player($0) }
+        let slots = model.battingSlots
         let unplaced = model.unplacedBatters
         let ids = PromptIDs(players: ctx.players)
 
@@ -585,11 +583,12 @@ struct BattingOrderList: View {
             VStack(alignment: .leading, spacing: 0) {
                 // Level with the players' header, so chips and open spots line up across.
                 if !unplaced.isEmpty { Color.clear.frame(width: 1, height: headerHeight) }
-                ForEach(Array(placed.enumerated()), id: \.element.id) { index, player in
-                    batterRow(index + 1, player, reason: model.document.battingReasons[player.id].map { ids.humanize($0, players: ctx.players) }, placed: placed)
-                }
-                ForEach(0..<unplaced.count, id: \.self) { offset in
-                    openRow(placed.count + offset + 1, first: offset == 0)
+                ForEach(Array(slots.enumerated()), id: \.offset) { index, id in
+                    if let id, let player = ctx.player(id) {
+                        batterRow(index, player, reason: model.document.battingReasons[id].map { ids.humanize($0, players: ctx.players) })
+                    } else {
+                        openRow(index)
+                    }
                 }
                 if !model.document.battingRationale.isEmpty && unplaced.isEmpty {
                     Text(ids.humanize(model.document.battingRationale, players: ctx.players))
@@ -601,7 +600,7 @@ struct BattingOrderList: View {
             .frame(maxWidth: unplaced.isEmpty ? .infinity : nil, alignment: .leading)
 
             if !unplaced.isEmpty {
-                playerTray(unplaced, placed: placed)
+                playerTray(unplaced)
             }
         }
         // A drag dropped outside any target never reports back; the next plain mouse move ends it.
@@ -620,7 +619,6 @@ struct BattingOrderList: View {
         .padding(.horizontal, 12)
         .frame(width: chipWidth, height: chipHeight)
         .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
-        .matchedGeometryEffect(id: player.id, in: chips)
         .opacity(dragging == player.id ? 0.35 : 1)
     }
 
@@ -631,15 +629,13 @@ struct BattingOrderList: View {
             .frame(width: 26, alignment: .trailing)
     }
 
-    private func batterRow(_ n: Int, _ player: PlayerSnapshot, reason: String?, placed: [PlayerSnapshot]) -> some View {
-        HStack(spacing: 14) {
-            number(n, open: false)
+    /// A filled spot. Dropping a kid here puts them in this spot; the others shift toward the nearest gap.
+    private func batterRow(_ index: Int, _ player: PlayerSnapshot, reason: String?) -> some View {
+        let lit = dropTarget == .slot(index) && dragging != nil && dragging != player.id
+        return HStack(spacing: 14) {
+            number(index + 1, open: false)
             chip(player, handle: true)
-                .overlay(alignment: lineEdge(for: player.id, placed: placed)) {
-                    if dropTarget == .batter(player.id) && dragging != player.id {
-                        Capsule().fill(Color.accentColor).frame(height: 3).offset(y: lineEdge(for: player.id, placed: placed) == .top ? -5 : 5)
-                    }
-                }
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(lit ? Color.accentColor : Color.clear, lineWidth: 2))
                 .onDrag { drag(player) } preview: { preview(player) }
                 .contextMenu {
                     Button("Remove from Batting Order") { withAnimation(.snappy) { model.removeBatter(player.id, undoManager: undoManager) } }
@@ -653,14 +649,14 @@ struct BattingOrderList: View {
         }
         .frame(height: rowHeight)
         .contentShape(Rectangle())
-        .onDrop(of: [.plainText], isTargeted: targeted(.batter(player.id))) { _ in drop(on: .batter(player.id), placed: placed) }
+        .onDrop(of: [.plainText], isTargeted: targeted(.slot(index))) { _ in drop(on: .slot(index)) }
     }
 
-    /// An empty spot, the exact shape of a chip. Dropping on any of them adds the kid at the end of the order.
-    private func openRow(_ n: Int, first: Bool) -> some View {
-        let lit = first && dropTarget == .end
+    /// An empty spot, the exact shape of a chip. A kid dropped here takes this spot.
+    private func openRow(_ index: Int) -> some View {
+        let lit = dropTarget == .slot(index) && dragging != nil
         return HStack(spacing: 14) {
-            number(n, open: true)
+            number(index + 1, open: true)
             RoundedRectangle(cornerRadius: 8)
                 .fill(lit ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(Color.clear))
                 .strokeBorder(lit ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
@@ -668,16 +664,16 @@ struct BattingOrderList: View {
         }
         .frame(height: rowHeight)
         .contentShape(Rectangle())
-        .onDrop(of: [.plainText], isTargeted: targeted(.end)) { _ in drop(on: .end, placed: []) }
+        .onDrop(of: [.plainText], isTargeted: targeted(.slot(index))) { _ in drop(on: .slot(index)) }
     }
 
-    private func playerTray(_ unplaced: [PlayerSnapshot], placed: [PlayerSnapshot]) -> some View {
+    private func playerTray(_ unplaced: [PlayerSnapshot]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Players").font(.headline)
                 Spacer()
                 Button("Add All") {
-                    withAnimation(.snappy) { for player in unplaced { model.placeBatter(player.id, at: nil, undoManager: undoManager) } }
+                    withAnimation(.snappy) { for player in unplaced { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) } }
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
@@ -687,10 +683,10 @@ struct BattingOrderList: View {
             ForEach(unplaced) { player in
                 chip(player, handle: false)
                     .contentShape(Rectangle())
-                    .onTapGesture(count: 2) { withAnimation(.snappy) { model.placeBatter(player.id, at: nil, undoManager: undoManager) } }
+                    .onTapGesture(count: 2) { withAnimation(.snappy) { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) } }
                     .onDrag { drag(player) } preview: { preview(player) }
                     .contextMenu {
-                        Button("Add to Batting Order") { withAnimation(.snappy) { model.placeBatter(player.id, at: nil, undoManager: undoManager) } }
+                        Button("Add to Batting Order") { withAnimation(.snappy) { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) } }
                     }
                     .help("Drag into the batting order, or double-click to add")
                     .frame(height: rowHeight)
@@ -698,7 +694,7 @@ struct BattingOrderList: View {
         }
         .padding(.horizontal, 8)
         .background(dropTarget == .players ? AnyShapeStyle(Color.accentColor.opacity(0.1)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 12))
-        .onDrop(of: [.plainText], isTargeted: targeted(.players)) { _ in drop(on: .players, placed: placed) }
+        .onDrop(of: [.plainText], isTargeted: targeted(.players)) { _ in drop(on: .players) }
     }
 
     // MARK: Drag and drop
@@ -718,25 +714,16 @@ struct BattingOrderList: View {
         Binding(get: { dropTarget == spot }, set: { dropTarget = $0 ? spot : (dropTarget == spot ? nil : dropTarget) })
     }
 
-    private func drop(on spot: DropSpot, placed: [PlayerSnapshot]) -> Bool {
+    private func drop(on spot: DropSpot) -> Bool {
         defer { dragging = nil; dropTarget = nil }
         guard let dragging else { return false }
         withAnimation(.snappy) {
             switch spot {
-            case .batter(let target): model.placeBatter(dragging, at: target, undoManager: undoManager)
-            case .end: model.placeBatter(dragging, at: nil, undoManager: undoManager)
+            case .slot(let index): model.placeBatter(dragging, inSlot: index, undoManager: undoManager)
             case .players: model.removeBatter(dragging, undoManager: undoManager)
             }
         }
         return true
-    }
-
-    /// Moving down drops below the target row; moving up, or in from the players, drops above it.
-    private func lineEdge(for target: PlayerID, placed: [PlayerSnapshot]) -> Alignment {
-        guard let dragging,
-              let from = placed.firstIndex(where: { $0.id == dragging }),
-              let to = placed.firstIndex(where: { $0.id == target }) else { return .top }
-        return from < to ? .bottom : .top
     }
 }
 

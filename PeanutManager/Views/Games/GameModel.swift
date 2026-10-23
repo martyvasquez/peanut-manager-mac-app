@@ -310,22 +310,31 @@ final class GameModel {
         step = .positions
     }
 
-    /// Batting order step: puts `player` in the order at `target`'s spot, or at the end.
-    /// Moving down lands below `target`, moving up (or in from the players) lands above it.
-    func placeBatter(_ player: PlayerID, at target: PlayerID?, undoManager: UndoManager?) {
-        guard player != target else { return }
-        let current = placedBatters
-        let from = current.firstIndex(of: player)
-        var order = current.filter { $0 != player }
-        var index = target.flatMap { order.firstIndex(of: $0) } ?? order.count
-        if let from, let to = target.flatMap({ current.firstIndex(of: $0) }), from < to { index += 1 }
-        order.insert(player, at: index)
-        mutate(from == nil ? "Add to Batting Order" : "Move in Batting Order", undoManager: undoManager) { $0.lineup.battingOrder = order }
+    /// The batting order step's spots, one per kid here; empty ones are nil.
+    var battingSlots: [PlayerID?] {
+        BattingSlots.resolve(document.battingSlots, order: document.lineup.battingOrder, present: context.presentPlayers.map(\.id))
+    }
+
+    /// Puts `player` in spot `index` (0-based), or the first empty spot. A taken spot makes room (`BattingSlots.place`).
+    func placeBatter(_ player: PlayerID, inSlot index: Int?, undoManager: UndoManager?) {
+        let before = battingSlots
+        let after = BattingSlots.place(player, at: index, in: before)
+        guard after != before else { return }
+        saveSlots(after, before.contains(player) ? "Move in Batting Order" : "Add to Batting Order", undoManager: undoManager)
     }
 
     func removeBatter(_ player: PlayerID, undoManager: UndoManager?) {
-        let order = placedBatters.filter { $0 != player }
-        mutate("Remove from Batting Order", undoManager: undoManager) { $0.lineup.battingOrder = order }
+        var slots = battingSlots
+        guard let index = slots.firstIndex(of: player) else { return }
+        slots[index] = nil
+        saveSlots(slots, "Remove from Batting Order", undoManager: undoManager)
+    }
+
+    private func saveSlots(_ slots: [PlayerID?], _ actionName: String, undoManager: UndoManager?) {
+        mutate(actionName, undoManager: undoManager) { doc in
+            doc.lineup.battingOrder = slots.compactMap { $0 }
+            doc.battingSlots = slots.contains(nil) ? slots : nil
+        }
     }
 
     // MARK: - Copy

@@ -224,6 +224,9 @@ final class Game {
 /// The working lineup for a game, with everything the coach needs to trust it.
 nonisolated struct LineupDocument: Codable, Hashable, Sendable {
     var lineup = Lineup()
+    /// The batting order's spots while the coach builds it by hand and some are still empty (`BattingSlots`).
+    /// nil once every spot is filled; `lineup.battingOrder` always has the gaps closed.
+    var battingSlots: [PlayerID?]?
     var locks: [Lock] = []
     var provenance: [CellKey: Provenance] = [:]
     var battingReasons: [PlayerID: String] = [:]

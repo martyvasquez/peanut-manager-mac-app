@@ -176,3 +176,43 @@ public enum Provenance: String, Codable, Sendable {
     case appAdjusted
     case coach
 }
+
+/// A batting order while the coach builds it by hand: one spot per kid here, any of them still empty.
+/// `Lineup.battingOrder` is these spots with the gaps closed.
+public enum BattingSlots {
+    /// The spots to show: the saved ones if they still match the order, or the order followed by empty spots.
+    /// Kids who aren't here drop out, and there's one spot per kid who is.
+    public static func resolve(_ saved: [PlayerID?]?, order: [PlayerID], present: [PlayerID]) -> [PlayerID?] {
+        let here = Set(present)
+        let placed = order.filter(here.contains)
+        var slots: [PlayerID?]
+        if let saved, saved.compactMap({ $0 }).filter(here.contains) == placed {
+            slots = saved.map { $0.flatMap { here.contains($0) ? $0 : nil } }
+        } else {
+            slots = placed
+        }
+        while slots.count < present.count { slots.append(nil) }
+        while slots.count > present.count, slots.last == .some(nil) { slots.removeLast() }
+        return slots
+    }
+
+    /// Puts `player` in spot `index` (or the first empty one). A taken spot makes room: the kids there shift
+    /// toward the nearest empty spot, below if there is one, else above. Moving within a full order is an insert.
+    public static func place(_ player: PlayerID, at index: Int?, in slots: [PlayerID?]) -> [PlayerID?] {
+        var s = slots
+        if let from = s.firstIndex(of: player) { s[from] = nil }
+        guard let i = index ?? s.firstIndex(of: nil), s.indices.contains(i) else { return slots }
+        if s[i] == nil {
+            s[i] = player
+        } else if let k = s[(i + 1)...].firstIndex(of: nil) {
+            for m in stride(from: k, to: i, by: -1) { s[m] = s[m - 1] }
+            s[i] = player
+        } else if let k = s[..<i].lastIndex(of: nil) {
+            for m in k..<i { s[m] = s[m + 1] }
+            s[i] = player
+        } else {
+            return slots
+        }
+        return s
+    }
+}
