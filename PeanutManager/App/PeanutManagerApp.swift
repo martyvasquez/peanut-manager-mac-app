@@ -6,6 +6,9 @@ struct PeanutManagerApp: App {
     let container: ModelContainer
 
     init() {
+        #if DEBUG
+        if CloudKitCheck.requested { CloudKitCheck.run() }
+        #endif
         container = Self.makeContainer()
         AppUpdater.shared.start()
         #if DEBUG
@@ -41,9 +44,10 @@ struct PeanutManagerApp: App {
         #if DEBUG
         if let scratch = UserDefaults.standard.string(forKey: "PMStore"), !scratch.isEmpty { name = scratch }
         #endif
-        let configuration = ModelConfiguration(url: folder.appending(path: "\(name).store"))
+        // iCloud sync stays off until the App Store build turns it on; the models are already CloudKit-safe.
+        let configuration = ModelConfiguration(url: folder.appending(path: "\(name).store"), cloudKitDatabase: .none)
         do {
-            return try ModelContainer(for: Team.self, Player.self, RuleSet.self, Rule.self, Game.self, configurations: configuration)
+            return try ModelContainer(for: Schema(versionedSchema: LibrarySchemaV1.self), configurations: configuration)
         } catch {
             fatalError("Couldn't open the Peanut Manager library: \(error)")
         }

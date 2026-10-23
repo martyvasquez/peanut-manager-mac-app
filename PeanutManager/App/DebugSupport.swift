@@ -26,6 +26,7 @@ import LineupKit
 ///   -PMBattingCard Name  open the batting card (Batting Order step) for the first player whose name starts with Name
 ///   -PMPrintTo path      once the lineup is filled, print it to a PDF at path (no print panel)
 ///   -PMRunEval YES       run the model eval on this (copied) library; see EvalRunner
+///   -PMCheckCloudKit YES check the schema against CloudKit's rules (and kids' data is encrypted), print, quit
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }
     static var fakeAI: Bool { UserDefaults.standard.bool(forKey: "PMFakeAI") }

@@ -101,6 +101,7 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMSignedOut YES` | Act signed out of ChatGPT; your real sign-in stays in the keychain |
 | `-PMShowSignIn YES` | Show the Sign in with ChatGPT sheet that follows creating the first team |
 | `-PMRunEval YES` | Run the model eval on this library (see **Model eval** below) |
+| `-PMCheckCloudKit YES` | Check the schema against CloudKit's rules and list which fields are encrypted, then quit |
 
 ## Model eval
 

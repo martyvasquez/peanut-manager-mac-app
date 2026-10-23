@@ -76,6 +76,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 - **Sample team** has made-up Best positions (the export has none), for demos and App Review.
 - **Signing:** local builds are signed with Marty's Developer ID (team `G88C7HMHUJ`), so the keychain's Always Allow sticks across builds; test modes (`-PMNoAI`, `-PMFakeAI`) never read the keychain. CI still signs ad-hoc.
 - **Tests:** LineupKit 91, LineupAI 33.
+- **Ready for iCloud sync (Oct 23):** every model attribute has a default or is optional; relationships are optional with inverses (`RuleSet.gameList` added); stored lists renamed `playerList` / `gameList` / `ruleSetList` / `ruleList` with `originalName`, and the old names (`players`, …) are read-only. Everything about a kid is end-to-end encrypted in iCloud (`.allowsCloudEncryption`: player name, jersey, notes, profile, ratings, stats, assessments; team assessment; game attendance, lineup, versions, scouting report, notes for the AI; rule text). That choice can't change once the schema is in production, so new fields about kids need it from the start. `LibrarySchemaV1` versions the schema; sync is explicitly off (`cloudKitDatabase: .none`) until the App Store build. `-PMCheckCloudKit YES` checks the rules. Tested: a library made by the previous build opens with every kid, rule and lineup intact. A lineup is ~10 KB, so 30 versions stay under CloudKit's 1 MB record limit (and larger values go to assets automatically).
 
 ### Still to do (priority order)
 
@@ -93,8 +94,9 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Listing: screenshots, description (don't imply a GameChanger affiliation), age rating.
    - TestFlight replaces Sparkle for testers.
 2. **iCloud sync (SwiftData + CloudKit).**
-   - Make the models CloudKit-safe **before the first App Store release**: every attribute has a default or is optional, every relationship is optional, no unique constraints (none today). Once the schema is deployed to production, changes can only add.
-   - Large blobs (stats, lineup documents) may need `.externalStorage`.
+   - Models are CloudKit-safe and kids' data is encrypted (Done, Oct 23). Once the schema is deployed to production, changes can only add.
+   - **Turn sync on in the first App Store build** so coaches' data is in iCloud before the iPad app ships: iCloud + CloudKit entitlement, container `iCloud.com.martyvasquez.PeanutManager`, remote-notification push, `cloudKitDatabase: .automatic`, deploy the schema to production in the CloudKit console.
+   - First launch on a new device: wait for iCloud before showing "Create a team / Try a Sample," or the coach makes a duplicate team.
    - Conflicts: last writer wins per record. `LineupDocument` is one blob, which is fine for one coach editing; sharing a team with assistant coaches (CloudKit sharing) is a later project.
    - Claude key in iCloud Keychain (synchronizable), so it's entered once. ChatGPT tokens stay per device (refresh tokens rotate).
    - Stats sync with the players; nothing extra.

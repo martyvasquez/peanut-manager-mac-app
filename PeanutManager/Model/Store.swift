@@ -4,28 +4,35 @@ import LineupKit
 
 // Local SwiftData store. Structured values (profiles, ratings, stats, lineups) are stored as JSON blobs
 // of LineupKit types so the domain package stays the single source of truth for their shape.
+//
+// Ready for iCloud (CloudKit) sync: every attribute has a default or is optional, every relationship is
+// optional with an inverse, and nothing is unique. Once the schema is in production it can only grow.
+// Anything about a kid is end-to-end encrypted in iCloud (`.allowsCloudEncryption`), and that choice
+// can't be changed later, so new fields about kids need it from the start.
 
 @Model
 final class Team {
-    var uid: UUID
-    var name: String
-    var ageGroup: String
-    var defaultInnings: Int
-    var createdAt: Date
+    var uid = UUID()
+    var name = ""
+    var ageGroup = ""
+    var defaultInnings = 6
+    var createdAt = Date.now
     var statsImportedAt: Date?
-    var assessmentData: Data?
+    @Attribute(.allowsCloudEncryption) var assessmentData: Data?
 
-    @Relationship(deleteRule: .cascade, inverse: \Player.team) var players: [Player] = []
-    @Relationship(deleteRule: .cascade, inverse: \RuleSet.team) var ruleSets: [RuleSet] = []
-    @Relationship(deleteRule: .cascade, inverse: \Game.team) var games: [Game] = []
+    @Relationship(deleteRule: .cascade, originalName: "players", inverse: \Player.team) var playerList: [Player]?
+    @Relationship(deleteRule: .cascade, originalName: "ruleSets", inverse: \RuleSet.team) var ruleSetList: [RuleSet]?
+    @Relationship(deleteRule: .cascade, originalName: "games", inverse: \Game.team) var gameList: [Game]?
 
     init(name: String, ageGroup: String = "", defaultInnings: Int = 6) {
-        self.uid = UUID()
         self.name = name
         self.ageGroup = ageGroup
         self.defaultInnings = defaultInnings
-        self.createdAt = .now
     }
+
+    var players: [Player] { playerList ?? [] }
+    var ruleSets: [RuleSet] { ruleSetList ?? [] }
+    var games: [Game] { gameList ?? [] }
 
     var activePlayers: [Player] { players.filter(\.active).sorted { $0.sortIndex < $1.sortIndex } }
     var sortedPlayers: [Player] { players.sorted { ($0.active ? 0 : 1, $0.sortIndex) < ($1.active ? 0 : 1, $1.sortIndex) } }
@@ -39,24 +46,21 @@ final class Team {
 
 @Model
 final class Player {
-    var uid: UUID
-    var name: String
-    var jersey: String
-    var active: Bool
-    var notes: String
-    var sortIndex: Int
-    var profileData: Data
-    var ratingsData: Data
-    var statsData: Data?
-    var assessmentData: Data?
+    var uid = UUID()
+    @Attribute(.allowsCloudEncryption) var name = ""
+    @Attribute(.allowsCloudEncryption) var jersey = ""
+    var active = true
+    @Attribute(.allowsCloudEncryption) var notes = ""
+    var sortIndex = 0
+    @Attribute(.allowsCloudEncryption) var profileData = Data()
+    @Attribute(.allowsCloudEncryption) var ratingsData = Data()
+    @Attribute(.allowsCloudEncryption) var statsData: Data?
+    @Attribute(.allowsCloudEncryption) var assessmentData: Data?
     var team: Team?
 
     init(name: String, jersey: String = "", sortIndex: Int = 0) {
-        self.uid = UUID()
         self.name = name
         self.jersey = jersey
-        self.active = true
-        self.notes = ""
         self.sortIndex = sortIndex
         self.profileData = (try? JSONEncoder().encode(PositionProfile.default)) ?? Data()
         self.ratingsData = (try? JSONEncoder().encode(Ratings())) ?? Data()
@@ -109,32 +113,32 @@ final class Player {
 
 @Model
 final class RuleSet {
-    var name: String
-    var createdAt: Date
+    var name = ""
+    var createdAt = Date.now
     var team: Team?
-    @Relationship(deleteRule: .cascade, inverse: \Rule.ruleSet) var rules: [Rule] = []
+    @Relationship(deleteRule: .cascade, originalName: "rules", inverse: \Rule.ruleSet) var ruleList: [Rule]?
+    /// Games played under this rule set; deleting the set leaves them without one.
+    @Relationship(deleteRule: .nullify, inverse: \Game.ruleSet) var gameList: [Game]?
 
     init(name: String) {
         self.name = name
-        self.createdAt = .now
     }
 
+    var rules: [Rule] { ruleList ?? [] }
     var sortedRules: [Rule] { rules.sorted { $0.order < $1.order } }
 }
 
 @Model
 final class Rule {
-    var uid: UUID
-    var text: String
-    var enabled: Bool
-    var order: Int
+    var uid = UUID()
+    @Attribute(.allowsCloudEncryption) var text = ""
+    var enabled = true
+    var order = 0
     var checkData: Data?
     var ruleSet: RuleSet?
 
     init(text: String, order: Int, check: RuleCheck? = nil) {
-        self.uid = UUID()
         self.text = text
-        self.enabled = true
         self.order = order
         self.checkData = check.flatMap { try? JSONEncoder().encode($0) }
     }
@@ -149,29 +153,25 @@ final class Rule {
 
 @Model
 final class Game {
-    var opponent: String
-    var date: Date
-    var innings: Int
-    var priorityRaw: String
-    var weightingRaw: String
-    var scoutingReport: String
-    var notesForAI: String
+    var opponent = ""
+    var date = Date.now
+    var innings = 6
+    var priorityRaw = GamePriority.balanced.rawValue
+    var weightingRaw = DataWeighting.equal.rawValue
+    @Attribute(.allowsCloudEncryption) var scoutingReport = ""
+    @Attribute(.allowsCloudEncryption) var notesForAI = ""
     var ourScore: Int?
     var theirScore: Int?
-    var availabilityData: Data
-    var documentData: Data?
-    var historyData: Data
-    @Relationship(deleteRule: .nullify) var ruleSet: RuleSet?
+    @Attribute(.allowsCloudEncryption) var availabilityData = Data()
+    @Attribute(.allowsCloudEncryption) var documentData: Data?
+    @Attribute(.allowsCloudEncryption) var historyData = Data()
+    var ruleSet: RuleSet?
     var team: Team?
 
     init(opponent: String, date: Date, innings: Int) {
         self.opponent = opponent
         self.date = date
         self.innings = innings
-        self.priorityRaw = GamePriority.balanced.rawValue
-        self.weightingRaw = DataWeighting.equal.rawValue
-        self.scoutingReport = ""
-        self.notesForAI = ""
         self.availabilityData = (try? JSONEncoder().encode([PlayerID: Availability]())) ?? Data()
         self.historyData = (try? JSONEncoder().encode([LineupVersion]())) ?? Data()
     }
@@ -252,4 +252,11 @@ nonisolated struct LineupVersion: Codable, Hashable, Identifiable, Sendable {
     var savedAt: Date
     var label: String
     var document: LineupDocument
+}
+
+/// The library's schema. CloudKit allows only additive changes once it's in production, so a later version
+/// adds fields or models (with defaults) and never renames or removes them.
+nonisolated enum LibrarySchemaV1: VersionedSchema {
+    static let versionIdentifier = Schema.Version(1, 0, 0)
+    static var models: [any PersistentModel.Type] { [Team.self, Player.self, RuleSet.self, Rule.self, Game.self] }
 }
