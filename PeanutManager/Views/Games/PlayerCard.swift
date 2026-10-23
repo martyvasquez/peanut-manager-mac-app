@@ -8,38 +8,41 @@ struct PlayerCard: View {
     let model: GameModel
     let player: PlayerSnapshot
 
-    private static let scale: CGFloat = 0.72
+    private static let scale: CGFloat = 0.66
 
     var body: some View {
         let ranks = model.game.team?.ranks
         let profile = player.profile
 
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(player.name).font(.title3.weight(.semibold))
-                if let jersey = player.jersey { Text("#\(jersey)").foregroundStyle(.secondary) }
+        // Wide rather than tall, so it fits inside the window even from the last row.
+        HStack(alignment: .top, spacing: 22) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(player.name).font(.title3.weight(.semibold))
+                    if let jersey = player.jersey { Text("#\(jersey)").foregroundStyle(.secondary) }
+                }
+                if let game = thisGame { section("This Game") { Text(game) } }
+                field(profile)
             }
+            .frame(width: FieldGeometry.size.width * Self.scale, alignment: .leading)
 
-            if let game = thisGame { section("This Game") { Text(game) } }
-
-            field(profile)
-
-            fielding(ranks)
-
-            if profile.canPlay(.p) { pitching(ranks) }
-            if profile.canPlay(.c) { catching }
-
-            if !player.notes.isEmpty {
-                section("Notes") { Text(player.notes).fixedSize(horizontal: false, vertical: true) }
+            VStack(alignment: .leading, spacing: 14) {
+                fielding(ranks)
+                if profile.canPlay(.p) { pitching(ranks) }
+                if profile.canPlay(.c) { catching }
+                if !player.notes.isEmpty {
+                    section("Notes") { Text(player.notes).lineLimit(4).fixedSize(horizontal: false, vertical: true) }
+                }
+                Spacer(minLength: 0)
+                if let stored = model.game.team?.players.first(where: { $0.uid == player.id }) {
+                    Button("Open in Roster") { Navigator.shared.open(stored, tab: .evaluation) }
+                        .buttonStyle(.link)
+                }
             }
-
-            if let stored = model.game.team?.players.first(where: { $0.uid == player.id }) {
-                Button("Open in Roster") { Navigator.shared.open(stored, tab: .evaluation) }
-                    .buttonStyle(.link)
-            }
+            .frame(width: 260, alignment: .leading)
         }
         .padding(18)
-        .frame(width: 300, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: Sections
