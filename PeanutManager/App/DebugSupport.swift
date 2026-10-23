@@ -22,6 +22,7 @@ import LineupKit
 ///   -PMCopyLastGame YES  copy the last game's lineup into an empty game when it opens
 ///   -PMHoverInning N     show inning N's header as if hovered (its menu button)
 ///   -PMDiamond N         open inning N on the field (the diamond popover)
+///   -PMPlayerCard Name   open the player card for the first player whose name starts with Name
 ///   -PMRunEval YES       run the model eval on this (copied) library; see EvalRunner
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }

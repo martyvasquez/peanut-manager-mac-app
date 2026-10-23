@@ -25,6 +25,7 @@ struct LineupGridView: View {
     @State private var hoveredInning: Int?
     @State private var hoveredRow: PlayerID?
     @State private var diamondInning: Int?
+    @State private var cardPlayer: PlayerID?
 
     // Sized to fill the available width, within comfortable limits.
     private var nameWidth: CGFloat { min(max(width * 0.26, 200), 280) }
@@ -95,6 +96,10 @@ struct LineupGridView: View {
             }
             let hover = UserDefaults.standard.integer(forKey: "PMHoverInning")
             if hover > 0 { hoveredInning = hover }
+            if let name = UserDefaults.standard.string(forKey: "PMPlayerCard"), model.hasGrid {
+                try? await Task.sleep(for: .milliseconds(400))
+                cardPlayer = rows.first { $0.name.hasPrefix(name) }?.id
+            }
             let diamond = UserDefaults.standard.integer(forKey: "PMDiamond")
             if diamond > 0, model.hasGrid { try? await Task.sleep(for: .milliseconds(400)); diamondInning = diamond }
         }
@@ -248,7 +253,11 @@ struct LineupGridView: View {
             Text(player.name).font(.title3).padding(.horizontal, 12).padding(.vertical, 6)
                 .background(.regularMaterial, in: Capsule())
         }
-        .help(model.document.battingReasons[player.id] ?? "")
+        .onTapGesture { cardPlayer = player.id }
+        .popover(isPresented: Binding(get: { cardPlayer == player.id }, set: { if !$0 { cardPlayer = nil } }), arrowEdge: .trailing) {
+            PlayerCard(model: model, player: player)
+        }
+        .help(model.document.battingReasons[player.id] ?? "Click for \(player.name.components(separatedBy: " ").first ?? player.name)'s positions and stats")
         .contextMenu {
             Button("Move Up") { model.moveBatter(player.id, by: -1, undoManager: undoManager) }
             Button("Move Down") { model.moveBatter(player.id, by: 1, undoManager: undoManager) }
