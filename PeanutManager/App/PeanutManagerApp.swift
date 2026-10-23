@@ -10,7 +10,6 @@ struct PeanutManagerApp: App {
         if CloudKitCheck.requested { CloudKitCheck.run() }
         #endif
         container = Self.makeContainer()
-        AppUpdater.shared.start()
         #if DEBUG
         if EvalRunner.requested { Task { [container] in await EvalRunner.run(container: container) } }
         #endif
@@ -25,10 +24,6 @@ struct PeanutManagerApp: App {
         .modelContainer(container)
         .commands {
             SidebarCommands()
-            CommandGroup(after: .appInfo) {
-                Button("Check for Updates…") { AppUpdater.shared.checkForUpdates() }
-                    .disabled(!AppUpdater.shared.canCheck)
-            }
         }
 
         Settings {

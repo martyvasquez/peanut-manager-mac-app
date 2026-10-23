@@ -22,7 +22,7 @@ Free and local-first. The AI runs on your ChatGPT plan: sign in with ChatGPT, no
 
 ## What's next (short version)
 
-1. **Stable code signing**, so updates stop asking for the keychain password.
+1. **Mac App Store** release, with iCloud sync on from the start.
 2. Assessments, part two: feed them into lineups (after evals), coach pushback, history.
 3. **Evals**: golden lineup, assessment and rule sets to compare models and prompts.
 4. **Printing and sharing** that's actually tested (lineup card, PDF, copy as text).
@@ -32,11 +32,9 @@ Free and local-first. The AI runs on your ChatGPT plan: sign in with ChatGPT, no
 
 Full list with details: [`docs/v2-plan.md` → Build status](docs/v2-plan.md#build-status-oct-2-2026).
 
-## Install and updates
+## Install
 
-Download `PeanutManager.zip` from [the latest release](https://github.com/martyvasquez/peanut-manager-mac-app/releases/latest), unzip, drag to Applications. The first open shows "Apple could not verify…": **System Settings → Privacy & Security → Open Anyway**.
-
-After that the app updates itself on launch. Every push to `main` that changes the app is built, signed and released by `.github/workflows/release-mac.yml` (Sparkle; see `docs/v2-plan.md` item 1).
+The app will ship on the Mac App Store (TestFlight for testers before that). Until then, build it from source (below) and copy `build/Build/Products/Debug/Peanut Manager.app` to Applications.
 
 ## Layout
 

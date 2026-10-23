@@ -43,4 +43,4 @@ Build, launch a scratch instance with debug flags, and screenshot the window (`C
 
 ## Commits
 
-Commit at each meaningful step with a descriptive message. Push to `origin main` (https://github.com/martyvasquez/peanut-manager-mac-app) only when the owner asks. Once Sparkle is set up, pushing app changes to `main` ships them to every installed copy.
+Commit at each meaningful step with a descriptive message. Push to `origin main` (https://github.com/martyvasquez/peanut-manager-mac-app) only when the owner asks. Pushing ships nothing: Sparkle was removed (Oct 23); the App Store and TestFlight are the only way out.

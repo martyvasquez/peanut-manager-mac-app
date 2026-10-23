@@ -9,11 +9,11 @@
 
 ## Build status (Oct 22, 2026)
 
-Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID `com.martyvasquez.PeanutManager`, macOS 26+. Marty uses it with a real team (SMV Trojans, LL Majors). Today it ships through Sparkle from GitHub Releases; next it goes to the Mac App Store, then sync, then iPad and iPhone.
+Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID `com.martyvasquez.PeanutManager`, macOS 26+. Marty uses it with a real team (SMV Trojans, LL Majors). Sparkle was removed on Oct 23 (no one else used it); Marty runs local builds until the Mac App Store, which ships with iCloud sync, then iPad and iPhone.
 
 ### Decided (Oct 22)
 
-- **Apple distribution.** Ship on the Mac App Store; Sparkle comes out of that build. Free, and the source stays public under an open-source license, which keeps Sign in with ChatGPT on OpenAI's self-serve open-source path (paid or closed apps need OpenAI's partner program).
+- **Apple distribution.** Ship on the Mac App Store (TestFlight for testers). Free, and the source stays public under an open-source license, which keeps Sign in with ChatGPT on OpenAI's self-serve open-source path (paid or closed apps need OpenAI's partner program).
 - **The app works fully without AI.** The core is making lineups by hand faster than a spreadsheet: drag kids into the batting order, pick positions on a board where a taken spot swaps (two kids can never share one), copy a previous game. AI is an extra button on the same screens, never a gate. Code never fills spots on its own.
 - **Keep both AI options** (ChatGPT plan and a Claude API key) and see which coaches use. ChatGPT plan use needs Go, Plus or Pro; Claude API credits come with Max and Team (not Pro), otherwise coaches buy credits.
 - **Sync is iCloud** (SwiftData + CloudKit). Stats ride along: they live on each player record.
@@ -22,8 +22,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 
 - **Add All in the batting order** adds kids in batting-average order (the Players column is sorted that way). Close to the app proposing an order; the alternative is roster order with the sort only as a guide.
 - **License:** MIT recommended (Apache 2.0 also fine; not GPL, which conflicts with App Store terms).
-- **Sparkle users:** last Sparkle release points to the App Store; data moves with a container migration (same bundle ID) or an export/import.
-- **CI signing until then:** Sparkle builds are still ad-hoc, so each update asks for the keychain once. Fix by putting the Developer ID certificate in GitHub secrets, or accept it until the App Store build.
+- **Moving Marty's library into the sandbox:** same bundle ID → `container-migration.plist`, or an export/import.
 
 ### Done
 
@@ -57,7 +56,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 - **Settings:** Sign in with ChatGPT (account, Manage Usage, Sign Out) or a Claude API key (checked, kept in the keychain); Model (a saved Claude key makes Claude Sonnet 5.5 the default; otherwise the newest Luna); Thinking (Default = Medium).
 - **App:** icon and accent color; local SwiftData store in its own folder; debug launch flags (README).
 
-- **Distribution:** Sparkle 2 auto-update from GitHub Releases (EdDSA, `release-mac.yml`, build N = run number + 100). Bundle ID, feed URL, public key, asset name and tag format are fixed forever for Sparkle users. Pushing to `main` ships to every installed copy.
+- **Distribution:** Sparkle and `release-mac.yml` removed (Oct 23); no one else used them. Pushing to `main` ships nothing. Old GitHub Releases still exist but nothing reads them.
 - **Sign in with ChatGPT** (OpenAI's self-serve flow for open-source apps; see the reference below) and a **Claude API key**.
 - **Lineups without AI (Oct 22):**
   - The game screen no longer stops at "Sign in" without AI. AI-only chips (priority, trust), Notes and lock icons hide; the model chip reads **Set Up AI**.
@@ -83,7 +82,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 1. **Mac App Store.**
    - License: add `LICENSE` (MIT recommended) and a README line that the name and icon aren't covered.
    - Accounts: confirm the Apple Developer Program membership for team `G88C7HMHUJ` is active; create the App Store Connect record; check the name.
-   - Sparkle out of the App Store build (a separate scheme, or remove it once Sparkle users have moved). Last Sparkle release tells users to switch.
+   - ~~Sparkle out~~ Done (Oct 23): removed entirely.
    - App Sandbox and entitlements: network client; network server (the ChatGPT loopback callback on 127.0.0.1); user-selected files read-only (CSV import); printing. Test Sign in with ChatGPT under the sandbox.
    - Data: the store moves into the app's container. Same bundle ID → `container-migration.plist`; otherwise export/import.
    - **AI consent (App Review 5.1.2(i)):** a one-time screen naming OpenAI or Anthropic before kids' data is sent. Consider sending pseudonyms and mapping back locally (extends `PromptIDs`).
@@ -92,7 +91,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Debug code: `EvalRunner` and the debug flags are already `#if DEBUG`; confirm nothing ships in Release.
    - App Review: the app already works without AI. Add a sample team with recorded AI results (a lineup and insights), labeled as a sample, and say how to try it in the review notes.
    - Listing: screenshots, description (don't imply a GameChanger affiliation), age rating.
-   - TestFlight replaces Sparkle for testers.
+   - TestFlight for testers.
 2. **iCloud sync (SwiftData + CloudKit).**
    - Models are CloudKit-safe and kids' data is encrypted (Done, Oct 23). Once the schema is deployed to production, changes can only add.
    - **Turn sync on in the first App Store build** so coaches' data is in iCloud before the iPad app ships: iCloud + CloudKit entitlement, container `iCloud.com.martyvasquez.PeanutManager`, remote-notification push, `cloudKitDatabase: .automatic`, deploy the schema to production in the CloudKit console.
@@ -109,7 +108,6 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Player card: rule limits for pitchers and catchers; the same card from the diamond and from batting-order chips (batting stats there).
    - The chip slide animation (removed: chips got stranded when several moved at once).
    - Needs Marty's hands: every drag (batting order, grid swaps, innings, diamond), hover menus and highlights, Edit Player… changes showing in the grid.
-5. **Stable signing for Sparkle builds** (only while Sparkle remains): Developer ID certificate in GitHub secrets, then sign (and ideally notarize) in `release-mac.yml`.
 6. **AI player & team assessments (§5, M3).** First slice built.
    - Done: `FactSheet` (stats, ratings, positions, notes as citable fact IDs; team rates from counts), `Scout` (v1's analysis prompts ported, with ratings/notes/positions as inputs and fact-ID citations; one retry when a citation doesn't exist, then it's dropped), cached `PlayerAssessment` / `TeamAssessment` on `Player` / `Team`, stale when the player's facts change.
    - Done: player page tabs (Stats · Scouting Report · Coach's Evaluation; the last tab is remembered); Stats & Insights section replacing Stats and Insights (Team Summary · Players · Stats); Insights content (team summary, strengths/work on with evidence chips, leadoff / middle / defensive core, practice plan, every player in a line). "Assess Team" re-assesses only changed players, three at a time, then the team.
@@ -215,7 +213,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
   3. **App: done (build 105).** `AIService` owns the sign-in (keychain), the account's model list and the model and thinking choices; one client factory for `GameModel` and `ScoutRunner`; Settings card (account, Sign Out, Manage Usage). Signed out, the AI actions become Sign In with ChatGPT and a sheet after the first team offers it (Continue / Later).
   4. **Polish: done.** One-time "You're using your ChatGPT plan" message, "Using ChatGPT plan · Manage Usage" in the model menu, usage-limit alert with Manage Usage.
   5. **Check quality (left):** same games on Marty's team across Sol / Terra / Astra and thinking levels; feeds the evals work (item 5).
-- Risks: new program; terms and access can change. Re-read OpenAI's terms before shipping it via Sparkle.
+- Risks: new program; terms and access can change. Re-read OpenAI's terms before shipping it.
 - Supersedes the earlier "drive the `codex` CLI" idea. Using a Claude subscription through the `claude` CLI is still only an idea (item 9).
 
 ---
@@ -269,7 +267,7 @@ v2 keeps what made v1 good (plain-language rules, coach control, GameChanger dat
    - **A last-resort minimal repair** that is always disclosed to the coach.
 
    Compliance is computed by code, never self-reported by the model.
-2. **Local-first, no accounts, free.** A native SwiftUI Mac app stores data on disk. There is no Supabase, auth, Stripe or marketing site. AI is optional: it runs on the coach's own ChatGPT plan (Sign in with ChatGPT) or their own Claude API key; OpenRouter BYOK was the original design and was removed on Oct 3. Sparkle handles updates from GitHub Releases today; the Mac App Store is next (Oct 22).
+2. **Local-first, no accounts, free.** A native SwiftUI Mac app stores data on disk. There is no Supabase, auth, Stripe or marketing site. AI is optional: it runs on the coach's own ChatGPT plan (Sign in with ChatGPT) or their own Claude API key; OpenRouter BYOK was the original design and was removed on Oct 3. Updates will come from the Mac App Store (decided Oct 22; Sparkle removed Oct 23).
 3. **Season-aware, game-day-ready.** Playing-time and pitching history carry across games. Lineups persist with full edit history. Game-day mode handles mid-game changes. Lineup cards print properly.
 
 The web app will be retired. It has no active users, and v1 data is not carried over. The Mac app starts fresh and fully local.
@@ -648,7 +646,7 @@ AI work splits into named **tasks**. Each has a shipped default model and a user
 
 - **Picker UI:** fetch `/api/v1/models`, filter to models whose `supported_parameters` include `structured_outputs` / `response_format`, and show price per million tokens and context size. Include a "Recommended" badge and a "Reset to default."
 - **Default slugs** are pinned in a bundled `models.json` and set at implementation time: a current Claude Sonnet-class model for reasoning and a Haiku-class model for fast tasks.
-  - That file can update through Sparkle releases, so the code doesn't hard-code slugs.
+  - That file can update with app releases, so the code doesn't hard-code slugs.
 - **Evals make swapping safe.** A golden test set (§10) runs against any model. The picker can show results for models we've tested, e.g. "valid on first try 17/20, avg 0.3 revisions, $0.04/lineup."
 
 ### 8.3 Prompt design changes vs v1
@@ -709,7 +707,7 @@ Most rule interpretations then resolve instantly and cheaply. Feedback becomes a
 | Secrets | Keychain: the ChatGPT sign-in and the Claude API key (OpenRouter was removed Oct 3) |
 | Networking | `URLSession` + `Codable`; no SDK dependencies |
 | Project | XcodeGen (`project.yml`), as in the Situations app |
-| Updates | Today: Sparkle 2 per `baseball-situational-simulator/docs/mac-auto-update-playbook.md` (EdDSA, GitHub Releases, `release-mac.yml`, public repo). Next: the Mac App Store. |
+| Updates | The Mac App Store (TestFlight for testers). Sparkle was used until Oct 23, then removed. |
 | Distribution | Today: free GitHub Release zip. Next (decided Oct 22): free on the Mac App Store, then iPad and iPhone; source stays public. |
 | Tests | Swift Testing. The validator/feasibility/repair/parser package must be heavily tested. CI runs tests before release (already part of the playbook workflow). |
 
