@@ -15,7 +15,7 @@ import LineupKit
 ///   -PMOpenPicker YES    open the position picker on the third batter, inning 1
 ///   -PMScrollToChecks YES scroll to the game plan and checks once a lineup exists
 ///   -PMAssessTeam YES    assess the team as soon as Insights opens
-///   -PMFlakyScout YES    fake Scout: Player03 times out once, Player05 always times out
+///   -PMFlakyScout YES    fake Scout: Nguyen times out once, Brooks always times out
 ///   -PMSignedOut YES     act signed out of ChatGPT (the real sign-in stays in the keychain)
 ///   -PMShowSignIn YES    show the after-first-team Sign in with ChatGPT sheet
 ///   -PMFakeClaudeKey YES act as if a Claude API key is saved (in memory only; the keychain is untouched)
@@ -129,11 +129,11 @@ struct FakeLLMClient: LLMClient {
         let prompt = request.messages.first?.content ?? ""
         if request.system.contains("player analyst") {
             if DebugSupport.flakyScout {
-                // Player03 times out once, then answers; Player05 always times out.
+                // Nguyen times out once, then answers; Brooks always times out.
                 let name = prompt.firstMatch(of: /PLAYER: ([^\n]+)/).map { String($0.1) } ?? ""
                 try await Task.sleep(for: .seconds(3))
                 let attempt = Self.attempts.withLock { counts in counts[name, default: 0] += 1; return counts[name]! }
-                if name.contains("Player05") || (name.contains("Player03") && attempt == 1) { throw URLError(.timedOut) }
+                if name.contains("Brooks") || (name.contains("Nguyen") && attempt == 1) { throw URLError(.timedOut) }
             }
             return Self.scoutPlayer(prompt)
         }

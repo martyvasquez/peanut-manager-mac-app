@@ -1,7 +1,7 @@
 {
  "players": [
   {
-   "name": "Alex Player01",
+   "name": "Alex Rivera",
    "id": "39529C2D-5415-436B-92D1-D483A7CBDAB8",
    "assessment": {
     "assessedAt": 814489507.48722,
@@ -276,7 +276,7 @@
    }
   },
   {
-   "name": "Blake Player02",
+   "name": "Blake Thompson",
    "id": "2EB639FA-B9E1-4BE0-AC69-478201E222D5",
    "assessment": {
     "assessedAt": 814489507.543167,
@@ -592,7 +592,7 @@
    }
   },
   {
-   "name": "Casey Player03",
+   "name": "Casey Nguyen",
    "id": "42D1BBDF-AA8B-4F04-9F40-872902FBDAE6",
    "assessment": {
     "assessedAt": 814489506.935603,
@@ -904,7 +904,7 @@
    }
   },
   {
-   "name": "Drew Player04",
+   "name": "Drew Patel",
    "id": "70588014-989D-445C-B5E0-A5EBD18C08D4",
    "assessment": {
     "weaknesses": [
@@ -1167,7 +1167,7 @@
    }
   },
   {
-   "name": "Eli Player05",
+   "name": "Eli Brooks",
    "id": "A0FD4E6F-7FC6-4A19-9AD6-008C78531D6F",
    "assessment": {
     "weaknesses": [
@@ -1482,7 +1482,7 @@
    }
   },
   {
-   "name": "Finn Player06",
+   "name": "Finn Carter",
    "id": "74978BC0-7FB2-44E6-A3EE-828DDEA59BA1",
    "assessment": {
     "weaknesses": [
@@ -1762,7 +1762,7 @@
    }
   },
   {
-   "name": "Gray Player07",
+   "name": "Gray Mitchell",
    "id": "A7AE1B0F-F841-4164-B652-4DB1E4D394C5",
    "assessment": {
     "model": "Sample · Claude Sonnet 5.5",
@@ -2081,7 +2081,7 @@
    }
   },
   {
-   "name": "Hayden Player08",
+   "name": "Hayden Park",
    "id": "B4731280-8C88-4C2C-BC37-235EC0B1D667",
    "assessment": {
     "weaknesses": [
@@ -2421,7 +2421,7 @@
    }
   },
   {
-   "name": "Indy Player09",
+   "name": "Indy Morales",
    "id": "B959CE63-61CC-4088-B3BD-E3808E5F8978",
    "assessment": {
     "model": "Sample · Claude Sonnet 5.5",
@@ -2686,7 +2686,7 @@
    }
   },
   {
-   "name": "Jules Player10",
+   "name": "Jules Bennett",
    "id": "8C53A2A1-F47D-4989-8EDA-0EE58F87EA7C",
    "assessment": {
     "eyeVsData": "The stats show a very strong hitter, but the coach has no batting ratings to confirm it, and 20 plate appearances is a small sample, so trust the on-base and speed signals more than the power numbers. Defensively, the perfect fielding percentage comes from only 4 chances, so trust the coach's ratings over it, especially the below-average throwing marks.",
@@ -2997,7 +2997,7 @@
    }
   },
   {
-   "name": "Kai Player11",
+   "name": "Kai Foster",
    "id": "A46F7FDF-D5FA-4BD7-8981-70A09FEB967F",
    "assessment": {
     "eyeVsData": "The coach's best-position choice of CF sits oddly beside a low fly ball rating, and only 3 chances give no stats to settle it, so trust the coach's eye. On the mound, the coach rates the arm highly while the results are poor. With only 3.1 innings, the walks may reflect control that is still developing rather than a true level, though the walk rate is worth working on. The hitting numbers are very high for a small sample and will likely settle lower.",
@@ -3310,7 +3310,7 @@
    }
   },
   {
-   "name": "Lane Player12",
+   "name": "Lane Sullivan",
    "id": "12063BCB-2DAB-4953-81FA-3AF2C8557519",
    "assessment": {
     "weaknesses": [

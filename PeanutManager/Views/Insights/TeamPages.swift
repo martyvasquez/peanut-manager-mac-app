@@ -44,7 +44,8 @@ struct SideCard: View {
 
     private func line(_ kind: String, _ text: String) -> some View {
         (Text(kind + "  ").foregroundStyle(.secondary).font(.callout) + Text(text).fontWeight(.medium))
-            .lineLimit(1)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     /// Two or fewer catchers or pitchers is a real gap.

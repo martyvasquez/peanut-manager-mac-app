@@ -110,6 +110,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
    - Spike first (half a day): does the ChatGPT loopback callback work inside `ASWebAuthenticationSession` on iOS? If not, iOS is Claude-key only until OpenAI supports mobile redirects.
    - iPad first (the dugout device), one universal purchase.
 4. **Lineup screens, follow-ups.**
+   - Insights → Offense, batting groups: on the small sample the Scout called eight kids table-setters, so "Top" holds eight and "Middle" shows "–". Groups should balance (code, from OBP/SLG ranks) or the prompt should spread zones; gate a prompt change on evals.
    - Decide the Add All order (above).
    - Player card: rule limits for pitchers and catchers; the same card from the diamond and from batting-order chips (batting stats there).
    - The chip slide animation (removed: chips got stranded when several moved at once).
