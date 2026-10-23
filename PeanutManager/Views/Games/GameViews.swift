@@ -228,6 +228,9 @@ struct GameDetailView: View {
             #endif
         }
         #if DEBUG
+        .onChange(of: model.isFilled) {
+            if model.isFilled && UserDefaults.standard.string(forKey: "PMPrintTo") != nil { LineupCardPrinter.print(model: model) }
+        }
         .onChange(of: model.hasBattingOrder) {
             if DebugSupport.autoPositions && DebugSupport.autoFills(game) && model.hasBattingOrder && !model.isFilled { model.setPositions(undoManager: undoManager) }
             if UserDefaults.standard.bool(forKey: "PMOpenPositions") && model.hasBattingOrder {

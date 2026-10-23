@@ -24,6 +24,7 @@ import LineupKit
 ///   -PMDiamond N         open inning N on the field (the diamond popover)
 ///   -PMPlayerCard Name   open the player card for the first player whose name starts with Name
 ///   -PMBattingCard Name  open the batting card (Batting Order step) for the first player whose name starts with Name
+///   -PMPrintTo path      once the lineup is filled, print it to a PDF at path (no print panel)
 ///   -PMRunEval YES       run the model eval on this (copied) library; see EvalRunner
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }
