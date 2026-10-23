@@ -557,16 +557,21 @@ struct StepLink: View {
     }
 }
 
-/// Step 1: the batting order as a list. Drag to reorder; each player's reason sits beside them.
-/// Step 1. The order on the left; everyone here who isn't in it yet waits on the right.
-/// Drag a player into a spot (or double-click to add them at the end), drag to reorder, drag back to take them out.
+/// Step 1. The order on the left; everyone here who isn't in it yet waits on the right, each chip level with an open spot.
+/// Spots and chips are the same shape, so a kid drops in like a puzzle piece. Drag a kid into a spot (or double-click to
+/// add them at the end), drag to reorder, drag back to take them out.
 struct BattingOrderList: View {
     let model: GameModel
     @Environment(\.undoManager) private var undoManager
     @State private var dragging: PlayerID?
     @State private var dropTarget: DropSpot?
+    /// A kid's chip flies between the players and their spot.
+    @Namespace private var chips
 
-    private let rowHeight: CGFloat = 52
+    private let rowHeight: CGFloat = 46
+    private let chipWidth: CGFloat = 240
+    private let chipHeight: CGFloat = 38
+    private let headerHeight: CGFloat = 34
 
     enum DropSpot: Hashable { case batter(PlayerID), end, players }
 
@@ -576,75 +581,90 @@ struct BattingOrderList: View {
         let unplaced = model.unplacedBatters
         let ids = PromptIDs(players: ctx.players)
 
-        HStack(alignment: .top, spacing: 40) {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(spacing: 0) {
-                    ForEach(Array(placed.enumerated()), id: \.element.id) { index, player in
-                        batterRow(index + 1, player, reason: model.document.battingReasons[player.id].map { ids.humanize($0, players: ctx.players) }, placed: placed)
-                    }
-                    ForEach(0..<unplaced.count, id: \.self) { offset in
-                        openRow(placed.count + offset + 1, first: offset == 0)
-                    }
+        HStack(alignment: .top, spacing: 36) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Level with the players' header, so chips and open spots line up across.
+                if !unplaced.isEmpty { Color.clear.frame(width: 1, height: headerHeight) }
+                ForEach(Array(placed.enumerated()), id: \.element.id) { index, player in
+                    batterRow(index + 1, player, reason: model.document.battingReasons[player.id].map { ids.humanize($0, players: ctx.players) }, placed: placed)
+                }
+                ForEach(0..<unplaced.count, id: \.self) { offset in
+                    openRow(placed.count + offset + 1, first: offset == 0)
                 }
                 if !model.document.battingRationale.isEmpty && unplaced.isEmpty {
                     Text(ids.humanize(model.document.battingRationale, players: ctx.players))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 16)
                 }
             }
-            // Narrow while players wait, so a drag from the tray is short.
-            .frame(maxWidth: unplaced.isEmpty ? .infinity : 520, alignment: .leading)
+            .frame(maxWidth: unplaced.isEmpty ? .infinity : nil, alignment: .leading)
 
             if !unplaced.isEmpty {
                 playerTray(unplaced, placed: placed)
-                    .frame(width: 220)
             }
+        }
+        // A drag dropped outside any target never reports back; the next plain mouse move ends it.
+        .onContinuousHover { _ in
+            if dragging != nil && NSEvent.pressedMouseButtons == 0 { dragging = nil; dropTarget = nil }
         }
     }
 
-    private func batterRow(_ number: Int, _ player: PlayerSnapshot, reason: String?, placed: [PlayerSnapshot]) -> some View {
+    /// The one shape every kid takes here, in a spot or waiting.
+    private func chip(_ player: PlayerSnapshot, handle: Bool) -> some View {
+        HStack(spacing: 8) {
+            Text(player.name).font(.title3).lineLimit(1)
+            Spacer(minLength: 0)
+            if handle { Image(systemName: "line.3.horizontal").font(.callout).foregroundStyle(.tertiary) }
+        }
+        .padding(.horizontal, 12)
+        .frame(width: chipWidth, height: chipHeight)
+        .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
+        .matchedGeometryEffect(id: player.id, in: chips)
+        .opacity(dragging == player.id ? 0.35 : 1)
+    }
+
+    private func number(_ n: Int, open: Bool) -> some View {
+        Text("\(n)")
+            .font(.title3.monospacedDigit())
+            .foregroundStyle(open ? AnyShapeStyle(.quaternary) : AnyShapeStyle(.tertiary))
+            .frame(width: 26, alignment: .trailing)
+    }
+
+    private func batterRow(_ n: Int, _ player: PlayerSnapshot, reason: String?, placed: [PlayerSnapshot]) -> some View {
         HStack(spacing: 14) {
-            Text("\(number)")
-                .font(.title3.monospacedDigit())
-                .foregroundStyle(.tertiary)
-                .frame(width: 26, alignment: .trailing)
-            Text(player.name).font(.title3)
+            number(n, open: false)
+            chip(player, handle: true)
+                .overlay(alignment: lineEdge(for: player.id, placed: placed)) {
+                    if dropTarget == .batter(player.id) && dragging != player.id {
+                        Capsule().fill(Color.accentColor).frame(height: 3).offset(y: lineEdge(for: player.id, placed: placed) == .top ? -5 : 5)
+                    }
+                }
+                .onDrag { drag(player) } preview: { preview(player) }
+                .contextMenu {
+                    Button("Remove from Batting Order") { withAnimation(.snappy) { model.removeBatter(player.id, undoManager: undoManager) } }
+                }
             if let reason, !reason.isEmpty {
                 Text(reason)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .help(reason)
             }
-            Spacer(minLength: 0)
-            Image(systemName: "line.3.horizontal").foregroundStyle(.quaternary)
         }
         .frame(height: rowHeight)
         .contentShape(Rectangle())
-        .overlay(alignment: .bottom) { Rectangle().fill(.separator.opacity(0.5)).frame(height: 0.5) }
-        .overlay(alignment: lineEdge(for: player.id, placed: placed)) {
-            if dropTarget == .batter(player.id) && dragging != player.id {
-                Capsule().fill(Color.accentColor).frame(height: 3).offset(y: lineEdge(for: player.id, placed: placed) == .top ? -1.5 : 1.5)
-            }
-        }
-        .opacity(dragging == player.id ? 0.4 : 1)
-        .onDrag { drag(player) } preview: { preview(player) }
         .onDrop(of: [.plainText], isTargeted: targeted(.batter(player.id))) { _ in drop(on: .batter(player.id), placed: placed) }
-        .contextMenu {
-            Button("Remove from Batting Order") { withAnimation(.snappy) { model.removeBatter(player.id, undoManager: undoManager) } }
-        }
     }
 
-    /// An empty spot. Dropping on any of them adds the player at the end of the order.
-    private func openRow(_ number: Int, first: Bool) -> some View {
-        HStack(spacing: 14) {
-            Text("\(number)")
-                .font(.title3.monospacedDigit())
-                .foregroundStyle(.quaternary)
-                .frame(width: 26, alignment: .trailing)
+    /// An empty spot, the exact shape of a chip. Dropping on any of them adds the kid at the end of the order.
+    private func openRow(_ n: Int, first: Bool) -> some View {
+        let lit = first && dropTarget == .end
+        return HStack(spacing: 14) {
+            number(n, open: true)
             RoundedRectangle(cornerRadius: 8)
-                .fill(first && dropTarget == .end ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(Color.clear))
-                .strokeBorder(.quaternary, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                .frame(height: 36)
+                .fill(lit ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(Color.clear))
+                .strokeBorder(lit ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                .frame(width: chipWidth, height: chipHeight)
         }
         .frame(height: rowHeight)
         .contentShape(Rectangle())
@@ -652,7 +672,7 @@ struct BattingOrderList: View {
     }
 
     private func playerTray(_ unplaced: [PlayerSnapshot], placed: [PlayerSnapshot]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Players").font(.headline)
                 Spacer()
@@ -663,25 +683,20 @@ struct BattingOrderList: View {
                 .foregroundStyle(.secondary)
                 .help("Add everyone in roster order, then drag to reorder")
             }
-            .padding(.bottom, 4)
+            .frame(width: chipWidth, height: headerHeight, alignment: .top)
             ForEach(unplaced) { player in
-                Text(player.name)
-                    .font(.title3)
-                    .lineLimit(1)
-                    .padding(.horizontal, 12)
-                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-                    .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
+                chip(player, handle: false)
                     .contentShape(Rectangle())
-                    .opacity(dragging == player.id ? 0.4 : 1)
                     .onTapGesture(count: 2) { withAnimation(.snappy) { model.placeBatter(player.id, at: nil, undoManager: undoManager) } }
                     .onDrag { drag(player) } preview: { preview(player) }
                     .contextMenu {
                         Button("Add to Batting Order") { withAnimation(.snappy) { model.placeBatter(player.id, at: nil, undoManager: undoManager) } }
                     }
                     .help("Drag into the batting order, or double-click to add")
+                    .frame(height: rowHeight)
             }
         }
-        .padding(10)
+        .padding(.horizontal, 8)
         .background(dropTarget == .players ? AnyShapeStyle(Color.accentColor.opacity(0.1)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 12))
         .onDrop(of: [.plainText], isTargeted: targeted(.players)) { _ in drop(on: .players, placed: placed) }
     }
@@ -694,8 +709,9 @@ struct BattingOrderList: View {
     }
 
     private func preview(_ player: PlayerSnapshot) -> some View {
-        Text(player.name).font(.title3).padding(.horizontal, 12).padding(.vertical, 6)
-            .background(.regularMaterial, in: Capsule())
+        Text(player.name).font(.title3).lineLimit(1).padding(.horizontal, 12)
+            .frame(width: chipWidth, height: chipHeight, alignment: .leading)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 
     private func targeted(_ spot: DropSpot) -> Binding<Bool> {
