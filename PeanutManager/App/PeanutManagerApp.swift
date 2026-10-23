@@ -31,9 +31,18 @@ struct PeanutManagerApp: App {
         }
     }
 
-    /// The library lives in its own folder (~/Library/Application Support/Peanut Manager), never the shared default store.
+    /// The library's own folder (Application Support/Peanut Manager, inside the sandbox container), never the
+    /// shared default store. `-PMLibraryFolder Name` uses another folder (to test the sandbox migration).
+    static var libraryFolder: URL {
+        var name = "Peanut Manager"
+        #if DEBUG
+        if let other = UserDefaults.standard.string(forKey: "PMLibraryFolder"), !other.isEmpty { name = other }
+        #endif
+        return URL.applicationSupportDirectory.appending(path: name, directoryHint: .isDirectory)
+    }
+
     static func makeContainer() -> ModelContainer {
-        let folder = URL.applicationSupportDirectory.appending(path: "Peanut Manager", directoryHint: .isDirectory)
+        let folder = libraryFolder
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         var name = "Library"
         #if DEBUG

@@ -80,15 +80,15 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 ### Still to do (priority order)
 
 1. **Mac App Store.**
-   - License: add `LICENSE` (MIT recommended) and a README line that the name and icon aren't covered.
-   - Accounts: confirm the Apple Developer Program membership for team `G88C7HMHUJ` is active; create the App Store Connect record; check the name.
+   - ~~License~~ Done (Oct 23): MIT `LICENSE`; README says the name and icon aren't covered.
+   - Accounts: membership is active (team `G88C7HMHUJ` has Developer ID and Apple Development certificates; signing is automatic). Left: create the App Store Connect record; check the name.
    - ~~Sparkle out~~ Done (Oct 23): removed entirely.
-   - App Sandbox and entitlements: network client; network server (the ChatGPT loopback callback on 127.0.0.1); user-selected files read-only (CSV import); printing. Test Sign in with ChatGPT under the sandbox.
-   - Data: the store moves into the app's container. Same bundle ID → `container-migration.plist`; otherwise export/import.
+   - ~~App Sandbox~~ Done (Oct 23): network client, network server (the ChatGPT callback on 127.0.0.1), user-selected files read-only (CSV import), printing (`PeanutManager.entitlements`, from `project.yml`). Left for Marty: Sign in with ChatGPT, a Claude key check, CSV import and printing in the sandboxed build.
+   - ~~Data~~ Done (Oct 23): `Resources/container-migration.plist` moves `Application Support/Peanut Manager` and the settings plist into the container on the first sandboxed launch. Tested with a re-signed copy under another bundle ID (`-PMLibraryFolder`): the library and settings moved, the old location emptied, every kid and the lineup opened.
    - **AI consent (App Review 5.1.2(i)):** a one-time screen naming OpenAI or Anthropic before kids' data is sent. Consider sending pseudonyms and mapping back locally (extends `PromptIDs`).
-   - Privacy: privacy policy URL, App Privacy answers, `PrivacyInfo.xcprivacy` (UserDefaults is a required-reason API).
-   - `ITSAppUsesNonExemptEncryption = NO` (HTTPS only).
-   - Debug code: `EvalRunner` and the debug flags are already `#if DEBUG`; confirm nothing ships in Release.
+   - Privacy: `PrivacyInfo.xcprivacy` done (no tracking, nothing collected by us, UserDefaults reason CA92.1). Left: privacy policy URL, App Privacy answers.
+   - ~~`ITSAppUsesNonExemptEncryption = NO`~~ Done (Oct 23).
+   - ~~Debug code~~ Checked (Oct 23): the Release binary has no `-PM…` flags, `EvalRunner`, `DebugSupport`, `CloudKitCheck` or fake AI.
    - App Review: the app already works without AI. Add a sample team with recorded AI results (a lineup and insights), labeled as a sample, and say how to try it in the review notes.
    - Listing: screenshots, description (don't imply a GameChanger affiliation), age rating.
    - TestFlight for testers.

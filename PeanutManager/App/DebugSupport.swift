@@ -6,6 +6,7 @@ import LineupKit
 
 /// Debug-only launch flags for exercising the app without clicking or an API key:
 ///   -PMStore Name        use a separate library file (keeps your real library untouched)
+///   -PMLibraryFolder Name use another Application Support folder instead of "Peanut Manager" (sandbox migration tests)
 ///   -PMSeedSample YES    create the sample team on launch if there are no teams, and open its game
 ///   -PMFakeAI YES        use a scripted local "AI" instead of ChatGPT
 ///   -PMAutoGenerate YES  make the batting order as soon as the first game opens (later games start empty)

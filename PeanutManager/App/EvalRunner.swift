@@ -21,7 +21,7 @@ enum EvalRunner {
 
     nonisolated static var folder: URL {
         let store = UserDefaults.standard.string(forKey: "PMStore") ?? ""
-        return URL.applicationSupportDirectory.appending(path: "Peanut Manager/Evals/\(store)", directoryHint: .isDirectory)
+        return PeanutManagerApp.libraryFolder.appending(path: "Evals/\(store)", directoryHint: .isDirectory)
     }
 
     static func run(container: ModelContainer) async {

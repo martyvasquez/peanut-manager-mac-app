@@ -42,7 +42,7 @@ The app will ship on the Mac App Store (TestFlight for testers before that). Unt
 |---|---|
 | `Packages/LineupKit` | Pure Swift core: models, validator, feasibility, safety-net repair, v1 prompts, lineup engine, GameChanger import. `swift test` runs in seconds. |
 | `Packages/LineupKit/Sources/LineupAI` | Sign in with ChatGPT and the ChatGPT plan client. |
-| `PeanutManager/` | SwiftUI + SwiftData Mac app. Library stored at `~/Library/Application Support/Peanut Manager/Library.store`. |
+| `PeanutManager/` | SwiftUI + SwiftData Mac app. Sandboxed; the library is at `~/Library/Containers/com.martyvasquez.PeanutManager/Data/Library/Application Support/Peanut Manager/Library.store` (moved there from `~/Library/Application Support/Peanut Manager` on the first sandboxed launch by `Resources/container-migration.plist`). |
 | `Design/` | App icon source art. |
 | `project.yml` | XcodeGen spec. The `.xcodeproj` is generated and not committed. |
 
@@ -100,6 +100,7 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMShowSignIn YES` | Show the Sign in with ChatGPT sheet that follows creating the first team |
 | `-PMRunEval YES` | Run the model eval on this library (see **Model eval** below) |
 | `-PMCheckCloudKit YES` | Check the schema against CloudKit's rules, list which fields are encrypted, report where a synced keychain item lands, then quit |
+| `-PMLibraryFolder Name` | Use another Application Support folder instead of `Peanut Manager` (to test the sandbox migration with a re-signed copy under another bundle ID) |
 | `-PMICloudWait YES` | With an empty library, show the new-device "Looking for your teams in iCloud…" wait instead of the welcome screen |
 
 ## Model eval
@@ -108,7 +109,7 @@ Compares the ChatGPT models (Luna, Sol, Terra, Astra) on one hard game and a few
 
 ```sh
 # 1. Copy the library (never run it on the real one)
-AS=~/Library/Application\ Support/Peanut\ Manager
+AS=~/Library/Containers/com.martyvasquez.PeanutManager/Data/Library/Application\ Support/Peanut\ Manager
 for f in "$AS"/Library.store*; do cp "$f" "$AS/EvalCopy${f##*/Library}"; done
 
 # 2. Run it
@@ -127,7 +128,7 @@ for f in "$AS"/Library.store*; do cp "$f" "$AS/EvalCopy${f##*/Library}"; done
 | `-PMEvalWeighting gc-heavy` | Data weighting instead of the game's (`gc-only`, `gc-heavy`, `equal`, `coach-heavy`, `coach-only`) |
 
 - **Claude:** set `ANTHROPIC_API_KEY=sk-ant-…` in front of the launch command to add Claude models. They run on the Claude API (a Max or Team plan's monthly credits, or paid credits), so unlike ChatGPT they cost money; the log and Reveal Models show each run's cost. Eval only: the app itself is still ChatGPT-only.
-- **Output:** `~/Library/Application Support/Peanut Manager/Evals/<Store>/` holds `results.json`, `progress.log` and `grade.html`. The page opens when the run ends.
+- **Output:** `~/Library/Containers/com.martyvasquez.PeanutManager/Data/Library/Application Support/Peanut Manager/Evals/<Store>/` holds `results.json`, `progress.log` and `grade.html`. The page opens when the run ends.
 - **Grading is blind:** each lineup and assessment is labeled A, B, C… Grade them (print as-is?, quality; accurate?, useful), then **Reveal Models** shows which model made what, with time, tokens, revisions, safety-net cells and lock-move attempts. **Copy Grades** puts the grades on the clipboard.
 - **Cheap by design:** finished runs are never repeated (relaunch to retry only what failed), a stored assessment from the same model on the same facts is reused, and a usage-limit or sign-in error stops the run at once.
 - **Check the setup with `-PMFakeAI YES` first.** That runs the whole pipeline for free.
@@ -144,3 +145,7 @@ Results and decisions so far are in `docs/v2-plan.md` (Build status, item 5).
 5. **Safety net** (code, last resort): `Repair` makes the fewest changes it can. Those cells are outlined in orange and disclosed.
 
 Compliance shown in the app always comes from the validator, never from the AI's self-report.
+
+## License
+
+The code is under the [MIT License](LICENSE). The name "Peanut Manager" and the app icon are not covered by it.
