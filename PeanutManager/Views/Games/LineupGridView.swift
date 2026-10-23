@@ -263,7 +263,7 @@ struct LineupGridView: View {
                       : isSelected ? AnyShapeStyle(Color.accentColor.opacity(0.18))
                       : problem ? AnyShapeStyle(Color.red.opacity(0.12))
                       : isLit ? AnyShapeStyle(Color.accentColor.opacity(0.12))
-                      : (!model.isFilled && model.hasGrid && available) ? AnyShapeStyle(.quaternary.opacity(hovered == key ? 0.8 : 0.35))
+                      : (model.hasGrid && available) ? AnyShapeStyle(.quaternary.opacity(hovered == key ? 0.8 : 0.35))
                       : AnyShapeStyle(Color.clear))
             if provenance == .appAdjusted {
                 RoundedRectangle(cornerRadius: 6).strokeBorder(Color.orange.opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
