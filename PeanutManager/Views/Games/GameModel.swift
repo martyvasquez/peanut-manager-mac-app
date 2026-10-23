@@ -60,8 +60,22 @@ final class GameModel {
     var hasDefense: Bool { document.lineup.hasDefense }
     /// The positions grid exists (it may be empty, or hold only the coach's locked spots).
     var hasGrid: Bool { game.innings > 0 && document.lineup.innings.count == game.innings }
-    /// The AI has filled the positions at least once.
-    var isFilled: Bool { document.generatedAt != nil && hasDefense }
+    /// Every position is taken in every inning, or the AI has filled them at least once.
+    var isFilled: Bool { hasGrid && (document.lineup.isFullyPositioned || (document.generatedAt != nil && hasDefense)) }
+
+    /// Batters in order, here today. Anyone here who isn't in it yet is in `unplacedBatters`.
+    var placedBatters: [PlayerID] {
+        let ctx = context
+        return document.lineup.battingOrder.filter { ctx.availability(of: $0).present }
+    }
+
+    var unplacedBatters: [PlayerSnapshot] {
+        let placed = Set(document.lineup.battingOrder)
+        return context.presentPlayers.filter { !placed.contains($0.id) }
+    }
+
+    /// Everyone here has a spot in the order.
+    var isBattingOrderComplete: Bool { hasBattingOrder && unplacedBatters.isEmpty }
 
     /// Live validation — recomputed on every edit, never taken from the AI.
     var findings: [Finding] {
@@ -120,10 +134,13 @@ final class GameModel {
     }
 
     /// Coach picks a slot for a player: a true swap, and the chosen cell is locked so regeneration keeps it.
+    /// Once the last position in an inning is taken, everyone else sits.
     func assign(_ player: PlayerID, to slot: Slot, inning: Int, undoManager: UndoManager?) {
+        let available = context.availablePlayers(inning: inning).map(\.id)
         mutate("Change Position", undoManager: undoManager) { doc in
             let displaced: PlayerID? = if case .field(let position) = slot { doc.lineup.innings[inning - 1].positions[position] } else { nil }
             doc.lineup.assign(player, to: slot, inning: inning)
+            doc.lineup.innings[inning - 1].seatRest(available: available)
             doc.locks.removeAll { $0.inning == inning && ($0.player == player || $0.player == displaced) }
             doc.locks.append(Lock(inning: inning, player: player, slot: slot))
             doc.provenance[CellKey(inning: inning, player: player)] = .coach
@@ -198,11 +215,63 @@ final class GameModel {
         step = .positions
     }
 
-    /// List reordering in the batting order step.
-    func moveBatters(fromOffsets source: IndexSet, toOffset destination: Int, undoManager: UndoManager?) {
-        var order = fullBattingOrder()
-        order.move(fromOffsets: source, toOffset: destination)
-        mutate("Move in Batting Order", undoManager: undoManager) { $0.lineup.battingOrder = order }
+    /// Batting order step: puts `player` in the order at `target`'s spot, or at the end.
+    /// Moving down lands below `target`, moving up (or in from the players) lands above it.
+    func placeBatter(_ player: PlayerID, at target: PlayerID?, undoManager: UndoManager?) {
+        guard player != target else { return }
+        let current = placedBatters
+        let from = current.firstIndex(of: player)
+        var order = current.filter { $0 != player }
+        var index = target.flatMap { order.firstIndex(of: $0) } ?? order.count
+        if let from, let to = target.flatMap({ current.firstIndex(of: $0) }), from < to { index += 1 }
+        order.insert(player, at: index)
+        mutate(from == nil ? "Add to Batting Order" : "Move in Batting Order", undoManager: undoManager) { $0.lineup.battingOrder = order }
+    }
+
+    func removeBatter(_ player: PlayerID, undoManager: UndoManager?) {
+        let order = placedBatters.filter { $0 != player }
+        mutate("Remove from Batting Order", undoManager: undoManager) { $0.lineup.battingOrder = order }
+    }
+
+    // MARK: - Copy
+
+    /// Other games with a lineup, most recent first.
+    var copySources: [Game] {
+        (game.team?.games ?? [])
+            .filter { $0 !== game && !($0.document?.lineup.battingOrder.isEmpty ?? true) }
+            .sorted { $0.date > $1.date }
+    }
+
+    /// The most recent game before this one, or the most recent one if none came before.
+    var lastGame: Game? {
+        let sources = copySources
+        return sources.first { $0.date < game.date } ?? sources.first
+    }
+
+    /// Starts from another game's lineup. What's copied counts as the coach's own picks, so it's locked.
+    func copyLineup(from source: Game, undoManager: UndoManager?) {
+        guard let lineup = source.document?.lineup else { return }
+        let ctx = context
+        let copied = lineup.carriedOver(
+            innings: game.innings,
+            present: Set(ctx.presentPlayers.map(\.id)),
+            available: { ctx.availablePlayers(inning: $0).map(\.id) }
+        )
+        var locks: [Lock] = []
+        for (index, inning) in copied.innings.enumerated() {
+            for (position, id) in inning.positions { locks.append(Lock(inning: index + 1, player: id, slot: .field(position))) }
+            // A kid who wasn't at that game sits because the inning is full, not because the coach said so.
+            let sat = lineup.innings.indices.contains(index) ? lineup.innings[index].sitting : []
+            for id in inning.sitting where sat.contains(id) { locks.append(Lock(inning: index + 1, player: id, slot: .bench)) }
+        }
+        snapshot("Before Copy")
+        mutate("Copy Lineup", undoManager: undoManager) { doc in
+            doc = LineupDocument()
+            doc.lineup = copied
+            doc.locks = locks
+            for lock in locks { doc.provenance[CellKey(inning: lock.inning, player: lock.player)] = .coach }
+        }
+        step = hasGrid && isBattingOrderComplete ? .positions : .battingOrder
     }
 
     /// Drag and drop: moving down lands below `target`, moving up lands above it.

@@ -91,7 +91,8 @@ final class AIService {
         anthropicKey = Keychain.data(Keys.anthropic).flatMap { String(data: $0, encoding: .utf8) }
         #if DEBUG
         if DebugSupport.fakeClaudeKey { anthropicKey = "sk-ant-debug-0000" }
-        if DebugSupport.signedOut { return }
+        if DebugSupport.noAI { anthropicKey = nil }
+        if DebugSupport.signedOut || DebugSupport.noAI { return }
         #endif
         if let record = Self.loadRecord() {
             account = record.account

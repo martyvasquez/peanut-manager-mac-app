@@ -82,6 +82,7 @@ struct ContentView: View {
             } else if DebugSupport.seedSample, selectedGame == nil {
                 selectedGame = team?.games.sorted { $0.date < $1.date }.last
             }
+            if let added = DebugSupport.addGameIfRequested(to: team, context: context) { selectedGame = added }
             if UserDefaults.standard.bool(forKey: "PMOpenSettings") { openSettings() }
             if DebugSupport.showSignIn { showingSignIn = true }
             if let open = UserDefaults.standard.string(forKey: "PMSection"),

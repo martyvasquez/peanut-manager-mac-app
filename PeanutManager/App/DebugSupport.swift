@@ -17,6 +17,9 @@ import LineupKit
 ///   -PMSignedOut YES     act signed out of ChatGPT (the real sign-in stays in the keychain)
 ///   -PMShowSignIn YES    show the after-first-team Sign in with ChatGPT sheet
 ///   -PMFakeClaudeKey YES act as if a Claude API key is saved (in memory only; the keychain is untouched)
+///   -PMNoAI YES          act as if no AI is set up: signed out of ChatGPT and no Claude key (the keychain is untouched)
+///   -PMAddGame YES       add a game after the team's last one, with the sixth player out, and open it (to try Copy Last Game)
+///   -PMCopyLastGame YES  copy the last game's lineup into an empty game when it opens
 ///   -PMRunEval YES       run the model eval on this (copied) library; see EvalRunner
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }
@@ -30,12 +33,27 @@ enum DebugSupport {
     static var signedOut: Bool { UserDefaults.standard.bool(forKey: "PMSignedOut") }
     static var showSignIn: Bool { UserDefaults.standard.bool(forKey: "PMShowSignIn") }
     static var fakeClaudeKey: Bool { UserDefaults.standard.bool(forKey: "PMFakeClaudeKey") }
+    static var noAI: Bool { UserDefaults.standard.bool(forKey: "PMNoAI") }
+    static var copyLastGame: Bool { UserDefaults.standard.bool(forKey: "PMCopyLastGame") }
     nonisolated static var flakyScout: Bool { UserDefaults.standard.bool(forKey: "PMFlakyScout") }
 
     @MainActor
     static func seedIfRequested(teams: [Team], context: ModelContext) -> Team? {
         guard seedSample, teams.isEmpty else { return nil }
         return try? SampleData.makeTeam(in: context)
+    }
+
+    /// A week after the team's last game; reuses the one made by an earlier run.
+    @MainActor
+    static func addGameIfRequested(to team: Team?, context: ModelContext) -> Game? {
+        guard UserDefaults.standard.bool(forKey: "PMAddGame"), let team, let last = team.games.max(by: { $0.date < $1.date }) else { return nil }
+        if last.opponent == "Next Opponent" { return last }
+        let game = Game(opponent: "Next Opponent", date: Calendar.current.date(byAdding: .day, value: 7, to: last.date)!, innings: last.innings)
+        context.insert(game)
+        game.team = team
+        game.ruleSet = last.ruleSet
+        if let out = team.activePlayers.dropFirst(5).first { game.availability = [out.uid: Availability(present: false)] }
+        return game
     }
 }
 

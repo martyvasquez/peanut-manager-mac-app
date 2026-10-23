@@ -62,7 +62,7 @@ struct GameRow: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            if game.document?.generatedAt != nil && game.document?.lineup.hasDefense == true {
+            if let lineup = game.document?.lineup, lineup.hasDefense, lineup.isFullyPositioned || game.document?.generatedAt != nil {
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).imageScale(.small)
             }
         }
@@ -134,13 +134,9 @@ struct GameDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     header
-                    if model.hasBattingOrder || model.isGenerating {
-                        VStack(alignment: .leading, spacing: 18) {
-                            stepBar
-                            stepContent
-                        }
-                    } else {
-                        startButton
+                    VStack(alignment: .leading, spacing: 18) {
+                        stepBar
+                        stepContent
                     }
                 }
                 .animation(.snappy, value: model.step)
@@ -205,6 +201,7 @@ struct GameDetailView: View {
         }
         .task {
             #if DEBUG
+            if DebugSupport.copyLastGame && !model.hasBattingOrder, let last = model.lastGame { model.copyLineup(from: last, undoManager: undoManager) }
             if DebugSupport.autoGenerate && !model.hasBattingOrder { model.makeBattingOrder(undoManager: undoManager) }
             if DebugSupport.autoPositions && model.hasBattingOrder && !model.isFilled { model.setPositions(undoManager: undoManager) }
             #endif
@@ -238,13 +235,17 @@ struct GameDetailView: View {
                 AttendanceButton(game: game)
                 ruleSetMenu
                 inningsMenu
-                priorityMenu
-                trustMenu
+                if AIService.shared.isReady {
+                    priorityMenu
+                    trustMenu
+                }
                 ModelMenu()
             }
             VStack(alignment: .leading, spacing: 6) {
-                TextField("Notes", text: $game.notesForAI, axis: .vertical)
-                    .help("For the AI: \"Cole pitches the 1st and 2nd,\" \"Ava's arm is sore.\"")
+                if AIService.shared.isReady {
+                    TextField("Notes", text: $game.notesForAI, axis: .vertical)
+                        .help("For the AI: \"Cole pitches the 1st and 2nd,\" \"Ava's arm is sore.\"")
+                }
                 TextField("Scouting report on \(game.opponent.isEmpty ? "the opponent" : game.opponent)", text: $game.scoutingReport, axis: .vertical)
                     .help("What you know about this team: \"They bunt a lot,\" \"lefty-heavy lineup,\" \"fast kids at the top.\" The AI uses it when it helps; it carries over the next time you play them.")
             }
@@ -322,69 +323,79 @@ struct GameDetailView: View {
 
     // MARK: Steps
 
-    @ViewBuilder
-    private var startButton: some View {
-        if !AIService.shared.isReady {
-            VStack(spacing: 10) {
-                SignInButton(prominent: true)
-                Text("Lineups run on your ChatGPT plan.").font(.callout).foregroundStyle(.secondary)
-                SettingsLink { Text("Use a Claude API Key Instead") }.buttonStyle(.link).font(.callout)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 40)
-        } else {
-            makeButton
-        }
-    }
-
-    private var makeButton: some View {
-        Button {
-            model.makeBattingOrder(undoManager: undoManager)
-        } label: {
-            Label("Make Batting Order", systemImage: "sparkles")
-                .font(.title3.weight(.medium))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-        }
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.capsule)
-        .keyboardShortcut("g", modifiers: .command)
-        .frame(maxWidth: .infinity)
-        .padding(.top, 40)
-    }
-
     /// Batting Order › Positions — where you are, and the one next thing to do.
+    /// Without AI the coach builds both steps by hand; with it, the AI can do either.
     private var stepBar: some View {
-        HStack(spacing: 10) {
+        let aiReady = AIService.shared.isReady
+        return HStack(spacing: 10) {
             StepLink(title: "Batting Order", active: model.step == .battingOrder) { model.step = .battingOrder }
             Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.quaternary)
             StepLink(title: "Positions", active: model.step == .positions) { model.preparePositions() }
-                .disabled(!model.hasBattingOrder)
+                .disabled(!model.isBattingOrderComplete)
             Spacer()
             if !model.isGenerating {
-                if model.step == .battingOrder || model.isFilled {
-                    Button("Remake…", systemImage: "sparkles") { feedbackFor = model.step }
-                        .buttonStyle(.borderless)
-                        .foregroundStyle(.secondary)
-                        .help(model.step == .battingOrder ? "Tell the AI what to change in the order" : "Tell the AI what to change. Locked spots stay.")
-                }
                 if model.step == .battingOrder {
-                    Button { model.preparePositions() } label: {
-                        Label("Positions", systemImage: "arrow.right").padding(.horizontal, 4)
+                    if !model.hasBattingOrder && !model.hasDefense, model.lastGame != nil { copyMenu }
+                    if aiReady && model.isBattingOrderComplete {
+                        Button("Remake…", systemImage: "sparkles") { feedbackFor = .battingOrder }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(.secondary)
+                            .help("Tell the AI what to change in the order")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.capsule)
-                    .keyboardShortcut("g", modifiers: .command)
-                } else if !model.isFilled {
-                    Button { model.setPositions(undoManager: undoManager) } label: {
-                        Label(model.document.locks.isEmpty ? "Fill Positions" : "Fill the Rest", systemImage: "sparkles").padding(.horizontal, 4)
+                    if model.isBattingOrderComplete {
+                        Button { model.preparePositions() } label: {
+                            Label("Positions", systemImage: "arrow.right").padding(.horizontal, 4)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.capsule)
+                        .keyboardShortcut("g", modifiers: .command)
+                    } else if aiReady && !model.hasBattingOrder {
+                        Button { model.makeBattingOrder(undoManager: undoManager) } label: {
+                            Label("Make Batting Order", systemImage: "sparkles").padding(.horizontal, 4)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.capsule)
+                        .keyboardShortcut("g", modifiers: .command)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.capsule)
-                    .keyboardShortcut("g", modifiers: .command)
+                } else if aiReady {
+                    if model.isFilled {
+                        Button("Remake…", systemImage: "sparkles") { feedbackFor = .positions }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(.secondary)
+                            .help("Tell the AI what to change. Locked spots stay.")
+                    } else {
+                        Button { model.setPositions(undoManager: undoManager) } label: {
+                            Label(model.document.locks.isEmpty ? "Fill Positions" : "Fill the Rest", systemImage: "sparkles").padding(.horizontal, 4)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.capsule)
+                        .keyboardShortcut("g", modifiers: .command)
+                    }
                 }
             }
         }
+    }
+
+    /// Start from the last game's lineup (click), or pick another game (menu).
+    private var copyMenu: some View {
+        Menu {
+            ForEach(model.copySources) { source in
+                Button(Self.gameLabel(source)) { model.copyLineup(from: source, undoManager: undoManager) }
+            }
+        } label: {
+            Label("Copy Last Game", systemImage: "doc.on.doc")
+        } primaryAction: {
+            if let last = model.lastGame { model.copyLineup(from: last, undoManager: undoManager) }
+        }
+        .menuStyle(.button)
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .fixedSize()
+        .help(model.lastGame.map { "Start from \(Self.gameLabel($0))" } ?? "")
+    }
+
+    static func gameLabel(_ game: Game) -> String {
+        "\(game.opponent) · \(game.date.formatted(.dateTime.month(.abbreviated).day()))"
     }
 
     @ViewBuilder
@@ -397,7 +408,7 @@ struct GameDetailView: View {
             if model.isGenerating {
                 progress
             } else if !model.isFilled {
-                Text("Click any spot to lock it in. The AI fills the rest.")
+                Text(AIService.shared.isReady ? "Click any spot to lock it in. The AI fills the rest." : "Click a spot to pick a position.")
                     .foregroundStyle(.secondary)
             }
             LineupGridView(model: model)
@@ -429,6 +440,13 @@ struct GameDetailView: View {
                     ForEach(history.reversed()) { version in
                         Button(version.savedAt.formatted(date: .abbreviated, time: .shortened)) {
                             model.restore(version, undoManager: undoManager)
+                        }
+                    }
+                }
+                if !model.copySources.isEmpty {
+                    Menu("Copy Lineup From") {
+                        ForEach(model.copySources) { source in
+                            Button(Self.gameLabel(source)) { model.copyLineup(from: source, undoManager: undoManager) }
                         }
                     }
                 }
@@ -478,12 +496,13 @@ struct ModelMenu: View {
                 }
             } else {
                 SettingsLink { Text("Sign In with ChatGPT…") }
+                SettingsLink { Text("Use a Claude API Key…") }
             }
         } label: {
-            Chip(ai.currentModelName, symbol: "sparkles")
+            Chip(ai.isReady ? ai.currentModelName : "Set Up AI", symbol: "sparkles")
         }
         .menuStyle(.button).buttonStyle(.plain).fixedSize()
-        .help("The AI that makes this lineup · " + (ai.usesClaude ? "Using your Claude API key" : "Using ChatGPT plan"))
+        .help(ai.isReady ? "The AI that makes this lineup · " + (ai.usesClaude ? "Using your Claude API key" : "Using ChatGPT plan") : "Let the AI make lineups")
         .task { if ai.isSignedIn && ai.chatGPTModels.isEmpty { await ai.loadModels() } }
     }
 }
@@ -552,53 +571,169 @@ struct StepLink: View {
 }
 
 /// Step 1: the batting order as a list. Drag to reorder; each player's reason sits beside them.
+/// Step 1. The order on the left; everyone here who isn't in it yet waits on the right.
+/// Drag a player into a spot (or double-click to add them at the end), drag to reorder, drag back to take them out.
 struct BattingOrderList: View {
     let model: GameModel
     @Environment(\.undoManager) private var undoManager
+    @State private var dragging: PlayerID?
+    @State private var dropTarget: DropSpot?
 
     private let rowHeight: CGFloat = 52
 
+    enum DropSpot: Hashable { case batter(PlayerID), end, players }
+
     var body: some View {
         let ctx = model.context
-        let order = model.rows.filter { ctx.availability(of: $0.id).present }
+        let placed = model.placedBatters.compactMap { ctx.player($0) }
+        let unplaced = model.unplacedBatters
         let ids = PromptIDs(players: ctx.players)
 
-        VStack(alignment: .leading, spacing: 16) {
-            List {
-                ForEach(Array(order.enumerated()), id: \.element.id) { index, player in
-                    HStack(spacing: 14) {
-                        Text("\(index + 1)")
-                            .font(.title3.monospacedDigit())
-                            .foregroundStyle(.tertiary)
-                            .frame(width: 26, alignment: .trailing)
-                        Text(player.name).font(.title3)
-                        if let reason = model.document.battingReasons[player.id], !reason.isEmpty {
-                            Text(ids.humanize(reason, players: ctx.players))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .help(reason)
-                        }
-                        Spacer(minLength: 0)
-                        Image(systemName: "line.3.horizontal").foregroundStyle(.quaternary)
+        HStack(alignment: .top, spacing: 40) {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(spacing: 0) {
+                    ForEach(Array(placed.enumerated()), id: \.element.id) { index, player in
+                        batterRow(index + 1, player, reason: model.document.battingReasons[player.id].map { ids.humanize($0, players: ctx.players) }, placed: placed)
                     }
-                    .frame(height: rowHeight)
-                    .listRowSeparator(.visible)
+                    ForEach(0..<unplaced.count, id: \.self) { offset in
+                        openRow(placed.count + offset + 1, first: offset == 0)
+                    }
                 }
-                .onMove { source, destination in
-                    withAnimation(.snappy) { model.moveBatters(fromOffsets: source, toOffset: destination, undoManager: undoManager) }
+                if !model.document.battingRationale.isEmpty && unplaced.isEmpty {
+                    Text(ids.humanize(model.document.battingRationale, players: ctx.players))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .scrollDisabled(true)
-            .frame(height: CGFloat(order.count) * (rowHeight + 1) + 8)
+            // Narrow while players wait, so a drag from the tray is short.
+            .frame(maxWidth: unplaced.isEmpty ? .infinity : 520, alignment: .leading)
 
-            if !model.document.battingRationale.isEmpty {
-                Text(ids.humanize(model.document.battingRationale, players: ctx.players))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            if !unplaced.isEmpty {
+                playerTray(unplaced, placed: placed)
+                    .frame(width: 220)
             }
         }
+    }
+
+    private func batterRow(_ number: Int, _ player: PlayerSnapshot, reason: String?, placed: [PlayerSnapshot]) -> some View {
+        HStack(spacing: 14) {
+            Text("\(number)")
+                .font(.title3.monospacedDigit())
+                .foregroundStyle(.tertiary)
+                .frame(width: 26, alignment: .trailing)
+            Text(player.name).font(.title3)
+            if let reason, !reason.isEmpty {
+                Text(reason)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .help(reason)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "line.3.horizontal").foregroundStyle(.quaternary)
+        }
+        .frame(height: rowHeight)
+        .contentShape(Rectangle())
+        .overlay(alignment: .bottom) { Rectangle().fill(.separator.opacity(0.5)).frame(height: 0.5) }
+        .overlay(alignment: lineEdge(for: player.id, placed: placed)) {
+            if dropTarget == .batter(player.id) && dragging != player.id {
+                Capsule().fill(Color.accentColor).frame(height: 3).offset(y: lineEdge(for: player.id, placed: placed) == .top ? -1.5 : 1.5)
+            }
+        }
+        .opacity(dragging == player.id ? 0.4 : 1)
+        .onDrag { drag(player) } preview: { preview(player) }
+        .onDrop(of: [.plainText], isTargeted: targeted(.batter(player.id))) { _ in drop(on: .batter(player.id), placed: placed) }
+        .contextMenu {
+            Button("Remove from Batting Order") { withAnimation(.snappy) { model.removeBatter(player.id, undoManager: undoManager) } }
+        }
+    }
+
+    /// An empty spot. Dropping on any of them adds the player at the end of the order.
+    private func openRow(_ number: Int, first: Bool) -> some View {
+        HStack(spacing: 14) {
+            Text("\(number)")
+                .font(.title3.monospacedDigit())
+                .foregroundStyle(.quaternary)
+                .frame(width: 26, alignment: .trailing)
+            RoundedRectangle(cornerRadius: 8)
+                .fill(first && dropTarget == .end ? AnyShapeStyle(Color.accentColor.opacity(0.15)) : AnyShapeStyle(Color.clear))
+                .strokeBorder(.quaternary, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                .frame(height: 36)
+        }
+        .frame(height: rowHeight)
+        .contentShape(Rectangle())
+        .onDrop(of: [.plainText], isTargeted: targeted(.end)) { _ in drop(on: .end, placed: []) }
+    }
+
+    private func playerTray(_ unplaced: [PlayerSnapshot], placed: [PlayerSnapshot]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Players").font(.headline)
+                Spacer()
+                Button("Add All") {
+                    withAnimation(.snappy) { for player in unplaced { model.placeBatter(player.id, at: nil, undoManager: undoManager) } }
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .help("Add everyone in roster order, then drag to reorder")
+            }
+            .padding(.bottom, 4)
+            ForEach(unplaced) { player in
+                Text(player.name)
+                    .font(.title3)
+                    .lineLimit(1)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+                    .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
+                    .contentShape(Rectangle())
+                    .opacity(dragging == player.id ? 0.4 : 1)
+                    .onTapGesture(count: 2) { withAnimation(.snappy) { model.placeBatter(player.id, at: nil, undoManager: undoManager) } }
+                    .onDrag { drag(player) } preview: { preview(player) }
+                    .contextMenu {
+                        Button("Add to Batting Order") { withAnimation(.snappy) { model.placeBatter(player.id, at: nil, undoManager: undoManager) } }
+                    }
+                    .help("Drag into the batting order, or double-click to add")
+            }
+        }
+        .padding(10)
+        .background(dropTarget == .players ? AnyShapeStyle(Color.accentColor.opacity(0.1)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 12))
+        .onDrop(of: [.plainText], isTargeted: targeted(.players)) { _ in drop(on: .players, placed: placed) }
+    }
+
+    // MARK: Drag and drop
+
+    private func drag(_ player: PlayerSnapshot) -> NSItemProvider {
+        dragging = player.id
+        return NSItemProvider(object: player.id.uuidString as NSString)
+    }
+
+    private func preview(_ player: PlayerSnapshot) -> some View {
+        Text(player.name).font(.title3).padding(.horizontal, 12).padding(.vertical, 6)
+            .background(.regularMaterial, in: Capsule())
+    }
+
+    private func targeted(_ spot: DropSpot) -> Binding<Bool> {
+        Binding(get: { dropTarget == spot }, set: { dropTarget = $0 ? spot : (dropTarget == spot ? nil : dropTarget) })
+    }
+
+    private func drop(on spot: DropSpot, placed: [PlayerSnapshot]) -> Bool {
+        defer { dragging = nil; dropTarget = nil }
+        guard let dragging else { return false }
+        withAnimation(.snappy) {
+            switch spot {
+            case .batter(let target): model.placeBatter(dragging, at: target, undoManager: undoManager)
+            case .end: model.placeBatter(dragging, at: nil, undoManager: undoManager)
+            case .players: model.removeBatter(dragging, undoManager: undoManager)
+            }
+        }
+        return true
+    }
+
+    /// Moving down drops below the target row; moving up, or in from the players, drops above it.
+    private func lineEdge(for target: PlayerID, placed: [PlayerSnapshot]) -> Alignment {
+        guard let dragging,
+              let from = placed.firstIndex(where: { $0.id == dragging }),
+              let to = placed.firstIndex(where: { $0.id == target }) else { return .top }
+        return from < to ? .bottom : .top
     }
 }
 

@@ -78,6 +78,9 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMAutoGenerate YES` | Make the batting order as soon as the game opens |
 | `-PMAutoPositions YES` | Then fill positions |
 | `-PMOpenPositions YES` | Go to the Positions step and lock one spot |
+| `-PMNoAI YES` | Act as if no AI is set up (no ChatGPT sign-in, no Claude key); the keychain is untouched |
+| `-PMAddGame YES` | Add a game after the team's last one, with one player out, and open it |
+| `-PMCopyLastGame YES` | Copy the last game's lineup into an empty game when it opens |
 | `-PMOpenPicker YES` | Open the position picker |
 | `-PMSection roster\|team\|rules` | Open that section |
 | `-PMOpenSettings YES` / `-settingsTab models` | Open Settings / a tab |

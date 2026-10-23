@@ -11,6 +11,7 @@ Native SwiftUI + SwiftData macOS app (macOS 26+, Swift 6, XcodeGen) that makes y
 - **Every rule is met.** The coach's confidence that all rules are fulfilled is the core promise. Rule adherence gates model and prompt choices before lineup quality.
 - **Design bar: Apple / Cultured Code (Things 3).** Intuitive, minimal, no explanatory paragraphs, color only when it means something, the complicated made to feel simple. The owner reviews screenshots closely; show real screenshots, not descriptions.
 - Night-before flow is the hero path: batting order → lock spots → Fill the Rest → print.
+- **The app works fully without AI** (App Store direction, Oct 22). The coach drags players into the batting order, then picks positions; a taken position swaps, so two kids can't share one. Coaches can copy a previous game's lineup as a starting point. AI is an extra button on the same screens, never a gate, and code never fills spots on its own.
 - **Locks are the coach's decisions; the AI fills the rest.** This is the core feature. Code puts every lock back on every AI answer (`LineupEngine.keepingLocks`), a lock that breaks a rule goes to the coach (Fill Anyway), never to the AI, and nothing on screen may describe a lock being moved.
 
 ## Architecture

@@ -23,6 +23,8 @@ struct LineupGridView: View {
         return min(max((width - nameWidth - sitWidth) / innings, 54), 120)
     }
     private let rowHeight: CGFloat = 46
+    /// Locks tell the AI what to keep; without AI there's nothing to keep them from.
+    private var showsLocks: Bool { AIService.shared.isReady }
 
     var body: some View {
         let rows = model.rows
@@ -81,24 +83,44 @@ struct LineupGridView: View {
         HStack(spacing: 0) {
             Color.clear.frame(width: nameWidth, height: 1)
             ForEach(1...max(innings, 1), id: \.self) { inning in
-                let locked = model.isInningLocked(inning)
-                Button {
-                    model.toggleInningLock(inning, undoManager: undoManager)
-                } label: {
-                    HStack(spacing: 3) {
-                        Text("\(inning)")
-                        if locked { Image(systemName: "lock.fill").font(.system(size: 8)) }
+                let locked = showsLocks && model.isInningLocked(inning)
+                VStack(spacing: 0) {
+                    Button {
+                        model.toggleInningLock(inning, undoManager: undoManager)
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("\(inning)")
+                            if locked { Image(systemName: "lock.fill").font(.system(size: 8)) }
+                        }
+                        .font(.callout.monospacedDigit())
+                        .frame(width: cellWidth, height: 30)
+                        .foregroundStyle(locked ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                     }
-                    .font(.callout.monospacedDigit())
-                    .frame(width: cellWidth, height: 30)
-                    .foregroundStyle(locked ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
+                    .buttonStyle(.plain)
+                    .disabled(!model.isFilled)
+                    .help(inningHelp(inning, locked: locked))
+                    if model.hasGrid && !model.isFilled {
+                        Text(openLabel(inning))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .frame(width: cellWidth - 4, height: 16)
+                    }
                 }
-                .buttonStyle(.plain)
-                .disabled(!model.isFilled)
-                .help(inningHelp(inning, locked: locked))
             }
             Text("Sit").font(.callout).foregroundStyle(.tertiary)
                 .frame(width: sitWidth)
+        }
+    }
+
+    /// What's still open this inning: the positions themselves when only a few are left.
+    private func openLabel(_ inning: Int) -> String {
+        let open = model.lineup.innings[safe: inning - 1]?.openPositions ?? Position.allCases
+        switch open.count {
+        case 0: return ""
+        case 1...3: return open.map(\.label).joined(separator: " ")
+        default: return "\(open.count) open"
         }
     }
 
@@ -143,7 +165,7 @@ struct LineupGridView: View {
         let key = CellKey(inning: inning, player: player.id)
         let available = ctx.availability(of: player.id).isAvailable(inning: inning)
         let slot = model.lineup.slot(of: player.id, inning: inning)
-        let locked = model.isLocked(key)
+        let locked = showsLocks && model.isLocked(key)
         let provenance = model.document.provenance[key]
         let isSelected = selected == key
 
@@ -189,8 +211,10 @@ struct LineupGridView: View {
                     Button(position.label) { model.assign(player.id, to: .field(position), inning: inning, undoManager: undoManager) }
                 }
                 Button("Sit") { model.assign(player.id, to: .bench, inning: inning, undoManager: undoManager) }
-                Divider()
-                Button(locked ? "Unlock" : "Lock") { model.toggleLock(key, undoManager: undoManager) }
+                if showsLocks {
+                    Divider()
+                    Button(locked ? "Unlock" : "Lock") { model.toggleLock(key, undoManager: undoManager) }
+                }
             }
         }
         .help(cellHelp(provenance: provenance, locked: locked))
