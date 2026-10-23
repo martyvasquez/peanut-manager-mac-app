@@ -405,7 +405,7 @@ final class GameModel {
 
     // MARK: - Generation
 
-    var lineupModel: String { AIService.shared.currentModelID }
+    var lineupModel: String { AIService.shared.modelID }
 
     enum Step { case battingOrder, positions }
 

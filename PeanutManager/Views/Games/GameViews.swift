@@ -502,29 +502,14 @@ struct GameDetailView: View {
     }
 }
 
-/// Which model makes the lineup: ChatGPT (the coach's plan) or Claude (the coach's API key).
+/// The AI that makes the lineup: the app's pinned model for the connected service (ChatGPT plan or Claude key).
+/// Shown, never chosen; the menu only links to usage and Settings.
 struct ModelMenu: View {
     @State private var ai = AIService.shared
 
     var body: some View {
         Menu {
             if ai.isReady {
-                // Picking the default model follows the default (Settings can pin it).
-                let selection = Binding(get: { ai.modelID }, set: { ai.chosenModelID = $0 == ai.defaultModelID ? nil : $0 })
-                if ai.isSignedIn {
-                    Picker("ChatGPT", selection: selection) {
-                        if ai.chatGPTModels.isEmpty && !ai.usesClaude { Text(ai.currentModelName).tag(ai.modelID) }
-                        ForEach(ai.chatGPTModels) { Text($0.name).tag($0.id) }
-                    }
-                    .pickerStyle(.inline)
-                }
-                if ai.hasClaudeKey {
-                    Picker("Claude", selection: selection) {
-                        ForEach(AnthropicClient.models) { Text($0.name).tag($0.id) }
-                    }
-                    .pickerStyle(.inline)
-                }
-                Divider()
                 if ai.usesClaude {
                     Section("Using your Claude API key") {
                         Link("Claude Console…", destination: AnthropicClient.keysURL)
@@ -534,6 +519,7 @@ struct ModelMenu: View {
                         Link("Manage Usage…", destination: ChatGPTAuth.manageUsageURL)
                     }
                 }
+                SettingsLink { Text("AI Settings…") }
             } else {
                 SettingsLink { Text("Sign In with ChatGPT…") }
                 SettingsLink { Text("Use a Claude API Key…") }

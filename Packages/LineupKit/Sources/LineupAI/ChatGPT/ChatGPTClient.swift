@@ -4,12 +4,12 @@ import LineupKit
 /// Runs requests on the coach's ChatGPT plan through the public Responses API (Sign in with ChatGPT).
 /// The route requires `stream: true` and `store: false` and rejects `max_output_tokens` and `temperature`.
 public struct ChatGPTClient: LLMClient {
-    /// The default until the account's model list loads; after that, `preferredModel(in:)` decides.
+    /// The app's ChatGPT model, pinned: Luna 5.6 kept the coach's locks under pressure in the Oct 3 eval.
+    /// A newer model replaces it only after it wins an eval.
     public static let defaultModel = "gpt-5.6-luna"
 
-    /// The default model: the newest Luna the account offers, so the app moves up as OpenAI ships new ones.
-    /// Chosen by the Oct 3 eval: Luna kept the coach's locks under pressure, matched the others elsewhere,
-    /// and is fast. Falls back to the newest Sol, then the first in the list.
+    /// Only for when OpenAI retires the pinned model from an account: the newest Luna it offers,
+    /// then the newest Sol, then the first in the list.
     public static func preferredModel(in ids: [String]) -> String? {
         func newest(_ family: String) -> String? {
             ids.compactMap { id -> (String, [Int])? in

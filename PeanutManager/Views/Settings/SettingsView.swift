@@ -4,12 +4,33 @@ import LineupAI
 struct SettingsView: View {
     @State private var ai = AIService.shared
 
+    /// The coach asked to switch to the other service; its setup shows until it's connected.
+    @State private var switching = false
+
     var body: some View {
+        // One AI at a time: the connected one, with a quiet way to switch; both only while neither is set up.
         Form {
-            ChatGPTSettings()
-            ClaudeSettings()
-            if ai.isReady { ModelSettings() }
+            if ai.isSignedIn {
+                ChatGPTSettings()
+                if switching {
+                    ClaudeSettings(replacing: "ChatGPT")
+                } else {
+                    Section { Button("Use Claude Instead") { switching = true }.buttonStyle(.link) }
+                }
+            } else if ai.hasClaudeKey {
+                ClaudeSettings()
+                if switching {
+                    ChatGPTSettings(replacing: "your Claude key")
+                } else {
+                    Section { Button("Use ChatGPT Instead") { switching = true }.buttonStyle(.link) }
+                }
+            } else {
+                ChatGPTSettings()
+                ClaudeSettings()
+            }
         }
+        .onChange(of: ai.isSignedIn) { switching = false }
+        .onChange(of: ai.hasClaudeKey) { switching = false }
             .formStyle(.grouped)
             .scrollDisabled(true)
             .frame(width: 500)
@@ -23,14 +44,17 @@ struct SettingsView: View {
     }
 }
 
-/// Sign in with ChatGPT, the account, and which ChatGPT model runs.
+/// Sign in with ChatGPT, the account, and the model it runs.
 struct ChatGPTSettings: View {
+    /// What signing in replaces, when switching from Claude: "your Claude key".
+    var replacing: String?
     @State private var ai = AIService.shared
 
     var body: some View {
         if ai.isSignedIn {
             Section {
                 LabeledContent("Account", value: ai.account?.email ?? ai.account?.name ?? "ChatGPT")
+                LabeledContent("Model", value: ai.currentModelName)
                 if ai.planUsageGranted {
                     LabeledContent("Billing", value: "Your ChatGPT plan")
                 } else {
@@ -77,6 +101,9 @@ struct ChatGPTSettings: View {
                             .buttonStyle(.link)
                             .font(.callout)
                     }
+                    if let replacing {
+                        Text("Signing in removes \(replacing).").font(.callout).foregroundStyle(.secondary)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -87,6 +114,8 @@ struct ChatGPTSettings: View {
 
 /// The coach's own Anthropic API key, for running on Claude.
 struct ClaudeSettings: View {
+    /// What a checked key replaces, when switching from ChatGPT: "ChatGPT".
+    var replacing: String?
     @State private var ai = AIService.shared
     @State private var draft = ""
 
@@ -99,6 +128,7 @@ struct ClaudeSettings: View {
                         Button("Remove") { ai.removeClaudeKey() }
                     }
                 }
+                LabeledContent("Model", value: ai.currentModelName)
                 LabeledContent("Billing", value: "Your Anthropic account")
             } else {
                 HStack {
@@ -116,6 +146,11 @@ struct ClaudeSettings: View {
         } footer: {
             if let error = ai.keyError {
                 Text(error).foregroundStyle(.red)
+            } else if let replacing {
+                HStack(spacing: 4) {
+                    Text("Adding a key signs out of \(replacing).").foregroundStyle(.secondary)
+                    Link("Get a Key", destination: AnthropicClient.keysURL)
+                }
             } else if !ai.hasClaudeKey {
                 HStack(spacing: 4) {
                     Text("Claude Max and Team plans include monthly API credits.").foregroundStyle(.secondary)
@@ -127,48 +162,6 @@ struct ClaudeSettings: View {
 
     private func save() {
         Task { if await ai.saveClaudeKey(draft) { draft = "" } }
-    }
-}
-
-/// Which model runs, from every service that's connected, and how hard it thinks.
-struct ModelSettings: View {
-    @State private var ai = AIService.shared
-
-    var body: some View {
-        Section {
-            Picker("Model", selection: $ai.activeChoice) {
-                Text("Default (\(ai.displayName(for: ai.defaultModelID)))").tag(String?.none)
-                if ai.isSignedIn {
-                    Section("ChatGPT") {
-                        if ai.chatGPTModels.isEmpty, let chosen = ai.activeChoice, !AnthropicClient.isClaude(chosen) {
-                            Text(ai.displayName(for: chosen)).tag(Optional(chosen))
-                        }
-                        ForEach(ai.chatGPTModels) { Text($0.name).tag(Optional($0.id)) }
-                    }
-                }
-                if ai.hasClaudeKey {
-                    Section("Claude") {
-                        ForEach(AnthropicClient.models) { Text($0.name).tag(Optional($0.id)) }
-                    }
-                }
-            }
-            Picker("Thinking", selection: $ai.reasoningEffort) {
-                Text("Default\(ai.defaultEffortName.map { " (\($0))" } ?? "")").tag(String?.none)
-                Divider()
-                ForEach(ai.effortChoices, id: \.self) { Text($0.capitalized).tag(Optional($0)) }
-            }
-        } footer: {
-            if let error = ai.modelsError, !ai.usesClaude {
-                Text(error).foregroundStyle(.secondary)
-            } else if let summary = ai.currentModel?.summary {
-                Text(summary).foregroundStyle(.secondary)
-            }
-        }
-        .task { if ai.isSignedIn && ai.chatGPTModels.isEmpty { await ai.loadModels() } }
-        .onChange(of: ai.modelID) {
-            // Claude and ChatGPT offer different thinking levels.
-            if let effort = ai.reasoningEffort, !ai.effortChoices.contains(effort) { ai.reasoningEffort = nil }
-        }
     }
 }
 

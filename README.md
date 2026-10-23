@@ -18,7 +18,7 @@ Free and local-first. The AI runs on your ChatGPT plan: sign in with ChatGPT, no
 | **Rules** | Plain-language rule sets per team; attach a code check to any rule. |
 | **Stats & Insights** | Tabs for the AI team summary, every player's one-line take (opens their report), and the season stats table. AI scouting report per player and for the team. Every claim cites facts the app computed and shows their real values. Re-assesses only players whose inputs changed. |
 | **Stats** | GameChanger CSV import (section-aware parsing, exact matching, pitching and catching), sortable season table. |
-| **Settings** | Sign in with ChatGPT (keychain), the ChatGPT model and thinking level, Manage Usage. |
+| **Settings** | One AI at a time: Sign in with ChatGPT or a Claude API key (keychain), with a switch to the other. The model is pinned (Claude Sonnet 5.5 or GPT-5.6 Luna, Medium thinking); coaches never pick one. |
 
 ## What's next (short version)
 
@@ -104,6 +104,7 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMShowConsent openai\|anthropic` | Show the one-time "Share Your Team with OpenAI/Anthropic?" sheet |
 | `-PMAutoAllow YES` | With `-PMFakeAI`: ask for consent like a real provider, then press Allow a moment later (remembered for that run only) |
 | `-PMAutoRemake YES` | Once the batting order exists, open Remake… and submit it |
+| `-PMModel id` | Use this model instead of the pinned one, to try a new model before it ships (its service must be connected) |
 | `-PMICloudWait YES` | With an empty library, show the new-device "Looking for your teams in iCloud…" wait instead of the welcome screen |
 
 ## Model eval

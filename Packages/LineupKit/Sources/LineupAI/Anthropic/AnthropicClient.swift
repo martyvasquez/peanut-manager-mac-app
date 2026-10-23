@@ -18,6 +18,7 @@ public struct AnthropicClient: LLMClient {
         ModelInfo(id: "claude-haiku-5-5", name: "Claude Haiku 5.5"),
         ModelInfo(id: "claude-opus-5-5", name: "Claude Opus 5.5"),
     ]
+    /// The app's Claude model, pinned: Sonnet 5.5 led the Oct 20 blind rule-following evals.
     public static let defaultModel = "claude-sonnet-5-5"
     /// Where coaches make a key.
     public static let keysURL = URL(string: "https://console.anthropic.com/settings/keys")!

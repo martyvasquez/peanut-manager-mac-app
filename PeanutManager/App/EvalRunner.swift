@@ -32,7 +32,7 @@ enum EvalRunner {
         }
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let resultsURL = folder.appending(path: "results.json")
-        let effort = defaults.string(forKey: "PMEvalEffort") ?? AIService.defaultEffort
+        let effort = defaults.string(forKey: "PMEvalEffort") ?? AIService.effort
         var results = (try? Data(contentsOf: resultsURL)).flatMap { try? JSONDecoder().decode(EvalResults.self, from: $0) } ?? EvalResults(effort: effort)
         func save() {
             let encoder = JSONEncoder()

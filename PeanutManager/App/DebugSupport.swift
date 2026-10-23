@@ -30,6 +30,7 @@ import LineupKit
 ///   -PMShowConsent openai|anthropic  show the share-with-AI-company sheet
 ///   -PMAutoAllow YES     with -PMFakeAI: ask for consent like a real provider, then press Allow a moment later
 ///   -PMAutoRemake YES    once the batting order exists, open Remake… and submit it ("Test remake")
+///   -PMModel id          use this model instead of the pinned one (needs its service connected), e.g. claude-opus-5-5
 ///   -PMICloudWait YES    with an empty library, show the new-device wait for iCloud instead of the welcome screen
 ///   -PMCheckCloudKit YES check the schema against CloudKit's rules (and kids' data is encrypted), print, quit
 enum DebugSupport {
@@ -51,6 +52,8 @@ enum DebugSupport {
     static var showConsent: String? { UserDefaults.standard.string(forKey: "PMShowConsent") }
     static var autoAllow: Bool { UserDefaults.standard.bool(forKey: "PMAutoAllow") }
     static var autoRemake: Bool { UserDefaults.standard.bool(forKey: "PMAutoRemake") }
+    /// A model to try instead of the pinned one (testing a new model before it can ship).
+    static var model: String? { UserDefaults.standard.string(forKey: "PMModel").flatMap { $0.isEmpty ? nil : $0 } }
     nonisolated static var flakyScout: Bool { UserDefaults.standard.bool(forKey: "PMFlakyScout") }
 
     /// The first game opened this run; the auto flags (generate, positions, copy) act on it alone.

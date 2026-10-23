@@ -53,7 +53,8 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
   - Settings carry over from the last game.
   - Feasibility alert offers "Use GameChanger History" / "Open Roster."
 - **Stats:** full-width sortable table; import sheet with match review.
-- **Settings:** Sign in with ChatGPT (account, Manage Usage, Sign Out) or a Claude API key (checked, kept in the keychain); Model (a saved Claude key makes Claude Sonnet 5.5 the default; otherwise the newest Luna); Thinking (Default = Medium).
+- **Settings:** Sign in with ChatGPT (account, Manage Usage, Sign Out) or a Claude API key (checked, kept in the keychain).
+- **Models are pinned, one AI at a time (Oct 23, Marty's call):** coaches never pick a model. A Claude key runs Claude Sonnet 5.5; a ChatGPT sign-in runs GPT-5.6 Luna (the newest Luna only if OpenAI retires 5.6 from the account); both at Medium, as evaluated. Only one service is connected: Settings shows it with "Use Claude/ChatGPT Instead", and the new one replaces the old only once it works (a checked key, a finished sign-in). Setups that had both keep Claude and sign out of ChatGPT. The game's model chip shows the model, with links to usage and AI Settings. Old model and thinking choices are cleared. To try a new model: `-PMRunEval` with `-PMEvalModels`, and `-PMModel <id>` in a debug build; it ships by changing `AIService.claudeModel` / `chatGPTModel` once it wins. Candidate: Marty's account already offers GPT-6 Luna (untested).
 - **App:** icon and accent color; local SwiftData store in its own folder; debug launch flags (README).
 
 - **Distribution:** Sparkle and `release-mac.yml` removed (Oct 23); no one else used them. Pushing to `main` ships nothing. Old GitHub Releases still exist but nothing reads them.

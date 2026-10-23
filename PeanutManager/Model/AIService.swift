@@ -37,30 +37,31 @@ final class AIService {
     var keyError: String?
     var hasClaudeKey: Bool { anthropicKey != nil }
 
-    /// The model the coach picked; nil follows the default.
-    var chosenModelID: String? {
-        didSet { UserDefaults.standard.set(chosenModelID, forKey: Keys.choice) }
+    // MARK: The model
+    // Coaches don't pick models: rule adherence is the promise, so the app runs only models that passed the
+    // blind rule-following evals, pinned to exact versions, at the thinking level they were tested at. A new
+    // model ships only after it wins an eval (`-PMRunEval`, `-PMModel`); then its ID changes here.
+
+    /// Claude, with the coach's API key: Sonnet 5.5 led the Oct 20 blind evals.
+    static let claudeModel = AnthropicClient.defaultModel
+    /// ChatGPT, on the coach's plan: Luna 5.6 kept every lock in the Oct 3 eval.
+    static let chatGPTModel = ChatGPTClient.defaultModel
+    /// The thinking level the evals ran at.
+    static let effort = "medium"
+
+    /// The model requests use: the connected service's pinned model.
+    var modelID: String {
+        #if DEBUG
+        if let model = DebugSupport.model { return model }
+        #endif
+        return hasClaudeKey ? Self.claudeModel : chatGPTModelID
     }
-    /// The newest Luna the account offers, remembered so the app starts on it before the list loads.
-    private(set) var chatGPTDefaultID: String {
-        didSet { UserDefaults.standard.set(chatGPTDefaultID, forKey: Keys.defaultModel) }
-    }
-    /// Claude Sonnet once a key is saved (adding one means the coach wants Claude), else the newest Luna.
-    var defaultModelID: String { hasClaudeKey ? AnthropicClient.defaultModel : chatGPTDefaultID }
-    /// The coach's pick while it can run (its service is connected); nil follows the default. Settings binds to this.
-    var activeChoice: String? {
-        get {
-            guard let chosen = chosenModelID else { return nil }
-            let runnable = AnthropicClient.isClaude(chosen) ? hasClaudeKey : (isSignedIn || !hasClaudeKey)
-            return runnable ? chosen : nil
-        }
-        set { chosenModelID = newValue }
-    }
-    /// The model requests use.
-    var modelID: String { activeChoice ?? defaultModelID }
-    /// The thinking level the coach picked; nil uses the app's default.
-    var reasoningEffort: String? {
-        didSet { UserDefaults.standard.set(reasoningEffort, forKey: Keys.effort) }
+
+    /// Luna 5.6, or, only if OpenAI has retired it from the account, the newest Luna it offers.
+    private var chatGPTModelID: String {
+        let ids = chatGPTModels.map(\.id)
+        guard !ids.isEmpty, !ids.contains(Self.chatGPTModel) else { return Self.chatGPTModel }
+        return ChatGPTClient.preferredModel(in: ids) ?? Self.chatGPTModel
     }
 
     private var session: ChatGPTSession?
@@ -68,10 +69,8 @@ final class AIService {
     private let auth = ChatGPTAuth()
 
     nonisolated private enum Keys {
-        static let choice = "chatGPTModelChoice"
-        static let defaultModel = "chatGPTDefaultModel"
-        static let legacyModel = "chatGPTModel"
-        static let effort = "chatGPTEffort"
+        /// Model and thinking choices from before models were pinned; cleared on launch.
+        static let retired = ["chatGPTModelChoice", "chatGPTDefaultModel", "chatGPTModel", "chatGPTEffort", "aiProvider"]
         static let welcomed = "chatGPTWelcomed"
         static let vault = "chatgpt-session"
         static let host = "chatgpt-host-id"
@@ -81,14 +80,11 @@ final class AIService {
 
     private init() {
         let defaults = UserDefaults.standard
-        chatGPTDefaultID = defaults.string(forKey: Keys.defaultModel) ?? ChatGPTClient.defaultModel
-        // Builds before the newest-Sol default stored every model as a choice; only a non-default one was picked on purpose.
-        if let legacy = defaults.string(forKey: Keys.legacyModel) {
-            defaults.removeObject(forKey: Keys.legacyModel)
-            if legacy != "gpt-5.6-sol" { defaults.set(legacy, forKey: Keys.choice) }
-        }
-        chosenModelID = defaults.string(forKey: Keys.choice)
-        reasoningEffort = defaults.string(forKey: Keys.effort)
+        #if DEBUG
+        if !DebugSupport.noAI && !DebugSupport.fakeAI { Keys.retired.forEach(defaults.removeObject) }
+        #else
+        Keys.retired.forEach(defaults.removeObject)
+        #endif
         #if DEBUG
         // Test runs that don't use the real AI never touch the keychain, so they never ask for the password.
         if DebugSupport.fakeClaudeKey && !DebugSupport.noAI { anthropicKey = "sk-ant-debug-0000" }
@@ -106,7 +102,14 @@ final class AIService {
             account = record.account
             if let tokens = record.tokens { adopt(record.account, tokens) }
         }
-        // Pick up new or retired models before anything runs.
+        // One AI at a time. Setups from before that rule keep Claude (the first choice, and a key is harder to
+        // enter again than signing back in) and sign out of ChatGPT.
+        var keepsBoth = false
+        #if DEBUG
+        keepsBoth = DebugSupport.fakeClaudeKey  // an in-memory test key must never sign out the real account
+        #endif
+        if isSignedIn && hasClaudeKey && !keepsBoth { signOut() }
+        // Learn whether OpenAI still offers the pinned Luna before anything runs.
         if isSignedIn { Task { await loadModels() } }
     }
 
@@ -115,14 +118,14 @@ final class AIService {
     /// The client and model for the next request. Never fails here: a missing sign-in surfaces when the request runs.
     func client() -> (client: any LLMClient, model: String, effort: String?) {
         #if DEBUG
-        if DebugSupport.fakeAI { return (FakeLLMClient(), modelID, effectiveEffort) }
+        if DebugSupport.fakeAI { return (FakeLLMClient(), modelID, Self.effort) }
         #endif
         if AnthropicClient.isClaude(modelID) {
-            guard let anthropicKey else { return (UnavailableClient(), modelID, effectiveEffort) }
-            return (AnthropicClient(apiKey: anthropicKey, effort: effectiveEffort), modelID, effectiveEffort)
+            guard let anthropicKey else { return (UnavailableClient(), modelID, Self.effort) }
+            return (AnthropicClient(apiKey: anthropicKey, effort: Self.effort), modelID, Self.effort)
         }
-        guard let session else { return (UnavailableClient(), modelID, effectiveEffort) }
-        return (ChatGPTClient(session: session, reasoningEffort: effectiveEffort), modelID, effectiveEffort)
+        guard let session else { return (UnavailableClient(), modelID, Self.effort) }
+        return (ChatGPTClient(session: session, reasoningEffort: Self.effort), modelID, Self.effort)
     }
 
     /// "Luna · Medium": the model and, when known, its thinking level.
@@ -139,8 +142,6 @@ final class AIService {
     }
     #endif
 
-    var currentModelID: String { modelID }
-
     /// Whether the next request runs on Claude (the coach's API key) rather than the ChatGPT plan.
     var usesClaude: Bool { AnthropicClient.isClaude(modelID) }
 
@@ -152,7 +153,8 @@ final class AIService {
         return isSignedIn || hasClaudeKey
     }
 
-    var currentModelName: String { displayName(for: currentModelID) }
+    /// "Claude Sonnet 5.5": what the coach sees, never chooses.
+    var currentModelName: String { displayName(for: modelID) }
 
     /// "GPT-5.6-Sol"; falls back to a name made from the ID.
     func displayName(for id: String) -> String {
@@ -162,24 +164,6 @@ final class AIService {
     static func fallbackName(_ id: String) -> String {
         guard id.hasPrefix("gpt-") else { return id }
         return "GPT-" + id.dropFirst(4).split(separator: "-").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: "-")
-    }
-
-    var currentModel: ChatGPTClient.ModelInfo? { chatGPTModels.first { $0.id == modelID } }
-
-    /// Reasoning levels for the selected model, cheapest first.
-    var effortChoices: [String] { usesClaude ? AnthropicClient.efforts : currentModel?.efforts ?? ["low", "medium", "high"] }
-
-    /// The app's default thinking level, where the model offers it.
-    static let defaultEffort = "medium"
-
-    /// What requests use: the coach's pick, else Medium, else the model's own default.
-    var effectiveEffort: String? {
-        reasoningEffort ?? (effortChoices.contains(Self.defaultEffort) ? Self.defaultEffort : nil)
-    }
-
-    /// "Medium", or the model's own default when it has no Medium.
-    var defaultEffortName: String? {
-        (effortChoices.contains(Self.defaultEffort) ? Self.defaultEffort : currentModel?.defaultEffort)?.capitalized
     }
 
     // MARK: - Sharing with the AI company
@@ -268,6 +252,8 @@ final class AIService {
                 }
                 Self.saveRecord(Record(account: account, tokens: tokens))
                 adopt(account, tokens)
+                // One AI at a time: ChatGPT replaces Claude only now that it works.
+                if hasClaudeKey { removeClaudeKey() }
                 NSApp.activate()
                 if tokens.planUsageGranted && !UserDefaults.standard.bool(forKey: Keys.welcomed) {
                     UserDefaults.standard.set(true, forKey: Keys.welcomed)
@@ -293,8 +279,6 @@ final class AIService {
         isSignedIn = false
         planUsageGranted = false
         chatGPTModels = []
-        // A pinned ChatGPT model can't run now; follow the default (Claude, if there's a key).
-        if let chosen = chosenModelID, !AnthropicClient.isClaude(chosen) { chosenModelID = nil }
         if let account { Self.saveRecord(Record(account: account, tokens: nil)) }
         guard let record, let tokens = record.tokens else { return }
         Task {
@@ -320,10 +304,6 @@ final class AIService {
             let models = try await ChatGPTClient(session: session).models()
             chatGPTModels = models
             modelsError = nil
-            if let preferred = ChatGPTClient.preferredModel(in: models.map(\.id)) { chatGPTDefaultID = preferred }
-            // A picked model OpenAI retired: back to the default.
-            if let chosen = chosenModelID, !AnthropicClient.isClaude(chosen), !models.isEmpty, !models.contains(where: { $0.id == chosen }) { chosenModelID = nil }
-            if let effort = reasoningEffort, !effortChoices.contains(effort) { reasoningEffort = nil }
         } catch {
             modelsError = error.localizedDescription
         }
@@ -364,6 +344,8 @@ final class AIService {
         }
         Keychain.set(Data(key.utf8), for: Keys.anthropic, synced: true)
         anthropicKey = key
+        // One AI at a time: Claude replaces ChatGPT only now that the key checked out.
+        if isSignedIn { signOut() }
         return true
     }
 
@@ -371,8 +353,6 @@ final class AIService {
         Keychain.set(nil, for: Keys.anthropic)
         anthropicKey = nil
         keyError = nil
-        if let chosen = chosenModelID, AnthropicClient.isClaude(chosen) { chosenModelID = nil }
-        if let effort = reasoningEffort, !effortChoices.contains(effort) { reasoningEffort = nil }
     }
 
     /// "sk-ant-…QAA": enough to recognize the key, never the key.
