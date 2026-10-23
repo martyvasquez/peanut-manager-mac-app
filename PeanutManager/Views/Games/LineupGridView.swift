@@ -10,6 +10,8 @@ struct LineupGridView: View {
     @Bindable var model: GameModel
     @Environment(\.undoManager) private var undoManager
     @State private var selected: CellKey?
+    /// The keyboard cursor shows only while the keyboard is in use; a click just sets where the arrows start.
+    @State private var showsCursor = false
     @State private var editing: CellKey?
     @FocusState private var focused: Bool
     @State private var width: CGFloat = 600
@@ -253,7 +255,7 @@ struct LineupGridView: View {
         let slot = model.lineup.slot(of: player.id, inning: inning)
         let locked = showsLocks && model.isLocked(key)
         let provenance = model.document.provenance[key]
-        let isSelected = selected == key
+        let isSelected = showsCursor && focused && selected == key
 
         let swapTarget = cellTarget == key && draggingCell.map { $0.inning == inning && model.canSwap($0.player, player.id, inning: inning) } == true
         let isLit = lit != nil && slot == .field(lit!)
@@ -308,6 +310,7 @@ struct LineupGridView: View {
         .animation(.snappy(duration: 0.18), value: swapTarget)
         .onTapGesture {
             selected = key
+            showsCursor = false
             focused = true
             if available && model.hasGrid { editing = key }
         }
@@ -397,6 +400,7 @@ struct LineupGridView: View {
         let rows = model.rows
         guard !rows.isEmpty else { return .ignored }
         var current = selected ?? CellKey(inning: 1, player: rows[0].id)
+        showsCursor = true
         guard let row = rows.firstIndex(where: { $0.id == current.player }) else { return .ignored }
 
         switch press.key {
