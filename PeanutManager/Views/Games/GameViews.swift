@@ -140,6 +140,7 @@ struct GameDetailView: View {
     @Environment(\.undoManager) private var undoManager
     @State private var feedbackFor: GameModel.Step?
     @State private var confirmStartOver = false
+    @State private var importingStats = false
 
     init(game: Game) {
         self.game = game
@@ -172,6 +173,7 @@ struct GameDetailView: View {
             #endif
         }
         .toolbar { toolbar }
+        .gameChangerImport(team: game.team, isPresented: $importingStats)
         .sheet(item: $feedbackFor) { step in
             FeedbackSheet(prompt: step == .battingOrder ? "Bat Mia leadoff" : "Move Jake to the outfield") { feedback in
                 if step == .battingOrder {
@@ -304,17 +306,28 @@ struct GameDetailView: View {
         .help("Win ↔ Develop")
     }
 
+    /// What the AI trusts. Without stats it can only go by ratings, so the chip says so and offers the import,
+    /// with the stats choices shown but out of reach.
     private var trustMenu: some View {
-        Menu {
-            Picker("Trust", selection: Binding(get: { game.weighting }, set: { game.weighting = $0 })) {
-                ForEach(DataWeighting.allCases, id: \.self) { Text($0.label).tag($0) }
+        let hasStats = game.hasStats
+        return Menu {
+            if hasStats {
+                Picker("Trust", selection: Binding(get: { game.weighting }, set: { game.weighting = $0 })) {
+                    ForEach(DataWeighting.allCases, id: \.self) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.inline)
+            } else {
+                Button("Import GameChanger Stats…", systemImage: "chart.bar.xaxis") { importingStats = true }
+                Section("With Stats") {
+                    ForEach(DataWeighting.allCases.filter { $0 != .coachOnly }, id: \.self) { Button($0.label) {}.disabled(true) }
+                }
             }
-            .pickerStyle(.inline)
         } label: {
-            Chip(game.weighting.label, symbol: "chart.bar")
+            Chip(hasStats ? game.weighting.label : DataWeighting.coachOnly.label, symbol: "chart.bar")
         }
         .menuStyle(.button).buttonStyle(.plain).fixedSize()
-        .help("What the AI trusts: GameChanger stats, your ratings, or both")
+        .help(hasStats ? "What the AI trusts: GameChanger stats, your ratings, or both"
+                       : "No stats yet, so the AI goes by your ratings. Import GameChanger stats to weigh them too.")
     }
 
     private var canUseHistory: Bool {

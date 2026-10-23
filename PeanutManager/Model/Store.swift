@@ -203,6 +203,9 @@ final class Game {
 
     var isPast: Bool { Calendar.current.startOfDay(for: date) < Calendar.current.startOfDay(for: .now) }
 
+    /// Someone on the team has season stats. Without them the AI can only go by the coach's ratings.
+    var hasStats: Bool { team?.activePlayers.contains { $0.stats != nil } == true }
+
     /// Everything the engine and validator need, assembled from the stored game.
     func context(locks: [Lock] = []) -> GameContext {
         let team = self.team
@@ -212,7 +215,7 @@ final class Game {
             availability: availability,
             rules: ruleSet?.sortedRules.map(\.teamRule) ?? [],
             priority: priority,
-            weighting: weighting,
+            weighting: hasStats ? weighting : .coachOnly,
             locks: locks,
             ageGroup: team?.ageGroup,
             scoutingReport: scoutingReport,
