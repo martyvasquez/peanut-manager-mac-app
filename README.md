@@ -88,6 +88,7 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMHoverInning N` | Show inning N's header as if hovered (its menu button) |
 | `-PMDiamond N` | Open inning N on the field (the diamond popover) |
 | `-PMPlayerCard Name` | Open the player card for the first player whose name starts with Name |
+| `-PMBattingCard Name` | Open the batting card (Batting Order step) for the first player whose name starts with Name |
 | `-PMOpenPicker YES` | Open the position picker |
 | `-PMSection roster\|team\|rules` | Open that section |
 | `-PMOpenSettings YES` / `-settingsTab models` | Open Settings / a tab |

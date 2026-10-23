@@ -606,6 +606,9 @@ struct BattingOrderList: View {
     @Environment(\.undoManager) private var undoManager
     @State private var dragging: PlayerID?
     @State private var dropTarget: DropSpot?
+    @State private var cardPlayer: PlayerID?
+    @State private var editingPlayer: Player?
+    @State private var importingStats = false
     /// The stat columns show team ranks, or the numbers themselves.
     @AppStorage("battingOrderShowsNumbers") private var showsNumbers = false
 
@@ -621,14 +624,13 @@ struct BattingOrderList: View {
     /// Team ranks on AVG, OBP and SLG, from season stats; nil when nobody here has batting stats.
     private struct Stats {
         let ranks: TeamRanks
-        let lines: [PlayerID: BattingLine]
     }
 
     var body: some View {
         let ctx = model.context
         let slots = model.battingSlots
         let lines = Dictionary(ctx.players.compactMap { p in p.stats?.batting.flatMap { $0.pa > 0 ? (p.id, $0) : nil } }, uniquingKeysWith: { a, _ in a })
-        let stats = lines.isEmpty ? nil : model.game.team.map { Stats(ranks: $0.ranks, lines: lines) }
+        let stats = lines.isEmpty ? nil : model.game.team.map { Stats(ranks: $0.ranks) }
         let unplaced = sortedByAverage(model.unplacedBatters, stats)
         let ids = PromptIDs(players: ctx.players)
         let width = chipWidth(stats)
@@ -683,6 +685,39 @@ struct BattingOrderList: View {
         .onContinuousHover { _ in
             if dragging != nil && NSEvent.pressedMouseButtons == 0 { dragging = nil; dropTarget = nil }
         }
+        .gameChangerImport(team: model.game.team, isPresented: $importingStats)
+        // A kid's roster page over the game; Done comes straight back to the lineup.
+        .sheet(item: $editingPlayer) { player in
+            PlayerEditorView(player: player, showsManagement: false)
+                .frame(width: 860, height: 700)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button("Done") { editingPlayer = nil } }
+                }
+        }
+        #if DEBUG
+        .task(id: slots.compactMap { $0 }.count) {
+            if let name = UserDefaults.standard.string(forKey: "PMBattingCard"), slots.contains(where: { $0 != nil }) {
+                try? await Task.sleep(for: .milliseconds(400))
+                cardPlayer = ctx.players.first { $0.name.hasPrefix(name) }?.id
+            }
+        }
+        #endif
+    }
+
+    /// Click a kid for their season at the plate, your evaluation, and the Scouting Report's take.
+    private func card(_ player: PlayerSnapshot) -> some View {
+        BattingCard(model: model, player: player, onEdit: { stored in
+            cardPlayer = nil
+            UserDefaults.standard.set(PlayerTab.stats.rawValue, forKey: "playerTab")
+            editingPlayer = stored
+        }, onImportStats: {
+            cardPlayer = nil
+            importingStats = true
+        })
+    }
+
+    private func showsCard(_ player: PlayerSnapshot) -> Binding<Bool> {
+        Binding(get: { cardPlayer == player.id }, set: { if !$0 { cardPlayer = nil } })
     }
 
     private func chipWidth(_ stats: Stats?) -> CGFloat {
@@ -707,7 +742,7 @@ struct BattingOrderList: View {
         .frame(width: chipWidth(stats), height: chipHeight)
         .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
         .opacity(dragging == player.id ? 0.35 : 1)
-        .help(stats.flatMap { statLine(player.id, $0) } ?? "")
+        .help("Click for \(InningDiamond.firstName(player))'s hitting")
     }
 
     /// A team rank (top three in orange) or the number itself. "–" when they haven't batted enough to rank.
@@ -731,22 +766,6 @@ struct BattingOrderList: View {
             }
             Color.clear.frame(width: handleWidth + 8, height: 1)
         }
-    }
-
-    /// The season line on hover: ".412 AVG (1st) · .500 OBP (2nd) · .588 SLG (4th)" and the counts behind it.
-    private func statLine(_ player: PlayerID, _ stats: Stats) -> String? {
-        guard let line = stats.lines[player] else { return nil }
-        let rates = Self.metrics.compactMap { metric in
-            stats.ranks.standing(player, metric).map { "\(metric.format($0.value)) \(metric.label)" + ($0.rankText.map { " (\($0))" } ?? "") }
-        }.joined(separator: " · ")
-        var counts = ["\(line.pa) PA", "\(line.h) H"]
-        if line.doubles > 0 { counts.append("\(line.doubles) 2B") }
-        if line.triples > 0 { counts.append("\(line.triples) 3B") }
-        if line.hr > 0 { counts.append("\(line.hr) HR") }
-        counts += ["\(line.bb) BB", "\(line.so) K"]
-        if line.sb > 0 { counts.append("\(line.sb) SB") }
-        let ranked = stats.ranks.standing(player, .avg)?.rank != nil
-        return rates + "\n" + counts.joined(separator: " · ") + (ranked ? "" : "\nToo few plate appearances to rank")
     }
 
     /// Ranked batting averages first (best first), then kids too new to rank (by average), then kids without stats.
@@ -774,7 +793,10 @@ struct BattingOrderList: View {
             number(index + 1, open: false)
             chip(player, handle: true, stats: stats)
                 .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(lit ? Color.accentColor : Color.clear, lineWidth: 2))
+                .contentShape(Rectangle())
+                .onTapGesture { cardPlayer = player.id }
                 .onDrag { drag(player) } preview: { preview(player) }
+                .popover(isPresented: showsCard(player), arrowEdge: .trailing) { card(player) }
                 .contextMenu {
                     Button("Remove from Batting Order") { withAnimation(.snappy) { model.removeBatter(player.id, undoManager: undoManager) } }
                 }
@@ -827,7 +849,9 @@ struct BattingOrderList: View {
                 chip(player, handle: false, stats: stats)
                     .contentShape(Rectangle())
                     .onTapGesture(count: 2) { withAnimation(.snappy) { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) } }
+                    .onTapGesture { cardPlayer = player.id }
                     .onDrag { drag(player) } preview: { preview(player) }
+                    .popover(isPresented: showsCard(player), arrowEdge: .leading) { card(player) }
                     .contextMenu {
                         Button("Add to Batting Order") { withAnimation(.snappy) { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) } }
                     }

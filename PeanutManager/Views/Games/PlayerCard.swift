@@ -25,7 +25,7 @@ struct PlayerCard: View {
                     Text(player.name).font(.title3.weight(.semibold))
                     if let jersey = player.jersey { Text("#\(jersey)").foregroundStyle(.secondary) }
                 }
-                if let game = thisGame { section("This Game") { Text(game) } }
+                if let game = thisGame { CardSection("This Game") { Text(game) } }
                 field(profile)
             }
             .frame(width: FieldGeometry.size.width * Self.scale, alignment: .leading)
@@ -35,7 +35,7 @@ struct PlayerCard: View {
                 if profile.canPlay(.p) { pitching(ranks) }
                 if profile.canPlay(.c) { catching }
                 if !player.notes.isEmpty {
-                    section("Notes") { Text(player.notes).lineLimit(4).fixedSize(horizontal: false, vertical: true) }
+                    CardSection("Notes") { Text(player.notes).lineLimit(4).fixedSize(horizontal: false, vertical: true) }
                 }
                 if player.stats == nil, let onImportStats {
                     Unlock(kind: .stats, title: "Season Stats", message: "Fielding %, ERA, and where \(InningDiamond.firstName(player)) ranks on the team.",
@@ -86,7 +86,7 @@ struct PlayerCard: View {
         let line = player.stats?.fielding
         let played = (line?.innings ?? [:]).filter { $0.value > 0 }.sorted { $0.value > $1.value }
         if !rated.isEmpty || line.map({ $0.tc > 0 }) == true || !played.isEmpty {
-            section("Fielding") {
+            CardSection("Fielding") {
                 if let line, line.tc > 0, let fpct = line.fpct {
                     Text("\(Metric.fpct.format(fpct)) fielding" + rank(ranks, .fpct) + " · \(line.tc) chances, \(line.e) errors")
                 }
@@ -103,7 +103,7 @@ struct PlayerCard: View {
         let keys: [RatingKey] = [.pitchControl, .pitchVelocity, .pitchComposure].filter { player.ratings[$0] != nil }
         let line = player.stats?.pitching
         if !keys.isEmpty || line.map({ $0.outs > 0 }) == true {
-            section("Pitching") {
+            CardSection("Pitching") {
                 if let line, line.outs > 0 {
                     let rates = [line.era.map { Metric.era.format($0) + " ERA" + rank(ranks, .era) },
                                  line.kPerBF.map { Metric.pitchKRate.format($0) + " K" + rank(ranks, .pitchKRate) }].compactMap { $0 }
@@ -119,7 +119,7 @@ struct PlayerCard: View {
         let outs = player.stats?.fielding?.catcherOuts ?? 0
         let rated = player.ratings[.catcherAbility] != nil
         if outs > 0 || rated {
-            section("Catching") {
+            CardSection("Catching") {
                 if outs > 0 { Text("\(Self.innings(Double(outs) / 3)) innings caught") }
                 ratings([.catcherAbility].filter { player.ratings[$0] != nil })
             }
@@ -128,29 +128,7 @@ struct PlayerCard: View {
 
     // MARK: Pieces
 
-    private func section<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
-            content().font(.callout)
-        }
-    }
-
-    private func ratings(_ keys: [RatingKey]) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            ForEach(keys, id: \.self) { key in
-                HStack {
-                    Text(key.label)
-                    Spacer()
-                    HStack(spacing: 2) {
-                        ForEach(1...5, id: \.self) { star in
-                            Image(systemName: "star.fill").font(.system(size: 9))
-                                .foregroundStyle(star <= (player.ratings[key] ?? 0) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary))
-                        }
-                    }
-                }
-            }
-        }
-    }
+    private func ratings(_ keys: [RatingKey]) -> some View { StarRatings(keys: keys, ratings: player.ratings) }
 
     /// " (2nd)" when the kid ranks on the team, else nothing.
     private func rank(_ ranks: TeamRanks?, _ metric: Metric) -> String {
@@ -161,5 +139,202 @@ struct PlayerCard: View {
     private static func innings(_ value: Double) -> String {
         let outs = Int((value * 3).rounded())
         return outs % 3 == 0 ? "\(outs / 3)" : "\(outs / 3).\(outs % 3)"
+    }
+}
+
+/// What a coach wants to know about a kid while setting the batting order: the season at the plate and on
+/// the bases, their own hitting evaluation, and what the Scouting Report says about the kid's offense.
+/// Numbers come from the roster and season stats; the AI's claims show the cited facts' real values.
+struct BattingCard: View {
+    let model: GameModel
+    let player: PlayerSnapshot
+    var onEdit: ((Player) -> Void)?
+    var onImportStats: (() -> Void)?
+    @State private var runner = ScoutRunner.shared
+
+    private static let metrics: [Metric] = [.avg, .obp, .slg]
+    private static let ratingKeys: [RatingKey] = [.plateDiscipline, .contactAbility, .battingPower, .runSpeed]
+
+    var body: some View {
+        let ranks = model.game.team?.ranks
+        let line = player.stats?.batting.flatMap { $0.pa > 0 ? $0 : nil }
+        let stored = model.game.team?.players.first { $0.uid == player.id }
+
+        HStack(alignment: .top, spacing: 22) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(player.name).font(.title3.weight(.semibold))
+                    if let jersey = player.jersey { Text("#\(jersey)").foregroundStyle(.secondary) }
+                }
+                if let spot = model.lineup.battingOrder.firstIndex(of: player.id) {
+                    CardSection("This Game") { Text("Batting \(Standing.ordinal(spot + 1))") }
+                }
+                if let line {
+                    season(line, ranks)
+                    running(line, ranks)
+                } else if let onImportStats {
+                    Unlock(kind: .stats, title: "Season Stats", message: "AVG, OBP, SLG and where \(InningDiamond.firstName(player)) ranks on the team.",
+                           compact: true, onImport: onImportStats)
+                }
+                let rated = Self.ratingKeys.filter { player.ratings[$0] != nil }
+                if !rated.isEmpty {
+                    CardSection("Your Evaluation") { StarRatings(keys: rated, ratings: player.ratings) }
+                }
+            }
+            .frame(width: 250, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 14) {
+                if let stored { scouting(stored, hasStats: line != nil) }
+                if !player.notes.isEmpty {
+                    CardSection("Notes") { Text(player.notes).lineLimit(4).fixedSize(horizontal: false, vertical: true) }
+                }
+                Spacer(minLength: 0)
+                if let onEdit, let stored {
+                    Button("Edit Player…") { onEdit(stored) }
+                        .buttonStyle(.link)
+                }
+            }
+            .frame(width: 300, alignment: .leading)
+        }
+        .padding(18)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    // MARK: Sections
+
+    /// AVG, OBP and SLG large with their team ranks (top three in orange), then the counts behind them.
+    private func season(_ line: BattingLine, _ ranks: TeamRanks?) -> some View {
+        CardSection("Season") {
+            HStack(alignment: .top, spacing: 22) {
+                ForEach(Self.metrics, id: \.self) { metric in
+                    let standing = ranks?.standing(player.id, metric)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(standing.map { metric.format($0.value) } ?? "–").font(.title2.monospacedDigit())
+                        Text([metric.label, standing?.rankText].compactMap { $0 }.joined(separator: " · "))
+                            .font(.caption)
+                            .foregroundStyle(standing?.rank.map { $0 <= 3 } == true ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
+                    }
+                }
+            }
+            .padding(.bottom, 2)
+            Text(counts(line)).foregroundStyle(.secondary)
+            let rates = [Metric.kRate, .bbRate].compactMap { metric in
+                ranks?.standing(player.id, metric).map { "\(metric.format($0.value)) \(metric.label)" + ($0.rankText.map { " (\($0))" } ?? "") }
+            }
+            if !rates.isEmpty { Text(rates.joined(separator: " · ")) }
+            if ranks?.standing(player.id, .avg)?.rank == nil {
+                Text("Too few plate appearances to rank").foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func running(_ line: BattingLine, _ ranks: TeamRanks?) -> some View {
+        if line.sb + line.cs > 0 {
+            CardSection("Baserunning") {
+                let rank = ranks?.standing(player.id, .sb)?.rankText.map { " (\($0))" } ?? ""
+                Text(["\(line.sb) SB" + rank, line.sbPct.map { "\(Int(($0 * 100).rounded()))% success" }].compactMap { $0 }.joined(separator: " · "))
+            }
+        }
+    }
+
+    /// The batting role and the offense half of the Scouting Report; in its place, what it takes to get one.
+    @ViewBuilder
+    private func scouting(_ stored: Player, hasStats: Bool) -> some View {
+        if let job = runner.jobs[stored.uid], job.isActive {
+            CardSection("Scouting Report") { JobStatus(job: job) }
+        } else if let a = stored.assessment {
+            CardSection("Scouting Report") {
+                if !a.battingRole.isEmpty { Text(Self.battingLine(a)).fixedSize(horizontal: false, vertical: true) }
+                let good = a.strengths.filter { $0.side == .offense }.prefix(2)
+                let work = a.weaknesses.filter { $0.side == .offense }.prefix(2)
+                ForEach(Array(good.enumerated()), id: \.offset) { _, claim in self.claim("Strength", claim, a.facts) }
+                ForEach(Array(work.enumerated()), id: \.offset) { _, claim in self.claim("Work On", claim, a.facts) }
+                if runner.isStale(stored) {
+                    Text("Changed since \(a.assessedAt.formatted(date: .abbreviated, time: .omitted))").foregroundStyle(.tertiary)
+                }
+            }
+        } else if stored.isAssessable && AIService.shared.isReady {
+            CardSection("Scouting Report") {
+                Button("Write Scouting Report", systemImage: "sparkles") { runner.assess(stored) }
+                    .buttonStyle(.link)
+            }
+        } else if hasStats || !stored.isAssessable {
+            // Without stats the Season unlock already asks for them; this one adds AI when that's missing too.
+            let needs: [Unlock.Kind] = (stored.isAssessable ? [] : [.stats]) + (AIService.shared.isReady ? [] : [.ai])
+            if !needs.isEmpty && !(needs == [.stats] && onImportStats != nil) {
+                Unlock(needs: needs, title: "Scouting Report", message: "What \(InningDiamond.firstName(player)) does well at the plate, what to work on, and where to bat.",
+                       compact: true, onImport: onImportStats)
+            }
+        }
+    }
+
+    private func claim(_ kind: String, _ claim: Claim, _ facts: FactSheet) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            (Text(kind + " ").foregroundStyle(.secondary) + Text(claim.title).fontWeight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+            EvidenceChips(ids: claim.evidence, facts: facts, limit: 2)
+        }
+        .padding(.top, 4)
+    }
+
+    // MARK: Pieces
+
+    /// "33 PA · 20 H · 4 2B · 1 HR · 6 BB · 3 K"
+    private func counts(_ line: BattingLine) -> String {
+        var counts = ["\(line.pa) PA", "\(line.h) H"]
+        if line.doubles > 0 { counts.append("\(line.doubles) 2B") }
+        if line.triples > 0 { counts.append("\(line.triples) 3B") }
+        if line.hr > 0 { counts.append("\(line.hr) HR") }
+        counts += ["\(line.bb) BB", "\(line.so) K"]
+        return counts.joined(separator: " · ")
+    }
+
+    private static func battingLine(_ a: PlayerAssessment) -> String {
+        var text = a.battingRole.prefix(1).uppercased() + a.battingRole.dropFirst()
+        if let zone = a.battingZone { text += " · \(zone.rawValue) of the order" }
+        if !a.battingReason.isEmpty { text += ". \(a.battingReason)" }
+        return text
+    }
+}
+
+/// A small uppercase heading over a card's lines.
+struct CardSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    init(_ title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+            content.font(.callout)
+        }
+    }
+}
+
+/// The coach's 1–5 star ratings, one per line.
+struct StarRatings: View {
+    let keys: [RatingKey]
+    let ratings: Ratings
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            ForEach(keys, id: \.self) { key in
+                HStack {
+                    Text(key.label)
+                    Spacer()
+                    HStack(spacing: 2) {
+                        ForEach(1...5, id: \.self) { star in
+                            Image(systemName: "star.fill").font(.system(size: 9))
+                                .foregroundStyle(star <= (ratings[key] ?? 0) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary))
+                        }
+                    }
+                }
+            }
+        }
     }
 }
