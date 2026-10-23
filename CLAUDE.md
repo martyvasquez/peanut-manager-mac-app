@@ -35,6 +35,7 @@ Native SwiftUI + SwiftData macOS app (macOS 26+, Swift 6, XcodeGen) that makes y
 - Building `GameContext` decodes every player; it's memoized by a hash key in `GameModel`. Don't call `game.context(...)` per grid cell.
 - Launch flags that name a stored setting (`-teamTab`, `-playerTab`, `-settingsTab`) override `@AppStorage` for the whole run, so the control can't change it. Use them only for screenshots; launch builds for Marty without them.
 - Never test against the owner's library: run debug builds with `-PMStore <Name>` (see README) and delete `~/Library/Containers/com.martyvasquez.PeanutManager/Data/Library/Application Support/Peanut Manager/<Name>.store*` afterward. The app is sandboxed, so its files live in that container; the first sandboxed launch moved the library there (`container-migration.plist`), and debug flags can't write outside it (`-PMPrintTo` needs a path inside the container).
+- `-PMStore` separates the library, not the settings: test runs share UserDefaults with the owner's app. A debug path that would save a setting (consent, model choice, selected team) must keep it in memory instead (see `-PMAutoAllow`).
 - The sample CSV and test fixture are anonymized; never commit real kids' names (the repo is public).
 
 ## Verify UI changes
