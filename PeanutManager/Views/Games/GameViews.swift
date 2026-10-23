@@ -139,6 +139,8 @@ struct GameDetailView: View {
     @State private var model: GameModel
     @Environment(\.undoManager) private var undoManager
     @State private var feedbackFor: GameModel.Step?
+    /// What the coach asked for in Remake…, run once that sheet has closed so the next sheet (consent) can open.
+    @State private var remake: (step: GameModel.Step, feedback: String)?
     @State private var confirmStartOver = false
     @State private var importingStats = false
 
@@ -174,13 +176,9 @@ struct GameDetailView: View {
         }
         .toolbar { toolbar }
         .gameChangerImport(team: game.team, isPresented: $importingStats)
-        .sheet(item: $feedbackFor) { step in
+        .sheet(item: $feedbackFor, onDismiss: runRemake) { step in
             FeedbackSheet(prompt: step == .battingOrder ? "Bat Mia leadoff" : "Move Jake to the outfield") { feedback in
-                if step == .battingOrder {
-                    model.makeBattingOrder(feedback: feedback, undoManager: undoManager)
-                } else {
-                    model.setPositions(feedback: feedback, undoManager: undoManager)
-                }
+                remake = (step, feedback)
             }
         }
         .alert(model.blockedByPositions ? "Who Pitches and Catches?" : "Couldn't Make a Lineup", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
@@ -224,6 +222,7 @@ struct GameDetailView: View {
             guard DebugSupport.autoFills(game) else { return }
             if DebugSupport.copyLastGame && !model.hasBattingOrder, let last = model.lastGame { model.copyLineup(from: last, undoManager: undoManager) }
             if DebugSupport.autoGenerate && !model.hasBattingOrder { model.makeBattingOrder(undoManager: undoManager) }
+            if DebugSupport.autoRemake && model.hasBattingOrder { feedbackFor = .battingOrder }
             if DebugSupport.autoPositions && model.hasBattingOrder && !model.isFilled { model.setPositions(undoManager: undoManager) }
             #endif
         }
@@ -335,6 +334,16 @@ struct GameDetailView: View {
 
     private var canUseHistory: Bool {
         (game.team?.activePlayers ?? []).contains { $0.stats != nil && $0.profile == .default }
+    }
+
+    private func runRemake() {
+        guard let remake else { return }
+        self.remake = nil
+        if remake.step == .battingOrder {
+            model.makeBattingOrder(feedback: remake.feedback, undoManager: undoManager)
+        } else {
+            model.setPositions(feedback: remake.feedback, undoManager: undoManager)
+        }
     }
 
     private func useHistoryAndRetry() {
@@ -581,6 +590,14 @@ struct FeedbackSheet: View {
         }
         .padding(20)
         .frame(width: 420)
+        #if DEBUG
+        .task {
+            guard DebugSupport.autoRemake else { return }
+            try? await Task.sleep(for: .seconds(1))
+            onSubmit("Test remake")
+            dismiss()
+        }
+        #endif
     }
 }
 

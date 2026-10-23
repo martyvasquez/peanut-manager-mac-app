@@ -102,6 +102,8 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMCheckCloudKit YES` | Check the schema against CloudKit's rules, list which fields are encrypted, report where a synced keychain item lands, then quit |
 | `-PMLibraryFolder Name` | Use another Application Support folder instead of `Peanut Manager` (to test the sandbox migration with a re-signed copy under another bundle ID) |
 | `-PMShowConsent openai\|anthropic` | Show the one-time "Share Your Team with OpenAI/Anthropic?" sheet |
+| `-PMAutoAllow YES` | With `-PMFakeAI`: ask for consent like a real provider, then press Allow a moment later (remembered for that run only) |
+| `-PMAutoRemake YES` | Once the batting order exists, open Remake… and submit it |
 | `-PMICloudWait YES` | With an empty library, show the new-device "Looking for your teams in iCloud…" wait instead of the welcome screen |
 
 ## Model eval

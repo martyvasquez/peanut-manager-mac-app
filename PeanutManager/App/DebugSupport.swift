@@ -28,6 +28,8 @@ import LineupKit
 ///   -PMPrintTo path      once the lineup is filled, print it to a PDF at path (no print panel)
 ///   -PMRunEval YES       run the model eval on this (copied) library; see EvalRunner
 ///   -PMShowConsent openai|anthropic  show the share-with-AI-company sheet
+///   -PMAutoAllow YES     with -PMFakeAI: ask for consent like a real provider, then press Allow a moment later
+///   -PMAutoRemake YES    once the batting order exists, open Remake… and submit it ("Test remake")
 ///   -PMICloudWait YES    with an empty library, show the new-device wait for iCloud instead of the welcome screen
 ///   -PMCheckCloudKit YES check the schema against CloudKit's rules (and kids' data is encrypted), print, quit
 enum DebugSupport {
@@ -47,6 +49,8 @@ enum DebugSupport {
     static var copyLastGame: Bool { UserDefaults.standard.bool(forKey: "PMCopyLastGame") }
     static var iCloudWait: Bool { UserDefaults.standard.bool(forKey: "PMICloudWait") }
     static var showConsent: String? { UserDefaults.standard.string(forKey: "PMShowConsent") }
+    static var autoAllow: Bool { UserDefaults.standard.bool(forKey: "PMAutoAllow") }
+    static var autoRemake: Bool { UserDefaults.standard.bool(forKey: "PMAutoRemake") }
     nonisolated static var flakyScout: Bool { UserDefaults.standard.bool(forKey: "PMFlakyScout") }
 
     /// The first game opened this run; the auto flags (generate, positions, copy) act on it alone.

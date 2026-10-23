@@ -204,11 +204,13 @@ final class AIService {
 
     /// Shown as a sheet over the main window; the action runs only after Allow.
     var consentRequest: ConsentRequest?
+    /// Allowed and waiting for the sheet to finish closing, so the action never starts while a sheet is in motion.
+    @ObservationIgnored private var allowed: ConsentRequest?
 
     /// Where the next request goes; nil when nothing leaves the Mac (the debug fake AI).
     var provider: Provider? {
         #if DEBUG
-        if DebugSupport.fakeAI { return nil }
+        if DebugSupport.fakeAI { return DebugSupport.autoAllow ? .openAI : nil }
         #endif
         return usesClaude ? .anthropic : .openAI
     }
@@ -216,8 +218,16 @@ final class AIService {
     /// Whether the next AI action must ask first.
     var needsConsent: Bool {
         guard let provider else { return false }
+        #if DEBUG
+        if DebugSupport.autoAllow { return !testAllowed }
+        #endif
         return !UserDefaults.standard.bool(forKey: Keys.consent + provider.rawValue)
     }
+
+    #if DEBUG
+    /// `-PMAutoAllow` remembers its Allow for this run only, so a test never grants consent in the coach's settings.
+    @ObservationIgnored private var testAllowed = false
+    #endif
 
     /// Asks before `action` runs; the coach's Allow is remembered for that company.
     func askConsent(then action: @escaping () -> Void) {
@@ -226,9 +236,19 @@ final class AIService {
     }
 
     func allow(_ request: ConsentRequest) {
+        #if DEBUG
+        if DebugSupport.autoAllow { testAllowed = true; allowed = request; consentRequest = nil; return }
+        #endif
         UserDefaults.standard.set(true, forKey: Keys.consent + request.provider.rawValue)
+        allowed = request
         consentRequest = nil
-        request.proceed()
+    }
+
+    /// The consent sheet has closed: run the action the coach allowed (Not Now runs nothing).
+    func consentSheetClosed() {
+        let request = allowed
+        allowed = nil
+        request?.proceed()
     }
 
     // MARK: - Sign in / out

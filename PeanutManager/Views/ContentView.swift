@@ -100,7 +100,16 @@ struct ContentView: View {
             #endif
         }
         .sheet(isPresented: $showingSignIn) { SignInSheet() }
-        .sheet(item: $ai.consentRequest) { request in ConsentSheet(request: request) }
+        .sheet(item: $ai.consentRequest, onDismiss: { ai.consentSheetClosed() }) { request in
+            ConsentSheet(request: request)
+            #if DEBUG
+                .task {
+                    guard DebugSupport.autoAllow else { return }
+                    try? await Task.sleep(for: .seconds(1))
+                    ai.allow(request)
+                }
+            #endif
+        }
         .sheet(item: $editingTeam) { team in
             TeamSheet(team: team)
         }
