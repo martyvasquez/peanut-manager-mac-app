@@ -208,21 +208,27 @@ final class GameModel {
         }
     }
 
-    /// The next inning starts as a copy of this one (for whoever's available then), ready for a few swaps.
-    func copyInningForward(_ number: Int, undoManager: UndoManager?) {
-        guard document.lineup.innings.indices.contains(number) else { return }
-        let available = context.availablePlayers(inning: number + 1).map(\.id)
-        mutate("Copy Inning", undoManager: undoManager) { doc in
-            var next = doc.lineup.innings[number - 1]
-            for (position, id) in next.positions where !available.contains(id) { next.positions[position] = nil }
-            next.sitting.removeAll { !available.contains($0) }
-            next.seatRest(available: available)
-            doc.lineup.innings[number] = next
-            doc.locks.removeAll { $0.inning == number + 1 }
-            doc.provenance = doc.provenance.filter { $0.key.inning != number + 1 }
-            for (position, id) in next.positions { doc.locks.append(Lock(inning: number + 1, player: id, slot: .field(position))) }
-            for id in next.sitting { doc.locks.append(Lock(inning: number + 1, player: id, slot: .bench)) }
-            for lock in doc.locks where lock.inning == number + 1 { doc.provenance[CellKey(inning: lock.inning, player: lock.player)] = .coach }
+    /// The inning the coach last copied. App-wide like the clipboard, so it pastes into any game.
+    static var copiedInning: InningAssignment?
+
+    func copyInning(_ number: Int) {
+        Self.copiedInning = document.lineup.innings[safe: number - 1]
+    }
+
+    /// Replaces inning `number` with the copied one, for whoever's available then. What's pasted counts as the coach's picks.
+    func pasteInning(into number: Int, undoManager: UndoManager?) {
+        guard var pasted = Self.copiedInning, document.lineup.innings.indices.contains(number - 1) else { return }
+        let available = context.availablePlayers(inning: number).map(\.id)
+        for (position, id) in pasted.positions where !available.contains(id) { pasted.positions[position] = nil }
+        pasted.sitting.removeAll { !available.contains($0) }
+        pasted.seatRest(available: available)
+        mutate("Paste Inning", undoManager: undoManager) { doc in
+            doc.lineup.innings[number - 1] = pasted
+            doc.locks.removeAll { $0.inning == number }
+            doc.provenance = doc.provenance.filter { $0.key.inning != number }
+            for (position, id) in pasted.positions { doc.locks.append(Lock(inning: number, player: id, slot: .field(position))) }
+            for id in pasted.sitting { doc.locks.append(Lock(inning: number, player: id, slot: .bench)) }
+            for lock in doc.locks where lock.inning == number { doc.provenance[CellKey(inning: number, player: lock.player)] = .coach }
         }
     }
 

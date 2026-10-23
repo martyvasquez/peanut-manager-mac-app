@@ -31,7 +31,7 @@ struct LineupCardView: View {
                         cell(player.name, width: 180, alignment: .leading)
                         ForEach(1...innings, id: \.self) { inning in
                             let slot = lineup.slot(of: player.id, inning: inning)
-                            cell(slot.map { $0 == .bench ? "—" : $0.description } ?? "", width: 46, bold: slot != .bench)
+                            cell(slot.map { $0 == .bench ? "SIT" : $0.description } ?? "", width: 46, bold: slot != .bench)
                         }
                     }
                 }

@@ -5,7 +5,7 @@ import LineupKit
 /// The hero view: batting order down the side, innings across the top.
 /// Click a cell to pick a position. Keyboard: arrows move · 1–9 assign by scorebook number (1 = P … 9 = RF) · 0 or B = bench ·
 /// Space = lock/unlock · ⌥↑/⌥↓ = move in batting order. Drag a name to reorder, a spot onto another in the same inning to swap,
-/// an inning number to move the inning. + adds an inning; the inning's menu copies, adds, locks or deletes.
+/// an inning number to move the inning. The inning's menu copies and pastes, adds, locks or deletes.
 struct LineupGridView: View {
     @Bindable var model: GameModel
     @Environment(\.undoManager) private var undoManager
@@ -26,10 +26,9 @@ struct LineupGridView: View {
 
     // Sized to fill the available width, within comfortable limits.
     private var nameWidth: CGFloat { min(max(width * 0.26, 200), 280) }
-    private let addWidth: CGFloat = 40
     private var cellWidth: CGFloat {
         let innings = CGFloat(max(model.game.innings, 1))
-        return min(max((width - nameWidth - addWidth) / innings, 54), 120)
+        return min(max((width - nameWidth) / innings, 54), 120)
     }
     private let rowHeight: CGFloat = 46
     /// Locks tell the AI what to keep; without AI there's nothing to keep them from.
@@ -54,7 +53,6 @@ struct LineupGridView: View {
                     ForEach(1...max(innings, 1), id: \.self) { inning in
                         cell(player: player, inning: inning, problem: problems.contains(CellKey(inning: inning, player: player.id)), lit: litPosition, ctx: ctx)
                     }
-                    Color.clear.frame(width: addWidth)
                 }
                 .frame(height: rowHeight)
                 .background(hoveredRow == player.id ? AnyShapeStyle(Color.primary.opacity(0.04)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 8))
@@ -74,7 +72,7 @@ struct LineupGridView: View {
                 }
             }
         }
-        .frame(width: nameWidth + cellWidth * CGFloat(max(innings, 1)) + addWidth, alignment: .leading)
+        .frame(width: nameWidth + cellWidth * CGFloat(max(innings, 1)), alignment: .leading)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .focusable()
@@ -104,16 +102,6 @@ struct LineupGridView: View {
             ForEach(1...max(innings, 1), id: \.self) { inning in
                 inningHeader(inning, innings: innings)
             }
-            Button { withAnimation(.snappy) { model.insertInning(at: innings + 1, undoManager: undoManager) } } label: {
-                Image(systemName: "plus")
-                    .font(.callout)
-                    .foregroundStyle(.tertiary)
-                    .frame(width: addWidth, height: 30)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .disabled(!model.hasGrid || innings >= 12)
-            .help("Add an inning")
         }
     }
 
@@ -179,9 +167,10 @@ struct LineupGridView: View {
 
     @ViewBuilder
     private func inningMenu(_ inning: Int, innings: Int, locked: Bool) -> some View {
-        if inning < innings {
-            Button("Copy to Inning \(inning + 1)") { withAnimation(.snappy) { model.copyInningForward(inning, undoManager: undoManager) } }
-        }
+        Button("Copy Inning") { model.copyInning(inning) }
+        Button("Paste Inning") { withAnimation(.snappy) { model.pasteInning(into: inning, undoManager: undoManager) } }
+            .disabled(GameModel.copiedInning == nil)
+        Divider()
         Button("Add Inning Before") { withAnimation(.snappy) { model.insertInning(at: inning, undoManager: undoManager) } }
         Button("Add Inning After") { withAnimation(.snappy) { model.insertInning(at: inning + 1, undoManager: undoManager) } }
         if showsLocks && model.isFilled {
@@ -284,7 +273,7 @@ struct LineupGridView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             Text(label(slot: slot, available: available))
-                .font(.title3.weight(slot == .field(.p) ? .semibold : .regular))
+                .font(slot == .bench ? .callout.weight(.medium) : .title3.weight(slot == .field(.p) ? .semibold : .regular))
                 .foregroundStyle(isLit && !problem ? AnyShapeStyle(Color.accentColor) : textStyle(slot: slot, problem: problem))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             if locked {
@@ -363,7 +352,7 @@ struct LineupGridView: View {
         guard available else { return "·" }
         switch slot {
         case .field(let p): return p.label
-        case .bench: return "–"
+        case .bench: return "SIT"
         case nil: return model.isFilled ? "?" : ""
         }
     }
@@ -372,7 +361,8 @@ struct LineupGridView: View {
         if problem { return AnyShapeStyle(Color.red) }
         switch slot {
         case .field: return AnyShapeStyle(.primary)
-        default: return AnyShapeStyle(.quaternary)
+        case .bench: return AnyShapeStyle(.secondary)
+        case nil: return AnyShapeStyle(.quaternary)
         }
     }
 
