@@ -38,6 +38,7 @@ enum CloudKitCheck {
             }
         }
         for suffix in ["", "-shm", "-wal"] { try? FileManager.default.removeItem(at: folder.appending(path: "CloudKitSchema.store" + suffix)) }
+        try? FileManager.default.removeItem(at: folder.appending(path: "CloudKitSchema_ckAssets"))
         print(failure.map { "CloudKitSchema: failed, \($0)" } ?? "CloudKitSchema: OK, development schema created for \(CloudSync.containerID)")
         exit(failure == nil ? 0 : 1)
     }
