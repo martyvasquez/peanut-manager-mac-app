@@ -35,9 +35,10 @@ struct SignInButton: View {
 /// What season stats or AI would add right here, for a coach who hasn't brought them in yet. The same card
 /// everywhere, sitting where the feature would be, so the coach always knows what they're missing.
 struct Unlock: View {
-    enum Kind { case ai, stats }
+    enum Kind { case stats, ai }
 
-    let kind: Kind
+    /// What's missing, each with its own button (stats first: it's the one to do first).
+    let needs: [Kind]
     /// The feature, named like a heading: "Team Summary".
     let title: String
     /// What it gives the coach, in one line.
@@ -52,13 +53,26 @@ struct Unlock: View {
     @State private var importing = false
     @State private var settingUp = false
 
+    init(kind: Kind, title: String, message: String, team: Team? = nil, compact: Bool = false, onImport: (() -> Void)? = nil) {
+        self.init(needs: [kind], title: title, message: message, team: team, compact: compact, onImport: onImport)
+    }
+
+    init(needs: [Kind], title: String, message: String, team: Team? = nil, compact: Bool = false, onImport: (() -> Void)? = nil) {
+        self.needs = needs.sorted { $0 == .stats && $1 == .ai }
+        self.title = title
+        self.message = message
+        self.team = team
+        self.compact = compact
+        self.onImport = onImport
+    }
+
     var body: some View {
         Group {
             if compact {
                 VStack(alignment: .leading, spacing: 4) {
                     Label { Text(title).fontWeight(.semibold) } icon: { icon }
                     Text(message).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    action.buttonStyle(.link).padding(.top, 2)
+                    HStack(spacing: 14) { actions }.buttonStyle(.link).padding(.top, 2)
                 }
                 .font(.callout)
             } else {
@@ -69,7 +83,7 @@ struct Unlock: View {
                         Text(message).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 16)
-                    action
+                    HStack(spacing: 8) { actions }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -82,17 +96,20 @@ struct Unlock: View {
     }
 
     private var icon: some View {
-        Image(systemName: kind == .ai ? "sparkles" : "chart.bar.xaxis").foregroundStyle(.tint)
+        Image(systemName: needs.contains(.ai) ? "sparkles" : "chart.bar.xaxis").foregroundStyle(.tint)
     }
 
-    private var action: some View {
-        Button(kind == .ai ? "Set Up AI…" : "Import Stats…") {
+    private var actions: some View {
+        ForEach(needs, id: \.self) { kind in
             switch kind {
-            case .ai: settingUp = true
-            case .stats: if let onImport { onImport() } else { importing = true }
+            case .stats:
+                Button("Import Stats…") { if let onImport { onImport() } else { importing = true } }
+                    .help("A GameChanger season stats export (CSV)")
+            case .ai:
+                Button("Set Up AI…") { settingUp = true }
+                    .help("Use your ChatGPT plan or a Claude API key")
             }
         }
-        .help(kind == .ai ? "Use your ChatGPT plan or a Claude API key" : "A GameChanger season stats export (CSV)")
     }
 }
 

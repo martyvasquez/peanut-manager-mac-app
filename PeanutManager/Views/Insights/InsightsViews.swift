@@ -48,10 +48,18 @@ struct ScoutingReport: View {
             }
             .font(.callout)
         } else if player.isAssessable {
+            let first = player.name.components(separatedBy: " ").first ?? player.name
             if AIService.shared.isReady {
                 Button("Write Scouting Report", systemImage: "sparkles") { runner.assess(player) }
+                if player.stats == nil {
+                    Unlock(kind: .stats, title: "Better with Stats", message: "With GameChanger stats, the report reads \(first)'s numbers too, not just your evaluation.", team: player.team)
+                        .padding(.top, 8)
+                }
             } else {
-                Unlock(kind: .ai, title: "Scouting Report", message: "What \(player.name.components(separatedBy: " ").first ?? player.name) does well, what to work on, and where they fit, from stats and your evaluation.")
+                // A scouting report wants both: AI to write it, and stats for it to read.
+                Unlock(needs: player.stats == nil ? [.stats, .ai] : [.ai], title: "Scouting Report",
+                       message: "What \(first) does well, what to work on, and where they fit. AI writes it from GameChanger stats and your evaluation.",
+                       team: player.team)
             }
         }
     }
