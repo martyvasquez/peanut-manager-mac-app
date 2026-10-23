@@ -886,74 +886,76 @@ struct AttendanceButton: View {
 
     var body: some View {
         let players = game.team?.activePlayers ?? []
-        let availability = game.availability
-        let present = players.filter { (availability[$0.uid] ?? .present).present }.count
+        let coming = players.filter { (game.availability[$0.uid] ?? .present).present }.count
         Button { showing.toggle() } label: {
-            Chip(present == players.count ? "\(present) Players" : "\(present) of \(players.count) Players", symbol: "person.2")
-                .foregroundStyle(present < 9 ? .red : .secondary)
+            Chip(coming == players.count ? "\(coming) Players" : "\(coming) of \(players.count) Players", symbol: "person.2")
+                .foregroundStyle(coming < 9 ? .red : .secondary)
         }
         .buttonStyle(.plain)
-        .popover(isPresented: $showing, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(players) { AttendanceRow(game: game, player: $0) }
-            }
-            .padding(.vertical, 8)
-            .frame(width: 340)
-        }
+        .help(coming < 9 ? "Only \(coming) coming. You need 9 to field a team." : "Who's coming to this game")
+        .popover(isPresented: $showing, arrowEdge: .bottom) { AttendanceList(game: game) }
+        #if DEBUG
+        .task { if DebugSupport.showAttendance { try? await Task.sleep(for: .seconds(2)); showing = true } }
+        #endif
     }
 }
 
-struct AttendanceRow: View {
+/// Who's coming: one check per kid. Kids who aren't coming say Out.
+struct AttendanceList: View {
     @Bindable var game: Game
-    let player: Player
-    @State private var hovering = false
-
-    private var availability: Availability { game.availability[player.uid] ?? .present }
-
-    private func update(_ change: (inout Availability) -> Void) {
-        var all = game.availability
-        var a = all[player.uid] ?? .present
-        change(&a)
-        all[player.uid] = a
-        game.availability = all
-    }
 
     var body: some View {
-        HStack(spacing: 10) {
-            Toggle(isOn: Binding(get: { availability.present }, set: { value in update { $0.present = value } })) {
-                Text(player.name).foregroundStyle(availability.present ? .primary : .secondary)
+        let players = game.team?.activePlayers ?? []
+        let coming = players.filter { isComing($0) }.count
+
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Who's Coming").font(.headline)
+                Spacer()
+                Text("\(coming) of \(players.count)").foregroundStyle(.secondary).monospacedDigit()
             }
-            .toggleStyle(.checkbox)
-            Spacer()
-            if availability.present {
-                Menu {
-                    Picker("Arrives", selection: Binding(get: { availability.arrivesInning ?? 1 }, set: { value in update { $0.arrivesInning = value == 1 ? nil : value } })) {
-                        Text("On Time").tag(1)
-                        ForEach(2...max(game.innings, 2), id: \.self) { Text("Inning \($0)").tag($0) }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 6)
+
+            ForEach(players) { player in
+                let on = isComing(player)
+                Toggle(isOn: Binding(get: { on }, set: { set(player, coming: $0) })) {
+                    HStack {
+                        Text(player.name).foregroundStyle(on ? .primary : .secondary)
+                        Spacer()
+                        if !on { Text("Out").foregroundStyle(.secondary) }
                     }
-                    Picker("Leaves", selection: Binding(get: { availability.leavesAfterInning ?? game.innings }, set: { value in update { $0.leavesAfterInning = value >= game.innings ? nil : value } })) {
-                        Text("Stays").tag(game.innings)
-                        ForEach(1..<max(game.innings, 2), id: \.self) { Text("After \($0)").tag($0) }
-                    }
-                } label: {
-                    Text(timing).font(.caption).foregroundStyle(availability.isPartial ? .orange : .secondary)
                 }
-                .menuStyle(.button).buttonStyle(.plain).fixedSize()
-                .opacity(availability.isPartial || hovering ? 1 : 0)
+                .toggleStyle(.checkbox)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 4)
             }
+
+            HStack(spacing: 10) {
+                if coming < 9 {
+                    Label("Only \(coming) coming. You need 9 to field a team.", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                }
+                Spacer(minLength: 0)
+                if coming < players.count {
+                    Button("Everyone's Coming") { game.availability = [:] }.buttonStyle(.link)
+                }
+            }
+            .font(.callout)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 14)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 4)
-        .onHover { hovering = $0 }
+        .frame(width: 340)
     }
 
-    private var timing: String {
-        switch (availability.arrivesInning, availability.leavesAfterInning) {
-        case (nil, nil): "All game"
-        case (let a?, nil): "From \(a)"
-        case (nil, let l?): "Through \(l)"
-        case (let a?, let l?): "\(a)–\(l)"
-        }
+    private func isComing(_ player: Player) -> Bool { (game.availability[player.uid] ?? .present).present }
+
+    private func set(_ player: Player, coming: Bool) {
+        var all = game.availability
+        all[player.uid] = coming ? nil : .absent
+        game.availability = all
     }
 }
 

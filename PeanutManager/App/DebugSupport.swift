@@ -37,6 +37,7 @@ enum DebugSupport {
     static var showSignIn: Bool { UserDefaults.standard.bool(forKey: "PMShowSignIn") }
     static var fakeClaudeKey: Bool { UserDefaults.standard.bool(forKey: "PMFakeClaudeKey") }
     static var noAI: Bool { UserDefaults.standard.bool(forKey: "PMNoAI") }
+    static var showAttendance: Bool { UserDefaults.standard.bool(forKey: "PMAttendance") }
     static var copyLastGame: Bool { UserDefaults.standard.bool(forKey: "PMCopyLastGame") }
     nonisolated static var flakyScout: Bool { UserDefaults.standard.bool(forKey: "PMFlakyScout") }
 
@@ -69,7 +70,7 @@ enum DebugSupport {
         context.insert(game)
         game.team = team
         game.ruleSet = last.ruleSet
-        if let out = team.activePlayers.dropFirst(5).first { game.availability = [out.uid: Availability(present: false)] }
+        if let out = team.activePlayers.dropFirst(5).first { game.availability = [out.uid: .absent] }
         return game
     }
 }

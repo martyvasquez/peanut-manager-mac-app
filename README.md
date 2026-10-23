@@ -83,6 +83,7 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMOpenPositions YES` | Go to the Positions step and lock one spot |
 | `-PMNoAI YES` | Act as if no AI is set up (no ChatGPT sign-in, no Claude key); the keychain is untouched |
 | `-PMAddGame YES` | Add a game after the team's last one, with one player out, and open it |
+| `-PMAttendance YES` | Open the Who's Coming popover |
 | `-PMCopyLastGame YES` | Copy the last game's lineup into an empty game when it opens |
 | `-PMHoverInning N` | Show inning N's header as if hovered (its menu button) |
 | `-PMDiamond N` | Open inning N on the field (the diamond popover) |
