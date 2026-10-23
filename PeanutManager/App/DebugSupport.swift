@@ -21,6 +21,7 @@ import LineupKit
 ///   -PMAddGame YES       add a game after the team's last one, with the sixth player out, and open it (to try Copy Last Game)
 ///   -PMCopyLastGame YES  copy the last game's lineup into an empty game when it opens
 ///   -PMHoverInning N     show inning N's header as if hovered (its menu button)
+///   -PMDiamond N         open inning N on the field (the diamond popover)
 ///   -PMRunEval YES       run the model eval on this (copied) library; see EvalRunner
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }

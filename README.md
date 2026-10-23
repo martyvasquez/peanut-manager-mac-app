@@ -82,6 +82,7 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMAddGame YES` | Add a game after the team's last one, with one player out, and open it |
 | `-PMCopyLastGame YES` | Copy the last game's lineup into an empty game when it opens |
 | `-PMHoverInning N` | Show inning N's header as if hovered (its menu button) |
+| `-PMDiamond N` | Open inning N on the field (the diamond popover) |
 | `-PMOpenPicker YES` | Open the position picker |
 | `-PMSection roster\|team\|rules` | Open that section |
 | `-PMOpenSettings YES` / `-settingsTab models` | Open Settings / a tab |

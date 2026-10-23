@@ -152,6 +152,17 @@ final class GameModel {
         }
     }
 
+    /// Whether `a` and `b` can trade places this inning: both are available, and each can play where the other was.
+    func canSwap(_ a: PlayerID, _ b: PlayerID, inning: Int) -> Bool {
+        let ctx = context
+        guard a != b, ctx.availability(of: a).isAvailable(inning: inning), ctx.availability(of: b).isAvailable(inning: inning) else { return false }
+        func fits(_ id: PlayerID, _ slot: Slot?) -> Bool {
+            guard case .field(let position) = slot else { return true }
+            return ctx.player(id)?.profile.canPlay(position) ?? false
+        }
+        return fits(a, lineup.slot(of: b, inning: inning)) && fits(b, lineup.slot(of: a, inning: inning))
+    }
+
     /// Dragging one kid's spot onto another's in the same inning: they trade places, and both become the coach's picks.
     func swap(_ a: PlayerID, _ b: PlayerID, inning: Int, undoManager: UndoManager?) {
         guard a != b, document.lineup.innings.indices.contains(inning - 1) else { return }
