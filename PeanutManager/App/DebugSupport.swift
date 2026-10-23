@@ -26,6 +26,7 @@ import LineupKit
 ///   -PMBattingCard Name  open the batting card (Batting Order step) for the first player whose name starts with Name
 ///   -PMPrintTo path      once the lineup is filled, print it to a PDF at path (no print panel)
 ///   -PMRunEval YES       run the model eval on this (copied) library; see EvalRunner
+///   -PMICloudWait YES    with an empty library, show the new-device wait for iCloud instead of the welcome screen
 ///   -PMCheckCloudKit YES check the schema against CloudKit's rules (and kids' data is encrypted), print, quit
 enum DebugSupport {
     static var seedSample: Bool { UserDefaults.standard.bool(forKey: "PMSeedSample") }
@@ -42,6 +43,7 @@ enum DebugSupport {
     static var noAI: Bool { UserDefaults.standard.bool(forKey: "PMNoAI") }
     static var showAttendance: Bool { UserDefaults.standard.bool(forKey: "PMAttendance") }
     static var copyLastGame: Bool { UserDefaults.standard.bool(forKey: "PMCopyLastGame") }
+    static var iCloudWait: Bool { UserDefaults.standard.bool(forKey: "PMICloudWait") }
     nonisolated static var flakyScout: Bool { UserDefaults.standard.bool(forKey: "PMFlakyScout") }
 
     /// The first game opened this run; the auto flags (generate, positions, copy) act on it alone.

@@ -95,9 +95,12 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 2. **iCloud sync (SwiftData + CloudKit).**
    - Models are CloudKit-safe and kids' data is encrypted (Done, Oct 23). Once the schema is deployed to production, changes can only add.
    - **Turn sync on in the first App Store build** so coaches' data is in iCloud before the iPad app ships: iCloud + CloudKit entitlement, container `iCloud.com.martyvasquez.PeanutManager`, remote-notification push, `cloudKitDatabase: .automatic`, deploy the schema to production in the CloudKit console.
-   - First launch on a new device: wait for iCloud before showing "Create a team / Try a Sample," or the coach makes a duplicate team.
+   - Prep done (Oct 23), so turning sync on is `CloudSync.enabled = true` plus the entitlement:
+     - `CloudSync` decides whether the library syncs; test libraries (`-PMStore`) never do, so sample teams can't reach the coach's iCloud.
+     - A new device with an empty library shows "Looking for your teams in iCloud…" until the first import finishes (at most 30 s; no wait when signed out of iCloud), so the coach doesn't make a duplicate team.
+     - The Claude key is saved to iCloud Keychain when the app can (it needs the iCloud entitlement) and to this Mac's keychain otherwise; once sync is enabled, a key saved earlier moves there on launch. ChatGPT tokens stay per device.
+     - Untested until sync is on: the import-finished signal (`NSPersistentCloudKitContainer.eventChangedNotification`) and iCloud Keychain itself. `-PMCheckCloudKit` reports where a synced keychain item lands.
    - Conflicts: last writer wins per record. `LineupDocument` is one blob, which is fine for one coach editing; sharing a team with assistant coaches (CloudKit sharing) is a later project.
-   - Claude key in iCloud Keychain (synchronizable), so it's entered once. ChatGPT tokens stay per device (refresh tokens rotate).
    - Stats sync with the players; nothing extra.
 3. **iPad, then iPhone.**
    - `LineupKit` is portable. Replace the AppKit pieces: `NSWorkspace`, `LineupCardPrinter` (PDF + `UIPrintInteractionController`), `NSHapticFeedbackManager`, the `NSEvent` drag cleanup, popovers (sheets on iPhone).

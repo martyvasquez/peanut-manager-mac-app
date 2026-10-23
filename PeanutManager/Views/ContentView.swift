@@ -62,6 +62,8 @@ struct ContentView: View {
                         detail(team)
                     }
                 }
+            } else if CloudSync.shared.isLookingInICloud {
+                ICloudWaitView()
             } else {
                 WelcomeView { created in
                     selectedTeamID = created.uid.uuidString

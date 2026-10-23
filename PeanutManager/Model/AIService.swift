@@ -93,7 +93,11 @@ final class AIService {
         if DebugSupport.fakeClaudeKey && !DebugSupport.noAI { anthropicKey = "sk-ant-debug-0000" }
         if DebugSupport.noAI || DebugSupport.fakeAI { return }
         #endif
-        if anthropicKey == nil { anthropicKey = Keychain.data(Keys.anthropic).flatMap { String(data: $0, encoding: .utf8) } }
+        if anthropicKey == nil {
+            // The Claude key follows the coach to every device; a key saved before iCloud sync moves there once.
+            if CloudSync.enabled { Keychain.moveToICloud(Keys.anthropic) }
+            anthropicKey = Keychain.data(Keys.anthropic).flatMap { String(data: $0, encoding: .utf8) }
+        }
         #if DEBUG
         if DebugSupport.signedOut { return }
         #endif
@@ -288,7 +292,7 @@ final class AIService {
             keyError = error.localizedDescription
             return false
         }
-        Keychain.set(Data(key.utf8), for: Keys.anthropic)
+        Keychain.set(Data(key.utf8), for: Keys.anthropic, synced: true)
         anthropicKey = key
         return true
     }

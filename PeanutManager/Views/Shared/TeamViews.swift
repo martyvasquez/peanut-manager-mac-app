@@ -46,6 +46,26 @@ struct WelcomeView: View {
     }
 }
 
+/// A new device downloading the library from iCloud: wait here rather than offer New Team and make a duplicate.
+struct ICloudWaitView: View {
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .frame(width: 128, height: 128)
+            Text("Peanut Manager").font(.largeTitle.weight(.semibold))
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("Looking for your teams in iCloud…")
+            }
+            .font(.title3)
+            .foregroundStyle(.secondary)
+        }
+        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
 /// Create or edit a team.
 struct TeamSheet: View {
     @Environment(\.modelContext) private var context

@@ -39,10 +39,16 @@ struct PeanutManagerApp: App {
         #if DEBUG
         if let scratch = UserDefaults.standard.string(forKey: "PMStore"), !scratch.isEmpty { name = scratch }
         #endif
-        // iCloud sync stays off until the App Store build turns it on; the models are already CloudKit-safe.
-        let configuration = ModelConfiguration(url: folder.appending(path: "\(name).store"), cloudKitDatabase: .none)
+        // Only the real library ever syncs; test libraries stay on this Mac so they never reach the coach's iCloud.
+        let syncing = CloudSync.syncs(isScratch: name != "Library")
+        let configuration = ModelConfiguration(
+            url: folder.appending(path: "\(name).store"),
+            cloudKitDatabase: syncing ? .private(CloudSync.containerID) : .none
+        )
         do {
-            return try ModelContainer(for: Schema(versionedSchema: LibrarySchemaV1.self), configurations: configuration)
+            let container = try ModelContainer(for: Schema(versionedSchema: LibrarySchemaV1.self), configurations: configuration)
+            CloudSync.shared.start(syncing: syncing)
+            return container
         } catch {
             fatalError("Couldn't open the Peanut Manager library: \(error)")
         }
