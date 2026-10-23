@@ -82,7 +82,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 
 1. **Mac App Store.**
    - ~~License~~ Done (Oct 23): MIT `LICENSE`; README says the name and icon aren't covered.
-   - Accounts: membership is active (team `G88C7HMHUJ` has Developer ID and Apple Development certificates; signing is automatic). Left: create the App Store Connect record; check the name.
+   - Accounts: membership is active (team `G88C7HMHUJ` has Developer ID and Apple Development certificates; signing is automatic). App ID `com.martyvasquez.PeanutManager` registered (no capabilities yet) and the App Store Connect record created Oct 23: name **Peanut Manager**, macOS, Apple ID 6826413372, version 1.0 in Prepare for Submission.
    - ~~Sparkle out~~ Done (Oct 23): removed entirely.
    - ~~App Sandbox~~ Done (Oct 23): network client, network server (the ChatGPT callback on 127.0.0.1), user-selected files read-only (CSV import), printing (`PeanutManager.entitlements`, from `project.yml`). Left for Marty: Sign in with ChatGPT, a Claude key check, CSV import and printing in the sandboxed build.
    - ~~Data~~ Done (Oct 23): `Resources/container-migration.plist` moves `Application Support/Peanut Manager` and the settings plist into the container on the first sandboxed launch. Tested with a re-signed copy under another bundle ID (`-PMLibraryFolder`): the library and settings moved, the old location emptied, every kid and the lineup opened.
