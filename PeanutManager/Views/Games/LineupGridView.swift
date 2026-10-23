@@ -247,6 +247,7 @@ struct LineupGridView: View {
             Text(model.lineup.battingOrder.contains(player.id) ? "\(slot)" : "")
                 .font(.title3.monospacedDigit()).foregroundStyle(.tertiary).frame(width: 26, alignment: .trailing)
             Text(player.name).font(.title3).lineLimit(1)
+                .foregroundStyle(ruleBreaks(player.id).isEmpty ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.red))
             Spacer(minLength: 0)
             if hoveredRow == player.id && model.lineup.battingOrder.contains(player.id) {
                 Image(systemName: "line.3.horizontal").foregroundStyle(.tertiary).padding(.trailing, 12)
@@ -270,7 +271,7 @@ struct LineupGridView: View {
                 editingPlayer = stored
             }
         }
-        .help(model.document.battingReasons[player.id] ?? "Click for \(player.name.components(separatedBy: " ").first ?? player.name)'s positions and stats")
+        .help(ruleBreaks(player.id).isEmpty ? (model.document.battingReasons[player.id] ?? "Click for \(player.name.components(separatedBy: " ").first ?? player.name)'s positions and stats") : ruleBreaks(player.id).joined(separator: "\n"))
         .contextMenu {
             Button("Move Up") { model.moveBatter(player.id, by: -1, undoManager: undoManager) }
             Button("Move Down") { model.moveBatter(player.id, by: 1, undoManager: undoManager) }
@@ -408,6 +409,11 @@ struct LineupGridView: View {
         }
         if locked { parts.append("Locked — regenerating keeps it") }
         return parts.joined(separator: " · ")
+    }
+
+    /// Rules this kid breaks across the game (not tied to one inning), for the red name and its tooltip.
+    private func ruleBreaks(_ player: PlayerID) -> [String] {
+        model.findings.violations.filter { $0.player == player && $0.inning == nil }.map(\.message)
     }
 
     private var problemCells: Set<CellKey> {

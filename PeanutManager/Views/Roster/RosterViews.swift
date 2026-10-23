@@ -6,6 +6,7 @@ struct RosterListView: View {
     @Environment(\.modelContext) private var context
     let team: Team
     @Binding var selection: Player?
+    @State private var importing = false
 
     var body: some View {
         List(selection: $selection) {
@@ -18,19 +19,25 @@ struct RosterListView: View {
         .navigationSplitViewColumnWidth(min: 260, ideal: 300)
         .overlay {
             if team.players.isEmpty {
+                // A GameChanger export brings the whole roster (and stats) in one step.
                 ContentUnavailableView {
                     Label("No Players", systemImage: "person.3")
-                } description: {
-                    Text("Or import a GameChanger export from Stats.")
                 } actions: {
-                    Button("Add Player") { addPlayer() }
+                    VStack(spacing: 8) {
+                        Button("Import from GameChanger…") { importing = true }
+                            .buttonStyle(.borderedProminent)
+                        Button("Add Player") { addPlayer() }
+                    }
                 }
             }
         }
         .toolbar {
+            Button("Import from GameChanger", systemImage: "square.and.arrow.down") { importing = true }
+                .help("Add or update players from a GameChanger season export (CSV)")
             Button("Add Player", systemImage: "plus") { addPlayer() }
                 .keyboardShortcut("n", modifiers: .command)
         }
+        .gameChangerImport(team: team, isPresented: $importing, acceptsDrops: true)
         .contextMenu(forSelectionType: Player.self) { players in
             if let player = players.first {
                 Button(player.active ? "Mark Inactive" : "Mark Active") { player.active.toggle() }

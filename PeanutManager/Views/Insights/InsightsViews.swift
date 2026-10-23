@@ -51,7 +51,7 @@ struct ScoutingReport: View {
             if AIService.shared.isReady {
                 Button("Write Scouting Report", systemImage: "sparkles") { runner.assess(player) }
             } else {
-                SignInButton()
+                SetUpAILink(purpose: "to write a scouting report")
             }
         }
     }
@@ -275,6 +275,7 @@ struct StatsInsightsView: View {
     let team: Team
     @State private var runner = ScoutRunner.shared
     @AppStorage("teamTab") private var tab: TeamTab = .summary
+    @State private var importing = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -282,14 +283,30 @@ struct StatsInsightsView: View {
                 .padding(.horizontal, 36)
                 .padding(.top, 28)
                 .padding(.bottom, 16)
-            switch tab {
-            case .summary: page { overview }
-            case .offense: page { offense }
-            case .defense: page { defense }
-            case .stats: StatsView(team: team)
+            if team.activePlayers.isEmpty {
+                ContentUnavailableView {
+                    Label("No Players Yet", systemImage: "person.3")
+                } description: {
+                    Text("Add your team first.")
+                } actions: {
+                    VStack(spacing: 8) {
+                        Button("Import from GameChanger…") { importing = true }
+                            .buttonStyle(.borderedProminent)
+                        Button("Open Roster") { Navigator.shared.section = .roster }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                switch tab {
+                case .summary: page { overview }
+                case .offense: page { offense }
+                case .defense: page { defense }
+                case .stats: StatsView(team: team)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .gameChangerImport(team: team, isPresented: $importing)
         .toolbar(removing: .title)
         .toolbar {
             if tab != .stats && AIService.shared.isReady {
@@ -310,7 +327,7 @@ struct StatsInsightsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
                 if !AIService.shared.isReady {
-                    SignInButton()
+                    SetUpAILink(purpose: "for scouting reports and a team summary")
                 } else if let error = runner.errors[team.uid], runner.teamRuns[team.uid] == nil {
                     HStack(spacing: 12) {
                         Text(error).foregroundStyle(.red)
@@ -339,6 +356,7 @@ struct StatsInsightsView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Stats & Insights").font(.largeTitle.weight(.bold))
+            if !team.activePlayers.isEmpty {
             HStack(spacing: 16) {
                 Picker("", selection: $tab) {
                     ForEach(TeamTab.allCases, id: \.self) { Text($0.title).tag($0) }
@@ -349,6 +367,19 @@ struct StatsInsightsView: View {
                 .fixedSize()
                 status
             }
+            }
+        }
+    }
+
+    /// Season stats are in for at least one player.
+    private var hasStats: Bool { team.activePlayers.contains { $0.stats != nil } }
+
+    /// Without stats there's nothing to rank or chart: one step to get them.
+    private var importStats: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Import a GameChanger season export to see team numbers, leaders and ranks.")
+                .foregroundStyle(.secondary)
+            Button("Import GameChanger Stats…") { importing = true }
         }
     }
 
@@ -378,16 +409,20 @@ struct StatsInsightsView: View {
             if let a {
                 Text(a.summary).font(.title3).textSelection(.enabled)
                 SidedClaims(side: nil, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
-            } else if runner.teamRuns[team.uid] == nil {
+            } else if runner.teamRuns[team.uid] == nil && AIService.shared.isReady {
                 Text("No team summary yet. It's written after every player is assessed.")
                     .foregroundStyle(.secondary)
             }
-            HStack(alignment: .top, spacing: 12) {
-                SideCard(title: "Offense", team: team, side: .offense, factIDs: ["team.obp", "team.k_rate", "team.sb"]) { tab = .offense }
-                SideCard(title: "Defense", team: team, side: .defense, factIDs: ["team.fpct", "team.p.whip", "team.catchers"]) { tab = .defense }
-                PlayersCard(team: team)
+            if !hasStats && a == nil {
+                importStats
+            } else {
+                HStack(alignment: .top, spacing: 12) {
+                    SideCard(title: "Offense", team: team, side: .offense, factIDs: ["team.obp", "team.k_rate", "team.sb"]) { tab = .offense }
+                    SideCard(title: "Defense", team: team, side: .defense, factIDs: ["team.fpct", "team.p.whip", "team.catchers"]) { tab = .defense }
+                    if AIService.shared.isReady || team.activePlayers.contains(where: { $0.assessment != nil }) { PlayersCard(team: team) }
+                }
+                TwoWayMap(team: team, ranks: team.ranks)
             }
-            TwoWayMap(team: team, ranks: team.ranks)
             if let a, !a.practice.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     Caption("Practice Plan")
@@ -401,13 +436,17 @@ struct StatsInsightsView: View {
         let ranks = team.ranks
         let a = team.assessment
         return VStack(alignment: .leading, spacing: 32) {
-            TeamNumbers(team: team, ids: TeamNumbers.offense)
+            if hasStats { TeamNumbers(team: team, ids: TeamNumbers.offense) }
             if let a {
                 SidedClaims(side: .offense, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
             }
-            BattingGroups(team: team, ranks: ranks)
-            HitterMap(team: team, ranks: ranks)
-            TeamLeaders(team: team, ranks: ranks, metrics: TeamLeaders.offense)
+            if hasStats {
+                BattingGroups(team: team, ranks: ranks)
+                HitterMap(team: team, ranks: ranks)
+                TeamLeaders(team: team, ranks: ranks, metrics: TeamLeaders.offense)
+            } else {
+                importStats
+            }
         }
     }
 
@@ -415,7 +454,7 @@ struct StatsInsightsView: View {
         let ranks = team.ranks
         let a = team.assessment
         return VStack(alignment: .leading, spacing: 32) {
-            TeamNumbers(team: team, ids: TeamNumbers.defense)
+            if hasStats { TeamNumbers(team: team, ids: TeamNumbers.defense) }
             if let a {
                 SidedClaims(side: .defense, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
             }
@@ -436,7 +475,7 @@ struct StatsInsightsView: View {
                     }
                 }
             }
-            TeamLeaders(team: team, ranks: ranks, metrics: TeamLeaders.defense)
+            if hasStats { TeamLeaders(team: team, ranks: ranks, metrics: TeamLeaders.defense) } else { importStats }
         }
     }
 

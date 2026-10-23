@@ -8,6 +8,7 @@ struct GamesListView: View {
     let team: Team
     @Binding var selection: Game?
     @State private var showingNewGame = false
+    @State private var importing = false
 
     var body: some View {
         let games = team.games.sorted { $0.date < $1.date }
@@ -25,7 +26,20 @@ struct GamesListView: View {
         .navigationTitle("Games")
         .navigationSplitViewColumnWidth(min: 220, ideal: 250)
         .overlay {
-            if games.isEmpty {
+            // A game needs kids: no roster, no new games (games made earlier stay listed).
+            if team.activePlayers.isEmpty && games.isEmpty {
+                ContentUnavailableView {
+                    Label("No Players Yet", systemImage: "person.3")
+                } description: {
+                    Text("Add your team first.")
+                } actions: {
+                    VStack(spacing: 8) {
+                        Button("Import from GameChanger…") { importing = true }
+                            .buttonStyle(.borderedProminent)
+                        Button("Open Roster") { Navigator.shared.section = .roster }
+                    }
+                }
+            } else if games.isEmpty {
                 ContentUnavailableView {
                     Label("No Games", systemImage: "calendar")
                 } actions: {
@@ -36,10 +50,13 @@ struct GamesListView: View {
         .toolbar {
             Button("New Game", systemImage: "plus") { showingNewGame = true }
                 .keyboardShortcut("n", modifiers: .command)
+                .disabled(team.activePlayers.isEmpty)
+                .help(team.activePlayers.isEmpty ? "Add players to the roster first" : "New Game")
         }
         .sheet(isPresented: $showingNewGame) {
             NewGameSheet(team: team) { selection = $0 }
         }
+        .gameChangerImport(team: team, isPresented: $importing)
         .contextMenu(forSelectionType: Game.self) { games in
             if let game = games.first {
                 Button("Delete", role: .destructive) {
@@ -399,6 +416,7 @@ struct GameDetailView: View {
             } else if !model.isFilled {
                 Text(AIService.shared.isReady ? "Click any spot to lock it in. The AI fills the rest." : "Click a spot to pick a position.")
                     .foregroundStyle(.secondary)
+                if model.hasGrid && !model.context.activeRules.isEmpty { RulesChecklist(model: model) }
             }
             LineupGridView(model: model)
             if model.isFilled { Summary(model: model).id("summary") }
@@ -989,6 +1007,50 @@ struct Summary: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+}
+
+/// The game's rules beside the work while the coach builds by hand. Checked rules show ✓, or ✗ with who breaks
+/// them, as spots are placed; rules the app can't check are reminders (the AI weighs them when it's set up).
+struct RulesChecklist: View {
+    let model: GameModel
+
+    var body: some View {
+        let violations = model.findings.violations
+        let ctx = model.context
+        VStack(alignment: .leading, spacing: 8) {
+            Caption(model.game.ruleSet.map { "\($0.name) Rules" } ?? "Rules")
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 24, alignment: .topLeading)], alignment: .leading, spacing: 6) {
+                ForEach(ctx.activeRules) { rule in
+                    let broken = violations.filter { $0.ruleID == rule.id }
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: rule.check == nil ? "circle" : broken.isEmpty ? "checkmark" : "xmark")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(rule.check == nil ? AnyShapeStyle(.tertiary) : broken.isEmpty ? AnyShapeStyle(Color.green) : AnyShapeStyle(Color.red))
+                            .frame(width: 14)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(rule.text).foregroundStyle(rule.check == nil ? .secondary : .primary)
+                            if !broken.isEmpty {
+                                Text(Self.names(broken, ctx)).foregroundStyle(.red)
+                            }
+                        }
+                        .lineLimit(2)
+                    }
+                    .font(.callout)
+                    .help(rule.check == nil
+                          ? (AIService.shared.isReady ? "The AI weighs this one; the app can't check it" : "A reminder: the app can't check this one")
+                          : broken.map(\.message).joined(separator: "\n"))
+                }
+            }
+        }
+        .padding(14)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private static func names(_ findings: [Finding], _ ctx: GameContext) -> String {
+        var seen = Set<PlayerID>()
+        return findings.compactMap(\.player).filter { seen.insert($0).inserted }
+            .map { ctx.name($0).components(separatedBy: " ").first ?? "" }.joined(separator: ", ")
     }
 }
 

@@ -317,7 +317,16 @@ public enum Validator {
 
     // MARK: - Coach rules
 
-    static func ruleFindings(_ check: RuleCheck, rule: TeamRule, lineup: Lineup, context: GameContext) -> [Finding] {
+    /// Rule checks on a lineup the coach is still building: an empty spot is undecided, not a sit, so only
+    /// what's already broken is reported (a limit passed, or too few open spots left to reach a minimum).
+    public static func liveRuleFindings(_ lineup: Lineup, context: GameContext) -> [Finding] {
+        context.activeRules.flatMap { rule in
+            rule.check.map { ruleFindings($0, rule: rule, lineup: lineup, context: context, settled: false) } ?? []
+        }
+    }
+
+    /// `settled` false: empty spots may still be filled either way (see `liveRuleFindings`).
+    static func ruleFindings(_ check: RuleCheck, rule: TeamRule, lineup: Lineup, context: GameContext, settled: Bool = true) -> [Finding] {
         let innings = Array(lineup.innings.prefix(context.innings).enumerated()).map { ($0.offset + 1, $0.element) }
         var findings: [Finding] = []
 
@@ -329,14 +338,15 @@ public enum Validator {
             let mine = innings.filter { context.availability(of: player.id).isAvailable(inning: $0.0) }
             let slots = mine.map { ($0.0, $0.1.slot(of: player.id)) }
             let fieldInnings = slots.filter { if case .field = $0.1 { true } else { false } }
-            let sits = slots.filter { $0.1 == .bench || $0.1 == nil }
+            let sits = slots.filter { $0.1 == .bench || (settled && $0.1 == nil) }
+            let open = settled ? 0 : slots.filter { $0.1 == nil }.count
             func count(_ position: Position) -> Int { slots.filter { $0.1 == .field(position) }.count }
 
             switch check {
             case .minFieldInnings(let n):
                 // A player who's only here for fewer innings can't be held to the full number.
                 let required = min(n, mine.count)
-                if fieldInnings.count < required {
+                if fieldInnings.count + open < required {
                     fail("\(player.name) fields \(fieldInnings.count) innings (needs \(required)).", player: player.id)
                 }
             case .maxSitInnings(let n):
@@ -344,14 +354,15 @@ public enum Validator {
             case .maxConsecutiveSits(let n):
                 var run = 0, longest = 0
                 for (_, slot) in slots {
-                    if slot == .bench || slot == nil { run += 1; longest = max(longest, run) } else { run = 0 }
+                    if slot == .bench || (settled && slot == nil) { run += 1; longest = max(longest, run) } else { run = 0 }
                 }
                 if longest > n { fail("\(player.name) sits \(longest) innings in a row (max \(n)).", player: player.id) }
             case .infieldBy(let inning):
                 let window = slots.filter { $0.0 <= inning }
                 guard !window.isEmpty else { break }
                 let playedInfield = window.contains { if case .field(let p) = $0.1 { p.isInfield } else { false } }
-                if !playedInfield { fail("\(player.name) hasn't played infield by the end of inning \(inning).", player: player.id) }
+                let stillOpen = !settled && window.contains { $0.1 == nil }
+                if !playedInfield && !stillOpen { fail("\(player.name) hasn't played infield by the end of inning \(inning).", player: player.id) }
             case .maxPitchingInnings(let n):
                 let pitched = count(.p)
                 if pitched > n { fail("\(player.name) pitches \(pitched) innings (max \(n)).", player: player.id) }

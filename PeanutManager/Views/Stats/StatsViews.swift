@@ -37,13 +37,58 @@ nonisolated struct StatRow: Identifiable, Sendable {
     }
 }
 
+/// Picks a GameChanger season export (CSV), then the match review: rows can update a player, become a new one,
+/// or be skipped, so the same import fills an empty roster or refreshes stats. Used by Stats, Roster and Insights.
+struct GameChangerImporter: ViewModifier {
+    let team: Team
+    @Binding var isPresented: Bool
+    var acceptsDrops = false
+    @State private var pending: PendingImport?
+    @State private var error: String?
+
+    func body(content: Content) -> some View {
+        content
+            .fileImporter(isPresented: $isPresented, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
+                if case .success(let url) = result { load(url) }
+            }
+            .dropDestination(for: URL.self) { urls, _ in
+                guard acceptsDrops, let url = urls.first else { return false }
+                load(url)
+                return true
+            }
+            .sheet(item: $pending) { pending in
+                ImportSheet(team: team, pending: pending)
+            }
+            .alert("Couldn't Import", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
+                Button("OK") {}
+            } message: {
+                Text(error ?? "")
+            }
+    }
+
+    private func load(_ url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let rows = try GameChangerImport.parse(String(contentsOf: url, encoding: .utf8))
+            pending = PendingImport(fileName: url.lastPathComponent, rows: rows)
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+}
+
+extension View {
+    func gameChangerImport(team: Team, isPresented: Binding<Bool>, acceptsDrops: Bool = false) -> some View {
+        modifier(GameChangerImporter(team: team, isPresented: isPresented, acceptsDrops: acceptsDrops))
+    }
+}
+
 /// Full-width season stats. Import lives in the toolbar; drop a CSV anywhere on the page.
 struct StatsView: View {
     let team: Team
     @State private var sortOrder = [KeyPathComparator(\StatRow.obp, order: .reverse)]
     @State private var importing = false
-    @State private var pending: PendingImport?
-    @State private var error: String?
 
     var body: some View {
         let rows = team.activePlayers.filter { $0.stats != nil }.map(StatRow.init).sorted(using: sortOrder)
@@ -90,33 +135,7 @@ struct StatsView: View {
             Button("Import", systemImage: "square.and.arrow.down") { importing = true }
                 .help("Import a GameChanger season export (CSV)")
         }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
-            if case .success(let url) = result { load(url) }
-        }
-        .dropDestination(for: URL.self) { urls, _ in
-            guard let url = urls.first else { return false }
-            load(url)
-            return true
-        }
-        .sheet(item: $pending) { pending in
-            ImportSheet(team: team, pending: pending)
-        }
-        .alert("Couldn't Import", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-            Button("OK") {}
-        } message: {
-            Text(error ?? "")
-        }
-    }
-
-    private func load(_ url: URL) {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        do {
-            let rows = try GameChangerImport.parse(String(contentsOf: url, encoding: .utf8))
-            pending = PendingImport(fileName: url.lastPathComponent, rows: rows)
-        } catch {
-            self.error = error.localizedDescription
-        }
+        .gameChangerImport(team: team, isPresented: $importing, acceptsDrops: true)
     }
 
     // Typed column helpers keep the Table simple enough for the compiler.

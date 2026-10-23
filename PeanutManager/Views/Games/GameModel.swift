@@ -93,7 +93,12 @@ final class GameModel {
         var result: [Finding] = []
         if hasBattingOrder { result += Validator.validateBattingOrder(document.lineup.battingOrder, context: ctx) }
         // What the coach's own locks make unavoidable shows as a warning, not an AI mistake.
-        if isFilled { result += Validator.excusing(Validator.validateDefense(document.lineup, context: ctx), conflicts: Validator.lockConflicts(ctx)) }
+        if isFilled {
+            result += Validator.excusing(Validator.validateDefense(document.lineup, context: ctx), conflicts: Validator.lockConflicts(ctx))
+        } else if hasGrid {
+            // Building by hand: only what's already broken, so a rule turns red the moment it is.
+            result += Validator.liveRuleFindings(document.lineup, context: ctx)
+        }
         return result
     }
 

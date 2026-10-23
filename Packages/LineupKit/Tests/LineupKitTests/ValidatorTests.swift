@@ -148,3 +148,46 @@ struct ValidatorTests {
         #expect(inning.positions[.lf] == ss)
     }
 }
+
+/// Rule checks while the coach is still building: empty spots are undecided.
+struct LiveRuleTests {
+    let players = makeTeam()
+
+    func context(_ check: RuleCheck) -> GameContext {
+        GameContext(innings: 6, players: players, rules: [TeamRule(text: check.summary, check: check)])
+    }
+
+    @Test func anEmptyGridBreaksNothing() {
+        var lineup = Lineup(battingOrder: players.map(\.id))
+        lineup.resize(innings: 6)
+        for check in RuleCheck.catalog {
+            #expect(Validator.liveRuleFindings(lineup, context: context(check)).isEmpty, "\(check)")
+        }
+    }
+
+    @Test func aPassedLimitShowsAtOnce() {
+        var lineup = Lineup(battingOrder: players.map(\.id))
+        lineup.resize(innings: 6)
+        for inning in 1...3 { lineup.assign(players[0].id, to: .field(.p), inning: inning) }
+        let findings = Validator.liveRuleFindings(lineup, context: context(.maxPitchingInnings(2)))
+        #expect(findings.count == 1 && findings[0].player == players[0].id)
+    }
+
+    @Test func aMinimumFailsOnlyWhenItCantBeReached() {
+        var lineup = Lineup(battingOrder: players.map(\.id))
+        lineup.resize(innings: 6)
+        for inning in 1...3 { lineup.assign(players[5].id, to: .bench, inning: inning) }
+        #expect(Validator.liveRuleFindings(lineup, context: context(.minFieldInnings(3))).isEmpty)
+        lineup.assign(players[5].id, to: .bench, inning: 4)
+        #expect(Validator.liveRuleFindings(lineup, context: context(.minFieldInnings(3))).count == 1)
+    }
+
+    @Test func infieldByWaitsForTheWindowToFill() {
+        var lineup = Lineup(battingOrder: players.map(\.id))
+        lineup.resize(innings: 6)
+        lineup.assign(players[6].id, to: .field(.lf), inning: 1)
+        #expect(Validator.liveRuleFindings(lineup, context: context(.infieldBy(inning: 2))).isEmpty)
+        lineup.assign(players[6].id, to: .field(.rf), inning: 2)
+        #expect(Validator.liveRuleFindings(lineup, context: context(.infieldBy(inning: 2))).count == 1)
+    }
+}

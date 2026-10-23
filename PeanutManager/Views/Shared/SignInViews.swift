@@ -32,7 +32,22 @@ struct SignInButton: View {
     }
 }
 
-/// After the first team is made: one step to connect ChatGPT, or skip it for now.
+/// The quiet way into AI where a page could use it: opens Settings (ChatGPT or a Claude key). Never the main action.
+struct SetUpAILink: View {
+    /// What AI adds here: "for scouting reports".
+    var purpose: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            SettingsLink { Label("Set Up AI", systemImage: "sparkles") }
+                .buttonStyle(.link)
+            Text(purpose).foregroundStyle(.secondary)
+        }
+        .font(.callout)
+    }
+}
+
+/// After the first team is made: AI is optional; connect ChatGPT or a Claude key, or skip it.
 struct SignInSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var ai = AIService.shared
@@ -42,8 +57,8 @@ struct SignInSheet: View {
             Image(nsImage: NSApplication.shared.applicationIconImage)
                 .resizable()
                 .frame(width: 96, height: 96)
-            Text("Make Lineups with ChatGPT").font(.title2.weight(.semibold))
-            Text("Peanut Manager runs on your ChatGPT Plus or Pro plan. No API key needed.")
+            Text("Add AI if You Like").font(.title2.weight(.semibold))
+            Text("Peanut Manager works on its own. With your ChatGPT plan or a Claude API key, AI can also suggest lineups and scout your players.")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -63,10 +78,10 @@ struct SignInSheet: View {
             if let error = ai.signInError {
                 Text(error).font(.callout).foregroundStyle(.red).multilineTextAlignment(.center)
             }
-            SettingsLink { Text("Use a Claude API Key Instead") }
+            SettingsLink { Text("Use a Claude API Key") }
                 .buttonStyle(.link)
                 .simultaneousGesture(TapGesture().onEnded { dismiss() })
-            Button("Later") { dismiss() }
+            Button("Not Now") { dismiss() }
                 .buttonStyle(.link)
                 .foregroundStyle(.secondary)
         }
