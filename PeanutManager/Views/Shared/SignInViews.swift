@@ -32,23 +32,92 @@ struct SignInButton: View {
     }
 }
 
-/// The quiet way into AI where a page could use it: opens Settings (ChatGPT or a Claude key). Never the main action.
-struct SetUpAILink: View {
-    /// What AI adds here: "for scouting reports".
-    var purpose: String
+/// What season stats or AI would add right here, for a coach who hasn't brought them in yet. The same card
+/// everywhere, sitting where the feature would be, so the coach always knows what they're missing.
+struct Unlock: View {
+    enum Kind { case ai, stats }
+
+    let kind: Kind
+    /// The feature, named like a heading: "Team Summary".
+    let title: String
+    /// What it gives the coach, in one line.
+    let message: String
+    /// The team the stats go to; needed for `.stats`.
+    var team: Team?
+    /// One tight row for small places (a popover, a column), instead of a card.
+    var compact = false
+    /// Runs instead of the built-in import, for places that can't present a file picker (a popover).
+    var onImport: (() -> Void)?
+
+    @State private var importing = false
+    @State private var settingUp = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            SettingsLink { Label("Set Up AI", systemImage: "sparkles") }
-                .buttonStyle(.link)
-            Text(purpose).foregroundStyle(.secondary)
+        Group {
+            if compact {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label { Text(title).fontWeight(.semibold) } icon: { icon }
+                    Text(message).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    action.buttonStyle(.link).padding(.top, 2)
+                }
+                .font(.callout)
+            } else {
+                HStack(spacing: 14) {
+                    icon.font(.title2).frame(width: 30)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).fontWeight(.semibold)
+                        Text(message).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 16)
+                    action
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .frame(maxWidth: 720, alignment: .leading)
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+            }
         }
-        .font(.callout)
+        .sheet(isPresented: $settingUp) { SignInSheet(title: title, message: message) }
+        .gameChangerImport(team: onImport == nil ? team : nil, isPresented: $importing)
+    }
+
+    private var icon: some View {
+        Image(systemName: kind == .ai ? "sparkles" : "chart.bar.xaxis").foregroundStyle(.tint)
+    }
+
+    private var action: some View {
+        Button(kind == .ai ? "Set Up AI…" : "Import Stats…") {
+            switch kind {
+            case .ai: settingUp = true
+            case .stats: if let onImport { onImport() } else { importing = true }
+            }
+        }
+        .help(kind == .ai ? "Use your ChatGPT plan or a Claude API key" : "A GameChanger season stats export (CSV)")
     }
 }
 
-/// After the first team is made: AI is optional; connect ChatGPT or a Claude key, or skip it.
+/// Opens AI setup for one feature, from a button that stands where the AI action would be.
+struct AIFeatureButton: View {
+    let title: String
+    let feature: String
+    let message: String
+    @State private var settingUp = false
+
+    var body: some View {
+        Button { settingUp = true } label: {
+            Label(title, systemImage: "sparkles").padding(.horizontal, 4)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .help("Set up AI to do this for you")
+        .sheet(isPresented: $settingUp) { SignInSheet(title: feature, message: message) }
+    }
+}
+
+/// After the first team is made, or from a feature that needs AI: connect ChatGPT or a Claude key, or skip it.
 struct SignInSheet: View {
+    var title = "Add AI if You Like"
+    var message = "Peanut Manager works on its own. With your ChatGPT plan or a Claude API key, AI can also suggest lineups and scout your players."
     @Environment(\.dismiss) private var dismiss
     @State private var ai = AIService.shared
 
@@ -57,8 +126,8 @@ struct SignInSheet: View {
             Image(nsImage: NSApplication.shared.applicationIconImage)
                 .resizable()
                 .frame(width: 96, height: 96)
-            Text("Add AI if You Like").font(.title2.weight(.semibold))
-            Text("Peanut Manager works on its own. With your ChatGPT plan or a Claude API key, AI can also suggest lineups and scout your players.")
+            Text(title).font(.title2.weight(.semibold))
+            Text(message)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)

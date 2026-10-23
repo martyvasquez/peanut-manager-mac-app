@@ -148,7 +148,7 @@ struct PlayerEditorView: View {
         if let stats = player.stats, let team = player.team {
             PlayerStatsPage(player: player, stats: stats, team: team)
         } else {
-            Text("No stats yet. Import a GameChanger export in Stats & Insights.").foregroundStyle(.secondary)
+            Unlock(kind: .stats, title: "Season Stats", message: "Import your GameChanger season stats to see this player's numbers and where they rank on the team.", team: player.team)
         }
     }
 

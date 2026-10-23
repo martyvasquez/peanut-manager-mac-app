@@ -51,7 +51,7 @@ struct ScoutingReport: View {
             if AIService.shared.isReady {
                 Button("Write Scouting Report", systemImage: "sparkles") { runner.assess(player) }
             } else {
-                SetUpAILink(purpose: "to write a scouting report")
+                Unlock(kind: .ai, title: "Scouting Report", message: "What \(player.name.components(separatedBy: " ").first ?? player.name) does well, what to work on, and where they fit, from stats and your evaluation.")
             }
         }
     }
@@ -327,7 +327,7 @@ struct StatsInsightsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
                 if !AIService.shared.isReady {
-                    SetUpAILink(purpose: "for scouting reports and a team summary")
+                    aiUnlock
                 } else if let error = runner.errors[team.uid], runner.teamRuns[team.uid] == nil {
                     HStack(spacing: 12) {
                         Text(error).foregroundStyle(.red)
@@ -374,12 +374,21 @@ struct StatsInsightsView: View {
     /// Season stats are in for at least one player.
     private var hasStats: Bool { team.activePlayers.contains { $0.stats != nil } }
 
-    /// Without stats there's nothing to rank or chart: one step to get them.
+    /// Without stats there's nothing to rank or chart: what this tab would show, and one step to get it.
     private var importStats: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Import a GameChanger season export to see team numbers, leaders and ranks.")
-                .foregroundStyle(.secondary)
-            Button("Import GameChanger Stats…") { importing = true }
+        switch tab {
+        case .offense: Unlock(kind: .stats, title: "Hitting Numbers", message: "On-base, strikeouts and steals, hitter groups, and the team's leaders at the plate.", team: team)
+        case .defense: Unlock(kind: .stats, title: "Fielding Numbers", message: "Fielding, pitching and catching numbers, and the team's leaders in the field.", team: team)
+        default: Unlock(kind: .stats, title: "Team Numbers", message: "Import your GameChanger season stats to see team numbers, leaders, and where every kid ranks.", team: team)
+        }
+    }
+
+    /// Without AI: what the AI would write on this tab.
+    private var aiUnlock: some View {
+        switch tab {
+        case .offense: Unlock(kind: .ai, title: "Offense Scouting", message: "What your hitters do well and what to work on, with the numbers behind it.")
+        case .defense: Unlock(kind: .ai, title: "Defense Scouting", message: "Who anchors your defense, where it's thin, and what to work on.")
+        default: Unlock(kind: .ai, title: "Team Summary", message: "A one-minute read on your team, a scouting report on every kid, and a practice plan.")
         }
     }
 

@@ -330,7 +330,7 @@ struct GameDetailView: View {
     // MARK: Steps
 
     /// Batting Order › Positions — where you are, and the one next thing to do.
-    /// Without AI the coach builds both steps by hand; with it, the AI can do either.
+    /// Without AI the coach builds both steps by hand, and the AI buttons stay in view to show what it would do.
     private var stepBar: some View {
         let aiReady = AIService.shared.isReady
         return HStack(spacing: 10) {
@@ -362,8 +362,16 @@ struct GameDetailView: View {
                         .buttonStyle(.borderedProminent)
                         .buttonBorderShape(.capsule)
                         .keyboardShortcut("g", modifiers: .command)
+                    } else if !model.hasBattingOrder {
+                        AIFeatureButton(title: "Make Batting Order", feature: "Let AI Make the Batting Order",
+                                        message: "AI weighs season stats, your ratings and notes, and the matchup, then explains every spot.")
                     }
-                } else if aiReady {
+                } else if !aiReady {
+                    if !model.isFilled {
+                        AIFeatureButton(title: "Fill Positions", feature: "Let AI Fill the Positions",
+                                        message: "Set the spots you care about. AI fills the rest so every rule is met and every kid gets fair time.")
+                    }
+                } else {
                     if model.isFilled {
                         Button("Remake…", systemImage: "sparkles") { feedbackFor = .positions }
                             .buttonStyle(.borderless)
@@ -812,7 +820,14 @@ struct BattingOrderList: View {
                     }
                     .frame(height: rowHeight)
             }
-            if stats != nil { addAll.padding(.top, 6) }
+            if stats != nil {
+                addAll.padding(.top, 6)
+            } else {
+                Unlock(kind: .stats, title: "Team Ranks", message: "See where each kid ranks in AVG, OBP and SLG as you set the order.",
+                       team: model.game.team, compact: true)
+                    .frame(width: chipWidth(stats), alignment: .leading)
+                    .padding(.top, 18)
+            }
         }
         .padding(.horizontal, 8)
         .background(dropTarget == .players ? AnyShapeStyle(Color.accentColor.opacity(0.1)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 12))

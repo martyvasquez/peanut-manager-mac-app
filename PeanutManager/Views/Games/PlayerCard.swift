@@ -9,6 +9,8 @@ struct PlayerCard: View {
     let player: PlayerSnapshot
     /// Opens the kid's roster page over the game, so the coach never leaves the lineup.
     var onEdit: ((Player) -> Void)?
+    /// Opens the GameChanger import (a popover can't present the file picker itself).
+    var onImportStats: (() -> Void)?
 
     private static let scale: CGFloat = 0.66
 
@@ -34,6 +36,10 @@ struct PlayerCard: View {
                 if profile.canPlay(.c) { catching }
                 if !player.notes.isEmpty {
                     section("Notes") { Text(player.notes).lineLimit(4).fixedSize(horizontal: false, vertical: true) }
+                }
+                if player.stats == nil, let onImportStats {
+                    Unlock(kind: .stats, title: "Season Stats", message: "Fielding %, ERA, and where \(InningDiamond.firstName(player)) ranks on the team.",
+                           compact: true, onImport: onImportStats)
                 }
                 Spacer(minLength: 0)
                 if let onEdit, let stored = model.game.team?.players.first(where: { $0.uid == player.id }) {

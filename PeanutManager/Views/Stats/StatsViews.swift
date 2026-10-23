@@ -82,6 +82,12 @@ extension View {
     func gameChangerImport(team: Team, isPresented: Binding<Bool>, acceptsDrops: Bool = false) -> some View {
         modifier(GameChangerImporter(team: team, isPresented: isPresented, acceptsDrops: acceptsDrops))
     }
+
+    /// No import without a team.
+    @ViewBuilder
+    func gameChangerImport(team: Team?, isPresented: Binding<Bool>) -> some View {
+        if let team { gameChangerImport(team: team, isPresented: isPresented) } else { self }
+    }
 }
 
 /// Full-width season stats. Import lives in the toolbar; drop a CSV anywhere on the page.

@@ -52,7 +52,12 @@ enum DebugSupport {
     @MainActor
     static func seedIfRequested(teams: [Team], context: ModelContext) -> Team? {
         guard seedSample, teams.isEmpty else { return nil }
-        return try? SampleData.makeTeam(in: context)
+        let team = try? SampleData.makeTeam(in: context)
+        if UserDefaults.standard.bool(forKey: "PMNoStats"), let team {
+            for player in team.players { player.stats = nil }
+            team.statsImportedAt = nil
+        }
+        return team
     }
 
     /// A week after the team's last game; reuses the one made by an earlier run.
