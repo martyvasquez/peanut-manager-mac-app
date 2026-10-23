@@ -816,6 +816,8 @@ struct Summary: View {
         let rules = model.context.activeRules
         let checked = rules.filter { $0.check != nil }
         let judged = rules.filter { $0.check == nil }
+        // Live, so a spot the coach has since changed no longer counts.
+        let adjusted = model.document.provenance.values.filter { $0 == .appAdjusted }.count
 
         VStack(alignment: .leading, spacing: 14) {
             Button { withAnimation(.snappy) { expanded.toggle() } } label: {
@@ -830,6 +832,9 @@ struct Summary: View {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
                         Text(violations.count == 1 ? "1 problem" : "\(violations.count) problems")
                     }
+                    if adjusted > 0 {
+                        Text("· \(adjusted) spot\(adjusted == 1 ? "" : "s") changed by the app").foregroundStyle(.orange)
+                    }
                     Image(systemName: "chevron.right")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.tertiary)
@@ -839,6 +844,7 @@ struct Summary: View {
             }
             .buttonStyle(.plain)
             .disabled(!model.hasDefense && violations.isEmpty)
+            .help(adjusted > 0 ? "The AI couldn't fix a rule problem, so the app made the smallest change that does. Those spots are outlined in orange." : "")
 
             if !violations.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
@@ -860,8 +866,8 @@ struct Summary: View {
                     ForEach(model.document.warnings, id: \.self) { warning in
                         RuleLine(text: warning, symbol: "exclamationmark.triangle", tint: .orange)
                     }
-                    if model.document.appAdjustedCount > 0 {
-                        RuleLine(text: "\(model.document.appAdjustedCount) spots adjusted by the app (outlined)", symbol: "wrench.adjustable", tint: .orange)
+                    if adjusted > 0 {
+                        RuleLine(text: "Outlined spots were changed by the app, because the AI couldn't fix a rule", symbol: "wrench.adjustable", tint: .orange)
                     }
                 }
                 .font(.callout)

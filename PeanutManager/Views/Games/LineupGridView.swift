@@ -370,7 +370,7 @@ struct LineupGridView: View {
         var parts: [String] = []
         switch provenance {
         case .coach: parts.append("Set by you")
-        case .appAdjusted: parts.append("Adjusted by the app after the AI couldn't fix a rule problem")
+        case .appAdjusted: parts.append("Changed by the app: the AI couldn’t fix a rule problem, so the app did")
         case .aiRevised: parts.append("AI (revised after a rule check)")
         case .ai: parts.append("AI")
         case nil: break
