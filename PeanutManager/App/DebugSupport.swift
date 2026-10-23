@@ -1,4 +1,5 @@
 #if DEBUG
+import AppKit
 import Foundation
 import Synchronization
 import SwiftData
@@ -33,6 +34,9 @@ import LineupKit
 ///   -PMModel id          use this model instead of the pinned one (needs its service connected), e.g. claude-opus-5-5
 ///   -PMSync YES          sync this test library with iCloud (development environment); never the real library
 ///   -PMInitCloudKitSchema YES create the CloudKit schema in the development environment, then quit
+///   -PMWindowSize WxH    size the main window in points (1440x900 = the 2880 × 1800 App Store screenshot)
+///   -PMAppearance light|dark  force the appearance
+///   -PMStep batting      open the game on the Batting Order step
 ///   -PMICloudWait YES    with an empty library, show the new-device wait for iCloud instead of the welcome screen
 ///   -PMCheckCloudKit YES check the schema against CloudKit's rules (and kids' data is encrypted), print, quit
 enum DebugSupport {
@@ -65,6 +69,31 @@ enum DebugSupport {
     static func autoFills(_ game: Game) -> Bool {
         if autoGame == nil { autoGame = game.persistentModelID }
         return autoGame == game.persistentModelID
+    }
+
+    /// `-PMWindowSize 1440x900` sizes the main window (2880 × 1800 pixels on a Retina screen, the Mac App Store
+    /// screenshot size); `-PMAppearance light|dark` forces the appearance.
+    @MainActor
+    static func prepareWindowForScreenshots() {
+        let defaults = UserDefaults.standard
+        if let name = defaults.string(forKey: "PMAppearance") {
+            NSApp.appearance = NSAppearance(named: name == "dark" ? .darkAqua : .aqua)
+        }
+        guard let size = defaults.string(forKey: "PMWindowSize")?.split(separator: "x").compactMap({ Double($0) }), size.count == 2 else { return }
+        Task {
+            // The window may not exist yet, and may come back in full screen (remembered from earlier use).
+            for _ in 0..<20 {
+                if let window = NSApp.windows.first(where: { $0.isVisible && $0.canBecomeMain }) {
+                    if window.styleMask.contains(.fullScreen) {
+                        window.toggleFullScreen(nil)
+                        try? await Task.sleep(for: .seconds(1.5))
+                    }
+                    window.setFrame(NSRect(x: 40, y: 40, width: size[0], height: size[1]), display: true)
+                    return
+                }
+                try? await Task.sleep(for: .milliseconds(200))
+            }
+        }
     }
 
     @MainActor

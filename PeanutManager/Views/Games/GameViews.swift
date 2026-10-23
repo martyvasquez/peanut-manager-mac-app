@@ -223,6 +223,7 @@ struct GameDetailView: View {
             if DebugSupport.copyLastGame && !model.hasBattingOrder, let last = model.lastGame { model.copyLineup(from: last, undoManager: undoManager) }
             if DebugSupport.autoGenerate && !model.hasBattingOrder { model.makeBattingOrder(undoManager: undoManager) }
             if DebugSupport.autoRemake && model.hasBattingOrder { feedbackFor = .battingOrder }
+            if UserDefaults.standard.string(forKey: "PMStep") == "batting" { model.step = .battingOrder }
             if DebugSupport.autoPositions && model.hasBattingOrder && !model.isFilled { model.setPositions(undoManager: undoManager) }
             #endif
         }

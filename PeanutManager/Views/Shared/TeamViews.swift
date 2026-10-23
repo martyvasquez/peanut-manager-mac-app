@@ -199,7 +199,7 @@ enum SampleData {
     private static func addRecordedAI(to team: Team, game: Game) {
         #if DEBUG
         // Test runs that make their own lineup start from the plain sample.
-        if DebugSupport.fakeAI || DebugSupport.autoGenerate { return }
+        if DebugSupport.autoGenerate || DebugSupport.copyLastGame { return }
         #endif
         struct Recorded: Decodable {
             struct Entry: Decodable { let name: String; let id: String; let assessment: PlayerAssessment? }

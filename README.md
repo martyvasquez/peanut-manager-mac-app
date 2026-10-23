@@ -107,6 +107,9 @@ Always pass `-PMStore <Name>` so your real library is untouched.
 | `-PMModel id` | Use this model instead of the pinned one, to try a new model before it ships (its service must be connected) |
 | `-PMSync YES` | Sync this test library with iCloud (CloudKit development environment). Debug builds never sync the real library |
 | `-PMInitCloudKitSchema YES` | Create every record type and field in the development environment (run after a model change, then deploy to production in the CloudKit Console) |
+| `-PMWindowSize 1440x900` | Size the main window in points; 1440x900 is the 2880 × 1800 Mac App Store screenshot |
+| `-PMAppearance light\|dark` | Force the appearance |
+| `-PMStep batting` | Open the game on the Batting Order step |
 | `-PMICloudWait YES` | With an empty library, show the new-device "Looking for your teams in iCloud…" wait instead of the welcome screen |
 
 ## Model eval

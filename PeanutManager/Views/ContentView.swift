@@ -79,6 +79,7 @@ struct ContentView: View {
         }
         .task {
             #if DEBUG
+            DebugSupport.prepareWindowForScreenshots()
             if let seeded = DebugSupport.seedIfRequested(teams: teams, context: context) {
                 selectedTeamID = seeded.uid.uuidString
                 selectedGame = seeded.games.first
