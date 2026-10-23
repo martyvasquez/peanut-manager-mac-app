@@ -99,8 +99,8 @@ final class Player {
         set { assessmentData = newValue.flatMap { try? JSONEncoder().encode($0) } }
     }
 
-    /// Something the Scout can work from: stats, ratings or notes.
-    var isAssessable: Bool { stats != nil || !ratings.isEmpty || !notes.isEmpty }
+    /// The Scout needs season stats to work from; ratings and notes add to them but can't stand alone.
+    var isAssessable: Bool { stats != nil }
 
     var snapshot: PlayerSnapshot {
         PlayerSnapshot(id: uid, name: name, jersey: jersey.isEmpty ? nil : jersey, notes: notes, profile: profile, ratings: ratings, stats: stats)

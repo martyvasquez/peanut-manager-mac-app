@@ -5,7 +5,7 @@ Native SwiftUI + SwiftData macOS app (macOS 26+, Swift 6, XcodeGen) that makes y
 ## Product rules (from the owner; don't drift)
 
 - **AI decides, code guarantees.** The AI assesses players and decides the batting order and positions. Code supplies facts, validates, sends violations back for the AI to revise, and only as a disclosed last resort repairs. Never add a deterministic lineup generator.
-- **AI assessments (player/team insights) are the second core pillar** (plan §5). First slice built (`Scout`, Insights page, Scouting Report); claims cite fact IDs, and the UI shows values from the fact sheet, never numbers the AI wrote.
+- **AI assessments (player/team insights) are the second core pillar** (plan §5). First slice built (`Scout`, Insights page, Scouting Report); claims cite fact IDs, and the UI shows values from the fact sheet, never numbers the AI wrote. Assessments need season stats (owner, Oct 23): no stats, no scouting report; ratings and notes add to stats but can't stand alone (`Player.isAssessable`).
 - **Port the AI, don't reinvent it.** v1's prompts (in `Prompts.swift`) are the proven baseline. Change prompts only when evals show a change beats v1.
 - **Local-first and free.** No server and no accounts of our own. The AI runs on the coach's ChatGPT plan via Sign in with ChatGPT, or on Claude with the coach's own Anthropic API key (added Oct 20 after Sonnet 5.5 led the rule-following models in the blind evals; Max and Team plans include API credits). Both live in the keychain. OpenRouter was removed on Oct 3; don't bring it back.
 - **Every rule is met.** The coach's confidence that all rules are fulfilled is the core promise. Rule adherence gates model and prompt choices before lineup quality.
