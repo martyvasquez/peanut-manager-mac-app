@@ -32,9 +32,20 @@ Free and local-first. The AI runs on your ChatGPT plan: sign in with ChatGPT, no
 
 Full list with details: [`docs/v2-plan.md` → Build status](docs/v2-plan.md#build-status-oct-2-2026).
 
-## Install
+## Install and release
 
-The app will ship on the Mac App Store (TestFlight for testers before that). Until then, build it from source (below) and copy `build/Build/Products/Debug/Peanut Manager.app` to Applications.
+The app ships on the Mac App Store; testers get it through TestFlight. To build and upload a release:
+
+```sh
+# Raise CURRENT_PROJECT_VERSION in project.yml first (every upload needs a new build number).
+xcodegen generate
+xcodebuild -project PeanutManager.xcodeproj -scheme PeanutManager -configuration Release \
+  -archivePath build/PeanutManager.xcarchive -allowProvisioningUpdates archive
+xcodebuild -exportArchive -archivePath build/PeanutManager.xcarchive \
+  -exportOptionsPlist ExportOptions.plist -exportPath build/export -allowProvisioningUpdates
+```
+
+The export signs with Apple Distribution and uploads to App Store Connect (TestFlight). Release builds sync the library through iCloud production; debug builds never sync the real library.
 
 ## Layout
 

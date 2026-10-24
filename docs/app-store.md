@@ -58,7 +58,7 @@ Drafts for Peanut Manager 1.0 (macOS, Apple ID 6826413372). Character counts are
 
 ## Screenshots
 
-`docs/screenshots/light` and `docs/screenshots/dark`: five each at 2880 × 1800 (positions, batting order, the field, Insights, Defense), from the sample team with its recorded AI results. Upload one set, in order. Retake with `-PMStore Shots -PMSeedSample YES -PMFakeAI YES -PMFakeClaudeKey YES -PMWindowSize 1440x900 -PMAppearance light|dark` plus `-PMStep batting`, `-PMDiamond 3`, or `-PMSection team -teamTab summary|defense`.
+`docs/screenshots/light` and `docs/screenshots/dark`: five each at 2880 × 1800 (positions, batting order, the field, Insights, Defense), from the sample team with its recorded AI results. Upload the **light** set (Marty's pick, Oct 23), in order. Retake with `-PMStore Shots -PMSeedSample YES -PMFakeAI YES -PMFakeClaudeKey YES -PMWindowSize 1440x900 -PMAppearance light|dark` plus `-PMStep batting`, `-PMDiamond 3`, or `-PMSection team -teamTab summary|defense`.
 
 ## App Privacy
 
