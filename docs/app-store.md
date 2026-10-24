@@ -94,7 +94,7 @@ Peanut Manager works fully without signing in. On first launch, click "Try a Sam
 
 To try lineups: open the game, drag players into the batting order (or "Add All"), click Positions, and click spots on the grid to assign positions.
 
-To try importing stats: the attached sample-team.csv is a GameChanger season stats export with made-up players. Create a new team (click the team name at the top of the sidebar → New Team…, or "New Team" on first launch), open Roster, click the Import from GameChanger button in the toolbar (or drop the file on the roster), and review the player matches. Players are created from the file. Peanut Manager isn't affiliated with GameChanger; coaches export the CSV from their own GameChanger account.
+To try importing stats: the attached sample-team.zip (unzip it for sample-team.csv) is a GameChanger season stats export with made-up players. Create a new team (click the team name at the top of the sidebar → New Team…, or "New Team" on first launch), open Roster, click the Import from GameChanger button in the toolbar (or drop the file on the roster), and review the player matches. Players are created from the file. Peanut Manager isn't affiliated with GameChanger; coaches export the CSV from their own GameChanger account.
 
 To see the AI features without an account: the sample team comes with a lineup and scouting reports made earlier by Claude Sonnet 5.5, labeled "Sample · Claude Sonnet 5.5". Open the game for the AI lineup and its plan; Stats & Insights for the team summary and practice plan; Roster → any player → Scouting Report.
 
