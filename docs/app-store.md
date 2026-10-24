@@ -87,10 +87,29 @@ Expected rating: **4+**.
 
 ## App Review notes
 
-> Peanut Manager works fully without signing in. On first launch, click "Try a Sample" to load a sample team with season stats, rules and a game.
->
-> To try lineups: open the game, drag players into the batting order (or "Add All"), click Positions, and click spots on the grid to assign positions.
->
-> To see the AI features without an account: the sample team comes with a lineup and scouting reports made earlier by Claude Sonnet 5.5, labeled "Sample · Claude Sonnet 5.5". Open the game for the AI lineup and its plan; Stats & Insights for the team summary and practice plan; Roster → any player → Scouting Report.
->
-> Making new AI lineups needs the user's own ChatGPT account (Sign in with ChatGPT) or Anthropic API key, set in Settings. Requests go directly from the device to OpenAI or Anthropic; the app asks permission, naming the company, before the first one. There is no server of our own and no account to create.
+Untick "Sign-in required". Contact: Marty Vasquez, apps@bytelaunch.com. Notes (the review key goes in App Store Connect only, never in this repo; make one per review in its own Anthropic workspace with a spend limit and a 30-day expiry, and delete it after approval):
+
+```
+Peanut Manager works fully without signing in. On first launch, click "Try a Sample" to load a sample team with season stats, rules and a game.
+
+To try lineups: open the game, drag players into the batting order (or "Add All"), click Positions, and click spots on the grid to assign positions.
+
+To see the AI features without an account: the sample team comes with a lineup and scouting reports made earlier by Claude Sonnet 5.5, labeled "Sample · Claude Sonnet 5.5". Open the game for the AI lineup and its plan; Stats & Insights for the team summary and practice plan; Roster → any player → Scouting Report.
+
+To try live AI: open Peanut Manager → Settings (⌘,) → Claude → paste this API key and click Add:
+PASTE-YOUR-REVIEW-KEY-HERE
+This key is for App Review only and has a spending limit. Then, in the game, click Remake… (or Make Batting Order / Fill Positions on a new game). The first AI action asks permission to share the team with Anthropic; click Allow.
+
+Requests go directly from the device to OpenAI or Anthropic; the app asks permission, naming the company, before the first one. There is no server of our own and no account to create. Data is stored on the device and synced through the user's private iCloud account (CloudKit), with player information end-to-end encrypted.
+```
+
+**App Sandbox Information** (optional; explains the entitlements):
+
+| Entitlement | Reason |
+|---|---|
+| Outgoing Connections (Client) | Sends AI requests to OpenAI or Anthropic when the user chooses to use AI. |
+| Incoming Connections (Server) | Sign in with ChatGPT returns to a temporary listener on 127.0.0.1 (OAuth loopback redirect) during sign-in only. No other incoming connections. |
+| User Selected File (Read Only) | Imports a season stats CSV file the user picks. |
+| Printing | Prints the lineup card. |
+
+**Version Release:** Manually release this version.
