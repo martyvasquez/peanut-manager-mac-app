@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.martyvasquez
   deploymentTarget:
     macOS: "26.0"
+    iOS: "26.0"
   createIntermediateGroups: true
 packages:
   LineupKit:
@@ -71,8 +72,42 @@ targets:
         COMBINE_HIDPI_IMAGES: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  # A throwaway spike: is the positions grid viable on an iPhone? The sample team, in memory, no AI.
+  PeanutPhoneSpike:
+    type: application
+    platform: iOS
+    sources:
+      - PhoneSpike
+      - path: PeanutManager/Resources/sample-team.csv
+        buildPhase: resources
+      - path: PeanutManager/Resources/sample-ai.json
+        buildPhase: resources
+    dependencies:
+      - package: LineupKit
+        product: LineupKit
+    info:
+      path: PhoneSpike/Info.plist
+      properties:
+        CFBundleDisplayName: Peanut Spike
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+    settings:
+      base:
+        PRODUCT_NAME: PeanutPhoneSpike
+        PRODUCT_BUNDLE_IDENTIFIER: com.martyvasquez.PeanutManager.phonespike
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: G88C7HMHUJ
 schemes:
   PeanutManager:
     build:
       targets:
         PeanutManager: all
+  PeanutPhoneSpike:
+    build:
+      targets:
+        PeanutPhoneSpike: all
