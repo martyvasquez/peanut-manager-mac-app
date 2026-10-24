@@ -80,7 +80,7 @@ Repo: https://github.com/martyvasquez/peanut-manager-mac-app (public). Bundle ID
 
 ### Still to do (priority order)
 
-1. **Mac App Store.**
+1. **Mac App Store.** **Submitted for review Oct 23, 2026: 1.0 (1), Waiting for Review.** App Privacy published as User Content → Other User Content (App Functionality, linked, no tracking). Release: automatic on approval. App Review got a Claude key in its own spend-limited workspace (30-day expiry): delete it after approval. The TestFlight build was checked on Marty's Mac: library intact, synced to iCloud production, no keychain prompts.
    - ~~License~~ Done (Oct 23): MIT `LICENSE`; README says the name and icon aren't covered.
    - Accounts: membership is active (team `G88C7HMHUJ` has Developer ID and Apple Development certificates; signing is automatic). App ID `com.martyvasquez.PeanutManager` registered (no capabilities yet) and the App Store Connect record created Oct 23: name **Peanut Manager**, macOS, Apple ID 6826413372, version 1.0 in Prepare for Submission.
    - ~~Sparkle out~~ Done (Oct 23): removed entirely.
