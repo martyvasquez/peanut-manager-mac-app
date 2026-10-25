@@ -90,19 +90,32 @@ struct TeamNumbers: View {
         let sheet = FactSheet.team(team.activePlayers.map(\.snapshot))
         let facts = ids.compactMap { sheet[$0] }
         if !facts.isEmpty {
-            TileRow(spacing: 10) {
-                ForEach(facts, id: \.id) { fact in
-                    VStack(spacing: 2) {
-                        Text(fact.value).font(.title3.weight(.semibold).monospacedDigit())
-                        Text(Self.short(fact)).font(.caption2.weight(.medium)).foregroundStyle(.secondary)
-                    }
-                    .frame(minWidth: 72)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 10)
-                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
-                }
+            #if os(macOS)
+            HStack(spacing: 10) {
+                ForEach(facts, id: \.id) { tile($0) }
             }
+            #else
+            // Three across, filling the width.
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                ForEach(facts, id: \.id) { tile($0).frame(maxWidth: .infinity) }
+            }
+            #endif
         }
+    }
+
+    private func tile(_ fact: Fact) -> some View {
+        VStack(spacing: 2) {
+            Text(fact.value).font(.title3.weight(.semibold).monospacedDigit())
+                .lineLimit(1).minimumScaleFactor(0.7)
+            Text(Self.short(fact)).font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+        }
+        .frame(minWidth: 72)
+        #if os(iOS)
+        .frame(maxWidth: .infinity)
+        #endif
+        .padding(.horizontal, 6)
+        .padding(.vertical, 10)
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
     }
 
     /// "Team K%" → "K%"; "Team stolen bases" → "SB".

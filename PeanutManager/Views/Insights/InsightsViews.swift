@@ -364,7 +364,9 @@ struct StatsInsightsView: View {
                 .id(tab)
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                #if os(macOS)
                 .fixedSize()
+                #endif
                 status
             }
             }
