@@ -23,7 +23,7 @@ struct PositionsBoard: View {
             VStack(spacing: 0) {
                 ScrollView {
                     PositionsGrid(model: model, selected: $selected, fieldInning: $fieldInning, swaps: $swaps,
-                                  width: geo.size.width - 24, rowHeight: min(max(fit, 34), 48), headerHeight: headerHeight)
+                                  width: geo.size.width - 24, fitRowHeight: min(max(fit, 34), 48), headerHeight: headerHeight)
                         .padding(.horizontal, 12)
                         .padding(.top, 4)
                 }
@@ -79,25 +79,36 @@ struct PositionsGrid: View {
     @Binding var fieldInning: Int
     @Binding var swaps: Int
     let width: CGFloat
-    let rowHeight: CGFloat
+    /// The row height that fits every kid on screen; larger zooms grow past it and the grid scrolls.
+    let fitRowHeight: CGFloat
     let headerHeight: CGFloat
     @Environment(\.undoManager) private var undoManager
     /// Tap a name for the kid's card.
     @State private var cardPlayer: PlayerSnapshot?
 
-    @AppStorage("gridFitsAllInnings") private var fitsAll = false
+    /// Pinch to change the size, always: 0 fits every inning, 1 is standard (six innings across), 2 is large,
+    /// 3 is extra large. Past what fits, the innings swipe sideways and the kids scroll, with names pinned.
+    @AppStorage("gridZoom") private var zoom = 1
 
     private var innings: Int { max(model.game.innings, 1) }
-    /// Up to six innings always fit. Past six there are two sizes, and a pinch picks one: comfortable cells with
-    /// the later innings a swipe away (a sliver of the next one shows), or every inning on screen in narrower cells.
-    private var showsAll: Bool { innings <= 6 || fitsAll }
-    private var nameWidth: CGFloat { innings > 6 && fitsAll ? 88 : 96 }
-    private var cellWidth: CGFloat {
-        let columns = showsAll ? CGFloat(innings) : 6.35
-        return min(max((width - nameWidth) / columns, showsAll ? 26 : 36), 56)
+    /// Innings across the screen at this size; a sliver of the next one shows when there are more.
+    private var columnsAcross: CGFloat {
+        switch zoom {
+        case 0: CGFloat(innings)
+        case 1: innings <= 6 ? CGFloat(innings) : 6.35
+        case 2: min(CGFloat(innings), 4.4)
+        default: min(CGFloat(innings), 3.4)
+        }
     }
+    private var showsAll: Bool { columnsAcross >= CGFloat(innings) }
+    private var nameWidth: CGFloat { [88, 96, 112, 128][zoom] }
+    private var cellWidth: CGFloat { max((width - nameWidth) / columnsAcross, 26) }
+    private var rowHeight: CGFloat { zoom <= 1 ? fitRowHeight : max(fitRowHeight, zoom == 2 ? 56 : 66) }
     /// Narrow cells take smaller type.
     private var compact: Bool { cellWidth < 36 }
+    private var cellFont: Font { compact ? .footnote : [Font.subheadline, .subheadline, .body, .title3][zoom] }
+    private var benchFont: Font { compact ? .system(size: 9, weight: .semibold) : [Font.caption, .caption, .footnote, .callout][zoom].weight(.semibold) }
+    private var nameFont: Font { compact ? .footnote : [Font.subheadline, .subheadline, .body, .title3][zoom] }
     /// Locks tell the AI what to keep; without AI there's nothing to keep them from.
     private var showsLocks: Bool { AIService.shared.isReady }
 
@@ -155,11 +166,12 @@ struct PositionsGrid: View {
         }
         #endif
         .simultaneousGesture(MagnifyGesture().onEnded { value in
-            guard innings > 6 else { return }
-            if value.magnification < 0.85, !fitsAll { withAnimation(.snappy) { fitsAll = true } }
-            if value.magnification > 1.15, fitsAll { withAnimation(.snappy) { fitsAll = false } }
+            // A bigger pinch moves two steps.
+            let steps = value.magnification > 1.6 || value.magnification < 0.6 ? 2 : 1
+            if value.magnification > 1.15 { withAnimation(.snappy) { zoom = min(zoom + steps, 3) } }
+            if value.magnification < 0.85 { withAnimation(.snappy) { zoom = max(zoom - steps, 0) } }
         })
-        .sensoryFeedback(.impact(weight: .light), trigger: fitsAll)
+        .sensoryFeedback(.impact(weight: .light), trigger: zoom)
     }
 
     private var separator: some View {
@@ -191,7 +203,7 @@ struct PositionsGrid: View {
                 .fixedSize()
                 .frame(minWidth: 18, alignment: .trailing)
             Text(player.shortName)
-                .font((compact ? Font.footnote : Font.subheadline).weight(selected?.player == player.id ? .semibold : .regular))
+                .font(nameFont.weight(selected?.player == player.id ? .semibold : .regular))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .foregroundStyle(breaks ? AnyShapeStyle(Color.red) : AnyShapeStyle(.primary))
@@ -225,8 +237,7 @@ struct PositionsGrid: View {
                 RoundedRectangle(cornerRadius: 7).strokeBorder(Color.orange.opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
             }
             Text(label(slot, available: available))
-                .font(slot == .bench ? (compact ? .system(size: 9, weight: .semibold) : .caption.weight(.semibold))
-                      : (compact ? Font.footnote : Font.subheadline).weight(slot == .field(.p) ? .bold : .medium))
+                .font(slot == .bench ? benchFont : cellFont.weight(slot == .field(.p) ? .bold : .medium))
                 .foregroundStyle(isSelected ? AnyShapeStyle(Color.white)
                                  : problem ? AnyShapeStyle(Color.red)
                                  : lit ? AnyShapeStyle(Color.accentColor)
