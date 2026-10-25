@@ -107,14 +107,15 @@ Requests go directly from the device to OpenAI or Anthropic; the app asks permis
 About com.apple.security.network.server: it's used only by the "Sign In with ChatGPT" button (Settings → ChatGPT), which uses OpenAI's official Sign in with ChatGPT for third-party apps. The user signs in on OpenAI's page in their browser, and OpenAI requires the redirect to be a loopback address, http://127.0.0.1:<port>/auth/callback (the OAuth native-app pattern in RFC 8252, section 7.3). While a sign-in is in progress, the app listens on 127.0.0.1 only, accepts that one callback request, and then stops listening. It never listens on any other interface and never accepts connections from other devices. The App Sandbox requires this entitlement even for a loopback-only listener: without it, binding the listener fails with "Operation not permitted" and ChatGPT sign-in can't complete. Outgoing requests to OpenAI and Anthropic use com.apple.security.network.client.
 ```
 
-**App Sandbox Information** (optional; explains the entitlements):
+**App Sandbox Information** (optional; explains the entitlements; filled in Oct 25 after the automated `network.server` rejection, along with a reply to App Review and the note at the end of the review notes):
 
 | Entitlement | Reason |
 |---|---|
 | Outgoing Connections (Client) | Sends AI requests to OpenAI or Anthropic when the user chooses to use AI. |
-| Incoming Connections (Server) | Sign in with ChatGPT returns to a temporary listener on 127.0.0.1 (OAuth loopback redirect) during sign-in only. No other incoming connections. |
+| Incoming Connections (Server) | Sign in with ChatGPT: OpenAI redirects the browser sign-in to a temporary listener on 127.0.0.1 (OAuth loopback redirect). Listens only during sign-in, loopback only. |
 | User Selected File (Read Only) | Imports a season stats CSV file the user picks. |
-| Printing | Prints the lineup card. |
+
+Printing isn't in App Store Connect's list, so it has no row. Don't pick `photos.project-conversion.prints`: it's a different entitlement the app doesn't have.
 
 **Version Release:** Manually release this version.
 
