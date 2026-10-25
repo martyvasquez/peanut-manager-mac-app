@@ -313,7 +313,11 @@ struct StatsInsightsView: View {
         VStack(alignment: .leading, spacing: 0) {
             header
                 .padding(.horizontal, PageMargin.horizontal)
+                #if os(macOS)
                 .padding(.top, 28)
+                #else
+                .padding(.top, 4)
+                #endif
                 .padding(.bottom, 16)
             if team.activePlayers.isEmpty {
                 ContentUnavailableView {
@@ -339,7 +343,12 @@ struct StatsInsightsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .gameChangerImport(team: team, isPresented: $importing)
+        #if os(macOS)
         .toolbar(removing: .title)
+        #else
+        // The phone's standard large title, like the other tabs.
+        .navigationTitle("Insights")
+        #endif
         .toolbar {
             if tab != .stats && AIService.shared.isReady && hasStats {
                 Button(actionTitle, systemImage: "sparkles") { runner.assessTeam(team) }
@@ -387,7 +396,9 @@ struct StatsInsightsView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 14) {
+            #if os(macOS)
             Text("Stats & Insights").font(.largeTitle.weight(.bold))
+            #endif
             if !team.activePlayers.isEmpty {
             SideBySide(alignment: .center, spacing: 16) {
                 Picker("", selection: $tab) {
