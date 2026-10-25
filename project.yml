@@ -89,6 +89,9 @@ targets:
         buildPhase: resources
       - path: PeanutManager/Resources/sample-ai.json
         buildPhase: resources
+      # The Mac's privacy manifest applies as is: the app's own settings are the only required-reason API.
+      - path: PeanutManager/Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: LineupKit
         product: LineupKit

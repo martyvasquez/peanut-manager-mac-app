@@ -47,6 +47,18 @@ xcodebuild -exportArchive -archivePath build/PeanutManager.xcarchive \
 
 The export signs with Apple Distribution and uploads to App Store Connect (TestFlight). Release builds sync the library through iCloud production; debug builds never sync the real library.
 
+The iPhone app (`PeanutPhone`, same bundle ID, so one universal purchase) uploads the same way:
+
+```sh
+xcodegen generate
+xcodebuild -project PeanutManager.xcodeproj -scheme PeanutPhone -configuration Release -destination 'generic/platform=iOS' \
+  -archivePath build/PeanutPhone.xcarchive -allowProvisioningUpdates archive
+xcodebuild -exportArchive -archivePath build/PeanutPhone.xcarchive \
+  -exportOptionsPlist ExportOptions.plist -exportPath build/export-ios -allowProvisioningUpdates
+```
+
+iOS and macOS build numbers are counted separately; raise `CURRENT_PROJECT_VERSION` for whichever uploads next.
+
 ## Layout
 
 | Path | What |

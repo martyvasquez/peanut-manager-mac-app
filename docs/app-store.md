@@ -115,3 +115,75 @@ Requests go directly from the device to OpenAI or Anthropic; the app asks permis
 | Printing | Prints the lineup card. |
 
 **Version Release:** Manually release this version.
+
+
+---
+
+# iPhone 1.0 (same app record, universal purchase)
+
+The iPhone app is the same App Store product as the Mac app (bundle ID `com.martyvasquez.PeanutManager`), so App Information (name, subtitle, category, privacy policy), App Privacy and the age rating are shared. In App Store Connect: the app → **Add Platform → iOS**, then fill the iOS 1.0 version page below. The iPhone doesn't have Insights or Scouting Reports yet (after 1.0), so its description leaves them out.
+
+## Version 1.0 (iOS)
+
+**Promotional Text (170)** *(144, same as the Mac)*
+
+> Make the night-before lineup in minutes: drag in the batting order, lock the spots you care about, and let AI fill the rest with every rule met.
+
+**Keywords (100)** *(95, same as the Mac)*
+
+> baseball,softball,lineup,batting order,little league,coach,youth,positions,rotation,depth chart
+
+**Support URL:** https://martyvasquez.github.io/peanut-manager-mac-app/support
+
+**Copyright:** 2026 Marty Vasquez
+
+**Description (4000)**
+
+> Lineups for youth baseball and softball, made the night before in minutes, with every rule met.
+>
+> THE WHOLE GAME ON ONE SCREEN
+> Every player and every inning fit on your iPhone at once. Tap a spot to pick a position; tap two spots in an inning to swap them. A taken spot swaps, so two players can never share one. Long games swipe sideways, or pinch to see every inning.
+>
+> BATTING ORDER
+> Tap players in order, drag to reorder, or start from a previous game's lineup.
+>
+> YOUR RULES, CHECKED
+> Write your league's rules in plain words, and add a check to the ones that can be counted: pitching limits, innings in the infield, times sitting. Every lineup shows whether it follows them, or exactly what doesn't.
+>
+> AI, IF YOU WANT IT
+> Place the spots you care about and let AI fill the rest. It weighs stats, your ratings and notes, and the matchup, and never moves a spot you placed. Use your own ChatGPT plan or a Claude API key. Nothing is sent until you allow it.
+>
+> GAMECHANGER STATS
+> Import your season stats from a GameChanger CSV export. Tap any player for their season at the plate and in the field, and where they rank on the team.
+>
+> PRINT OR SEND
+> Print a clean lineup card for the dugout, or send it to your team as a PDF or as text.
+>
+> PRIVATE BY DESIGN
+> No accounts, no ads, no tracking. Your team lives on your devices and in your own iCloud, with everything about your players end-to-end encrypted, and stays in sync with Peanut Manager on your Mac.
+>
+> Peanut Manager is free and open source. It isn't affiliated with GameChanger, OpenAI or Anthropic.
+
+## Screenshots (iPhone 6.9")
+
+`docs/screenshots/iphone`: five at 1320 × 2868 (iPhone 17 Pro Max), light, from the sample team: 1 the filled grid ("Follows your rules"), 2 picking a position, 3 two placed spots and Fill the Rest, 4 the batting order, 5 a player's card. Upload in order; App Store Connect scales them for smaller iPhones. Retake on the iPhone 17 Pro Max simulator with `-PMStore Shot1 -PMSeedSample YES -PMFakeAI YES -PMFakeClaudeKey YES -PMOpenGame YES` plus `-PMStep positions`, `-PMSelect 3:6`, `-PMClear positions -PMLockDemo YES` (store Shot2), `-PMStep batting`, or `-PMCard Hayden`, after `xcrun simctl status_bar <device> override --time 9:41 --batteryState charged --batteryLevel 100`.
+
+## App Review notes (iOS)
+
+Same attachment (the sample CSV, zipped) and the same rules for the review key (App Store Connect only, never in this repo). Notes:
+
+```
+Peanut Manager works fully without signing in. On first launch, tap "Try a Sample" to load a sample team with season stats, rules and a game.
+
+To try lineups: open the game. On Batting, tap players in order (or drag to reorder), then tap Positions. Tap any spot on the grid to pick a position; with a spot picked, tap another spot in the same inning to swap them. Share (top right) prints the lineup card or sends it.
+
+To try importing stats: save the attached sample-team.csv (unzip sample-team.zip) to the Files app. Make a new team (tap the team name at the top of Games → New Team…), open the Roster tab, tap the Import button (arrow into a tray), pick the file, and review the matches. Players are created from the file. Peanut Manager isn't affiliated with GameChanger; coaches export the CSV from their own GameChanger account.
+
+To try live AI: tap the gear on the Games tab → Claude → paste this API key and tap Add:
+PASTE-YOUR-REVIEW-KEY-HERE
+This key is for App Review only and has a spending limit. Then open the game → Positions → ⋯ → Clear Positions, tap a couple of spots to place players, and tap Fill the Rest. The first AI action asks permission to share the team with Anthropic; tap Allow. While the AI works the screen stays on.
+
+Requests go directly from the device to OpenAI or Anthropic; the app asks permission, naming the company, before the first one. There is no server of our own and no account to create. Data is stored on the device and synced through the user's private iCloud account (CloudKit), with player information end-to-end encrypted.
+```
+
+**Version Release:** Manually release this version.
