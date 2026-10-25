@@ -90,7 +90,7 @@ struct TeamNumbers: View {
         let sheet = FactSheet.team(team.activePlayers.map(\.snapshot))
         let facts = ids.compactMap { sheet[$0] }
         if !facts.isEmpty {
-            HStack(spacing: 10) {
+            TileRow(spacing: 10) {
                 ForEach(facts, id: \.id) { fact in
                     VStack(spacing: 2) {
                         Text(fact.value).font(.title3.weight(.semibold).monospacedDigit())
@@ -267,7 +267,12 @@ struct HitterMap: View {
 /// Order: the coach's position profile, then the Scout's fit, then innings already played there.
 struct DepthChart: View {
     let team: Team
+    #if os(macOS)
     private static let scale: CGFloat = 1.75
+    #else
+    /// The width of a phone.
+    private static let scale: CGFloat = 1.08
+    #endif
 
     var body: some View {
         let names = team.shortNames

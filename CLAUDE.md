@@ -27,7 +27,7 @@ Native SwiftUI + SwiftData macOS app (macOS 26+, Swift 6, XcodeGen) that makes y
 - `PeanutManager/Model/Store.swift`: SwiftData models. Structured values are JSON blobs of LineupKit types. `LineupDocument` holds the working lineup, locks, provenance and reasons.
 - `PeanutManager/Model/ScoutRunner.swift`: runs the Scout and saves assessments; app-wide so work survives navigation.
 - `PeanutManager/Views/Games/GameModel.swift`: the game screen's state and actions (two-step generation, undoable edits, memoized context and findings).
-- `PeanutPhone/`: the iPhone app (plan item 3). It compiles the Mac's model files above directly. **The Mac app is frozen at tag `mac-1.0`** (in App Review): in shared files, only `#if os(macOS)` guards or pure moves, and build both schemes after any change.
+- `PeanutPhone/`: the iPhone app (plan item 3). It compiles the Mac's model files above directly. **The Mac app is frozen at tag `mac-1.0`** (in App Review): in shared files, only `#if os(macOS)` guards, pure moves, or `SideBySide`/`TileRow` (exactly the old `HStack` on the Mac), and build both schemes after any change.
 
 ## Pitfalls already hit
 

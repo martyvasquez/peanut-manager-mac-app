@@ -5,12 +5,10 @@ import LineupKit
 /// The app: Games, Roster and Rules for the current team. The team's name titles Games; tap it to switch teams,
 /// add one, or edit this one. With no teams yet, the welcome screen.
 struct HomeView: View {
-    enum Section: Hashable { case games, roster, rules }
-
     @Query(sort: \Team.createdAt) private var teams: [Team]
     @Environment(\.modelContext) private var context
     @AppStorage("phoneTeam") private var teamID = ""
-    @State private var section = Section.games
+    @Bindable private var navigator = Navigator.shared
     @State private var path: [Game] = []
     @Bindable private var ai = AIService.shared
     @State private var showsSettings = false
@@ -22,7 +20,7 @@ struct HomeView: View {
     var body: some View {
         Group {
             if let team {
-                TabView(selection: $section) {
+                TabView(selection: Binding(get: { navigator.section ?? .games }, set: { navigator.section = $0 })) {
                     Tab("Games", systemImage: "calendar", value: .games) {
                         NavigationStack(path: $path) {
                             GamesList(team: team, path: $path)
@@ -38,6 +36,9 @@ struct HomeView: View {
                     }
                     Tab("Roster", systemImage: "person.3", value: .roster) {
                         RosterList(team: team)
+                    }
+                    Tab("Insights", systemImage: "chart.bar.xaxis", value: .insights) {
+                        NavigationStack { StatsInsightsView(team: team) }
                     }
                     Tab("Rules", systemImage: "list.bullet.clipboard", value: .rules) {
                         RuleSetsList(team: team)
@@ -93,8 +94,9 @@ struct HomeView: View {
         }
         // `-PMTab roster|rules` opens that tab.
         switch defaults.string(forKey: "PMTab") {
-        case "roster": section = .roster
-        case "rules": section = .rules
+        case "roster": navigator.section = .roster
+        case "rules": navigator.section = .rules
+        case "insights": navigator.section = .insights
         default: break
         }
         // `-PMAddGame YES` adds a game a week after the last one, with the sixth player out, and opens it.

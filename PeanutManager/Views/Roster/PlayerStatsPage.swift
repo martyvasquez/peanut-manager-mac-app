@@ -17,7 +17,7 @@ struct PlayerStatsPage: View {
                 PageSection("Offense")
                 StatTiles(stats: stats, player: player.uid, ranks: ranks, kinds: [.hitting])
                 PlateAppearances(line: b, team: team.activePlayers.compactMap { $0.stats?.batting })
-                HStack(alignment: .top, spacing: 16) {
+                SideBySide(spacing: 16) {
                     HitterMap(team: team, ranks: ranks, highlight: player.uid, height: 220)
                     TwoWayMap(team: team, ranks: ranks, highlight: player.uid, height: 220)
                 }
@@ -89,7 +89,7 @@ struct PlateAppearances: View {
             bar(mine, height: 22)
             bar(Self.parts(total), height: 6).opacity(0.6)
                 .help("Team")
-            HStack(spacing: 16) {
+            TileRow(spacing: 16) {
                 ForEach(mine.filter { $0.count > 0 }) { part in
                     HStack(spacing: 5) {
                         RoundedRectangle(cornerRadius: 2).fill(part.color).frame(width: 10, height: 10)

@@ -5,7 +5,16 @@ import LineupAI
 /// to switch; both only while neither is set up. The Mac's wording.
 struct SettingsScreen: View {
     /// Opened from a feature that needs AI: what it does, above the setup.
-    var feature: AIFeature?
+    var pitch: (title: String, message: String)?
+
+    init(feature: AIFeature? = nil) {
+        pitch = feature.map { ($0.title, $0.message) }
+    }
+
+    init(title: String, message: String) {
+        pitch = (title, message)
+    }
+
     @Bindable private var ai = AIService.shared
     @Environment(\.dismiss) private var dismiss
     /// The coach asked to switch to the other service; its setup shows until it's connected.
@@ -14,11 +23,11 @@ struct SettingsScreen: View {
     var body: some View {
         NavigationStack {
             Form {
-                if let feature, !ai.isReady {
+                if let pitch, !ai.isReady {
                     Section {
                         VStack(alignment: .leading, spacing: 6) {
-                            Label(feature.title, systemImage: "sparkles").font(.headline)
-                            Text(feature.message).foregroundStyle(.secondary)
+                            Label(pitch.title, systemImage: "sparkles").font(.headline)
+                            Text(pitch.message).foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 4)
                     }

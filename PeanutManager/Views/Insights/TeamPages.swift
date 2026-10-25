@@ -132,7 +132,7 @@ struct BattingGroups: View {
         if unplaced.count < players.count {
             VStack(alignment: .leading, spacing: 12) {
                 Caption("Batting Order")
-                HStack(alignment: .top, spacing: 12) {
+                SideBySide(spacing: 12) {
                     ForEach(BattingZone.allCases, id: \.self) { zone in
                         column(zone, players.filter { $0.assessment?.battingZone == zone })
                     }

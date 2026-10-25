@@ -12,6 +12,12 @@ struct RosterList: View {
 
     var body: some View {
         NavigationStack(path: $path) { list }
+            // A kid opened from elsewhere (an Insights link): show their page, then let it go.
+            .onChange(of: Navigator.shared.playerToOpen, initial: true) { _, player in
+                guard let player else { return }
+                path = [player]
+                Navigator.shared.playerToOpen = nil
+            }
             #if DEBUG
             // `-PMPlayer Name` opens the first player whose name starts with Name.
             .onAppear {
@@ -117,8 +123,55 @@ struct PlayerEditor: View {
     @Environment(\.modelContext) private var context
     @Bindable var player: Player
     @FocusState private var nameFocused: Bool
+    @AppStorage("playerTab") private var tab: PlayerTab = .evaluation
 
     var body: some View {
+        Group {
+            switch tab {
+            case .evaluation: evaluation
+            case .stats, .scouting:
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if tab == .stats { stats } else { ScoutingReport(player: player) }
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .safeAreaInset(edge: .top) {
+            Picker("Show", selection: $tab) {
+                ForEach(PlayerTab.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+            .background(.bar)
+        }
+        .navigationTitle(player.name.isEmpty ? "New Player" : player.name)
+        .navigationBarTitleDisplayMode(.inline)
+        // A player added and left without a name was a slip; one with anything else gets a placeholder name.
+        .onDisappear {
+            guard player.name.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+            if player.jersey.isEmpty && player.notes.isEmpty && player.ratings.isEmpty && player.profile == .default {
+                context.delete(player)
+            } else {
+                player.name = "New Player"
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var stats: some View {
+        if let stats = player.stats, let team = player.team {
+            PlayerStatsPage(player: player, stats: stats, team: team)
+        } else {
+            Unlock(kind: .stats, title: "Season Stats", message: "Import your GameChanger season stats to see this player's numbers and where they rank on the team.", team: player.team)
+        }
+    }
+
+    /// The coach's own read: number and name, where they play, what the numbers don't show, and ratings.
+    private var evaluation: some View {
         Form {
             Section {
                 HStack(spacing: 12) {
@@ -154,18 +207,7 @@ struct PlayerEditor: View {
             }
             RatingsSections(player: player)
         }
-        .navigationTitle(player.name.isEmpty ? "New Player" : player.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear { if player.name.isEmpty { nameFocused = true } }
-        // A player added and left without a name was a slip; one with anything else gets a placeholder name.
-        .onDisappear {
-            guard player.name.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-            if player.jersey.isEmpty && player.notes.isEmpty && player.ratings.isEmpty && player.profile == .default {
-                context.delete(player)
-            } else {
-                player.name = "New Player"
-            }
-        }
+        .onAppear { if player.name.isEmpty { tab = .evaluation; nameFocused = true } }
     }
 }
 

@@ -27,7 +27,7 @@ struct ScoutingReport: View {
         if let job = runner.jobs[player.uid], job.isActive {
             JobStatus(job: job).font(.callout)
         } else if let a = player.assessment {
-            HStack(spacing: 10) {
+            TileRow(spacing: 10) {
                 let model = AIService.shared.displayName(for: a.model, effort: a.effort)
                 let date = a.assessedAt.formatted(date: .abbreviated, time: .omitted)
                 Label("AI · \(model) · \(runner.isStale(player) ? "changed since \(date)" : date)", systemImage: "sparkles")
@@ -71,7 +71,7 @@ struct ScoutingReport: View {
 
             PageSection("Defense")
             if !a.defense.isEmpty {
-                HStack(alignment: .top, spacing: 36) {
+                SideBySide(spacing: 36) {
                     ScoutFitField(defense: a.defense)
                     fitList(a)
                 }
@@ -165,7 +165,7 @@ struct SidedClaims: View {
     var body: some View {
         let good = strengths.filter { $0.side == side }, work = weaknesses.filter { $0.side == side }
         if !good.isEmpty || !work.isEmpty {
-            HStack(alignment: .top, spacing: 40) {
+            SideBySide(spacing: 40) {
                 if !good.isEmpty { ClaimList(title: "Strengths", claims: good, facts: facts) }
                 if !work.isEmpty { ClaimList(title: "Work On", claims: work, facts: facts) }
                 // Keep a lone list at half width, on the left.
@@ -280,7 +280,7 @@ struct StatsInsightsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-                .padding(.horizontal, 36)
+                .padding(.horizontal, PageMargin.horizontal)
                 .padding(.top, 28)
                 .padding(.bottom, 16)
             if team.activePlayers.isEmpty {
@@ -336,7 +336,7 @@ struct StatsInsightsView: View {
                 }
                 content
             }
-            .padding(.horizontal, 36)
+            .padding(.horizontal, PageMargin.horizontal)
             .padding(.top, 8)
             .padding(.bottom, 28)
             .frame(maxWidth: 980, alignment: .leading)
@@ -357,7 +357,7 @@ struct StatsInsightsView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Stats & Insights").font(.largeTitle.weight(.bold))
             if !team.activePlayers.isEmpty {
-            HStack(spacing: 16) {
+            SideBySide(alignment: .center, spacing: 16) {
                 Picker("", selection: $tab) {
                     ForEach(TeamTab.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
@@ -429,7 +429,7 @@ struct StatsInsightsView: View {
             if !hasStats && a == nil {
                 importStats
             } else {
-                HStack(alignment: .top, spacing: 12) {
+                SideBySide(spacing: 12) {
                     SideCard(title: "Offense", team: team, side: .offense, factIDs: ["team.obp", "team.k_rate", "team.sb"]) { tab = .offense }
                     SideCard(title: "Defense", team: team, side: .defense, factIDs: ["team.fpct", "team.p.whip", "team.catchers"]) { tab = .defense }
                     if AIService.shared.isReady || team.activePlayers.contains(where: { $0.assessment != nil }) { PlayersCard(team: team) }
@@ -471,7 +471,7 @@ struct StatsInsightsView: View {
             if let a {
                 SidedClaims(side: .defense, strengths: a.strengths, weaknesses: a.weaknesses, facts: a.facts)
             }
-            HStack(alignment: .top, spacing: 40) {
+            SideBySide(spacing: 40) {
                 VStack(alignment: .leading, spacing: 12) {
                     Caption("Depth Chart")
                     DepthChart(team: team)

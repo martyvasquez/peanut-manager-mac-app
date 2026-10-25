@@ -23,6 +23,9 @@ enum DebugSupport {
     static var autoGenerate: Bool { false }
     static var copyLastGame: Bool { false }
     nonisolated static var flakyScout: Bool { UserDefaults.standard.bool(forKey: "PMFlakyScout") }
+    static var assessTeam: Bool { UserDefaults.standard.bool(forKey: "PMAssessTeam") }
+    /// A section of the team page to scroll to: "offense", "defense", "practice".
+    static var scrollTo: String? { UserDefaults.standard.string(forKey: "PMScrollTo") }
     static var model: String? { UserDefaults.standard.string(forKey: "PMModel").flatMap { $0.isEmpty ? nil : $0 } }
 }
 #endif
