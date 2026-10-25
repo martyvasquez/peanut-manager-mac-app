@@ -22,12 +22,43 @@ struct ScoutingReport: View {
         }
     }
 
+    #if os(iOS)
+    /// On a phone: who wrote it and when on one line, then the confidence and the way to redo it.
+    private func phoneStatus(_ a: PlayerAssessment) -> some View {
+        let model = AIService.shared.displayName(for: a.model, effort: nil)
+        let date = a.assessedAt.formatted(.dateTime.month(.abbreviated).day())
+        return VStack(alignment: .leading, spacing: 10) {
+            Label(runner.isStale(player) ? "\(model) · changed since \(date)" : "\(model) · \(date)", systemImage: "sparkles")
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            HStack {
+                Text("\(a.confidence.rawValue.capitalized) confidence")
+                    .foregroundStyle(a.confidence == .low ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .background(Color.primary.opacity(0.08), in: Capsule())
+                Spacer()
+                if AIService.shared.isReady {
+                    Button(runner.isStale(player) ? "Refresh" : "Reassess", systemImage: "arrow.clockwise") { runner.assess(player) }
+                        .buttonStyle(.bordered)
+                        .buttonBorderShape(.capsule)
+                        .controlSize(.small)
+                }
+            }
+        }
+        .font(.subheadline)
+    }
+    #endif
+
     @ViewBuilder
     private var status: some View {
         if let job = runner.jobs[player.uid], job.isActive {
             JobStatus(job: job).font(.callout)
         } else if let a = player.assessment {
-            TileRow(spacing: 10) {
+            #if os(iOS)
+            phoneStatus(a)
+            #else
+            HStack(spacing: 10) {
                 let model = AIService.shared.displayName(for: a.model, effort: a.effort)
                 let date = a.assessedAt.formatted(date: .abbreviated, time: .omitted)
                 Label("AI · \(model) · \(runner.isStale(player) ? "changed since \(date)" : date)", systemImage: "sparkles")
@@ -45,6 +76,7 @@ struct ScoutingReport: View {
                     .help(a.confidenceReason)
             }
             .font(.callout)
+            #endif
         } else if player.isAssessable && AIService.shared.isReady {
             Button("Write Scouting Report", systemImage: "sparkles") { runner.assess(player) }
         } else if !runner.isBusy(player) {
