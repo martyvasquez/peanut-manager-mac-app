@@ -86,8 +86,9 @@ struct PositionsGrid: View {
     /// Tap a name for the kid's card.
     @State private var cardPlayer: PlayerSnapshot?
 
-    /// Pinch to change the size, always: 0 fits every inning, 1 is standard (six innings across), 2 is large,
-    /// 3 is extra large. Past what fits, the innings swipe sideways and the kids scroll, with names pinned.
+    /// Pinch to change the size, always: 0 fits every inning, 1 is standard (six innings across), 2 is medium
+    /// (five), 3 is large, 4 is extra large. Past what fits, the innings swipe sideways and the kids scroll, with
+    /// names pinned.
     @AppStorage("gridZoom") private var zoom = 1
 
     private var innings: Int { max(model.game.innings, 1) }
@@ -96,19 +97,20 @@ struct PositionsGrid: View {
         switch zoom {
         case 0: CGFloat(innings)
         case 1: innings <= 6 ? CGFloat(innings) : 6.35
-        case 2: min(CGFloat(innings), 4.4)
+        case 2: min(CGFloat(innings), innings > 5 ? 5.35 : 5)
+        case 3: min(CGFloat(innings), 4.4)
         default: min(CGFloat(innings), 3.4)
         }
     }
     private var showsAll: Bool { columnsAcross >= CGFloat(innings) }
-    private var nameWidth: CGFloat { [88, 96, 112, 128][zoom] }
+    private var nameWidth: CGFloat { [88, 96, 104, 112, 128][zoom] }
     private var cellWidth: CGFloat { max((width - nameWidth) / columnsAcross, 26) }
-    private var rowHeight: CGFloat { zoom <= 1 ? fitRowHeight : max(fitRowHeight, zoom == 2 ? 56 : 66) }
+    private var rowHeight: CGFloat { zoom <= 1 ? fitRowHeight : max(fitRowHeight, [0, 0, 50, 56, 66][zoom]) }
     /// Narrow cells take smaller type.
     private var compact: Bool { cellWidth < 36 }
-    private var cellFont: Font { compact ? .footnote : [Font.subheadline, .subheadline, .body, .title3][zoom] }
-    private var benchFont: Font { compact ? .system(size: 9, weight: .semibold) : [Font.caption, .caption, .footnote, .callout][zoom].weight(.semibold) }
-    private var nameFont: Font { compact ? .footnote : [Font.subheadline, .subheadline, .body, .title3][zoom] }
+    private var cellFont: Font { compact ? .footnote : [Font.subheadline, .subheadline, .callout, .body, .title3][zoom] }
+    private var benchFont: Font { compact ? .system(size: 9, weight: .semibold) : [Font.caption, .caption, .caption, .footnote, .callout][zoom].weight(.semibold) }
+    private var nameFont: Font { compact ? .footnote : [Font.subheadline, .subheadline, .callout, .body, .title3][zoom] }
     /// Locks tell the AI what to keep; without AI there's nothing to keep them from.
     private var showsLocks: Bool { AIService.shared.isReady }
 
@@ -168,7 +170,7 @@ struct PositionsGrid: View {
         .simultaneousGesture(MagnifyGesture().onEnded { value in
             // A bigger pinch moves two steps.
             let steps = value.magnification > 1.6 || value.magnification < 0.6 ? 2 : 1
-            if value.magnification > 1.15 { withAnimation(.snappy) { zoom = min(zoom + steps, 3) } }
+            if value.magnification > 1.15 { withAnimation(.snappy) { zoom = min(zoom + steps, 4) } }
             if value.magnification < 0.85 { withAnimation(.snappy) { zoom = max(zoom - steps, 0) } }
         })
         .sensoryFeedback(.impact(weight: .light), trigger: zoom)
