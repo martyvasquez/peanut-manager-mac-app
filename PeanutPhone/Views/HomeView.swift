@@ -23,9 +23,21 @@ struct HomeView: View {
                 TabView(selection: Binding(get: { navigator.section ?? .games }, set: { navigator.section = $0 })) {
                     Tab("Games", systemImage: "calendar", value: .games) {
                         NavigationStack(path: $path) {
-                            GamesList(team: team, path: $path)
+                            GamesList(team: team, path: $path) {
+                                // The team's name is the way to switch, edit or add teams: a menu that looks
+                                // like the large title, with a chevron so it reads as tappable.
+                                Menu { teamMenu(team) } label: {
+                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                        Text(team.name).font(.largeTitle.weight(.bold)).foregroundStyle(Color.primary).lineLimit(1)
+                                        Image(systemName: "chevron.down").font(.title3.weight(.semibold)).foregroundStyle(.secondary)
+                                    }
+                                }
+                                .accessibilityLabel("\(team.name), switch or edit team")
+                            }
+                                // Named for the back button; the menu above stands in for the title.
                                 .navigationTitle(team.name)
-                                .toolbarTitleMenu { teamMenu(team) }
+                                .navigationBarTitleDisplayMode(.inline)
+                                .toolbar { ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) } }
                                 .navigationDestination(for: Game.self) { GameScreen(game: $0) }
                                 .toolbar {
                                     ToolbarItem(placement: .topBarLeading) {
@@ -122,9 +134,11 @@ struct HomeView: View {
     }
 }
 
-struct GamesList: View {
+struct GamesList<Header: View>: View {
     let team: Team
     @Binding var path: [Game]
+    /// The team menu, above the games.
+    @ViewBuilder var header: Header
     @Environment(\.modelContext) private var context
     @State private var addingGame = false
     @State private var deleting: Game?
@@ -135,6 +149,9 @@ struct GamesList: View {
         let upcoming = games.filter { !$0.isPast }
         let past = Array(games.filter(\.isPast).reversed())
         List {
+            header
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 4, trailing: 0))
             if !upcoming.isEmpty {
                 Section("Upcoming") { ForEach(upcoming, content: row) }
             }
