@@ -2,51 +2,71 @@ import SwiftUI
 import SwiftData
 import LineupKit
 
-/// The team's games, newest first. A coach with more than one team switches from the title menu.
+/// The app: Games, Roster and Rules for the current team. The team's name titles Games; tap it to switch teams,
+/// add one, or edit this one. With no teams yet, the welcome screen.
 struct HomeView: View {
+    enum Section: Hashable { case games, roster, rules }
+
     @Query(sort: \Team.createdAt) private var teams: [Team]
     @Environment(\.modelContext) private var context
     @AppStorage("phoneTeam") private var teamID = ""
+    @State private var section = Section.games
     @State private var path: [Game] = []
     @Bindable private var ai = AIService.shared
     @State private var showsSettings = false
+    @State private var newTeam = false
+    @State private var editingTeam: Team?
 
     private var team: Team? { teams.first { $0.uid.uuidString == teamID } ?? teams.first }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            Group {
-                if let team {
-                    GamesList(team: team, path: $path)
-                } else {
-                    ContentUnavailableView {
-                        Label("No Teams Yet", systemImage: "figure.baseball")
-                    } actions: {
-                        Button("Try a Sample") { loadSample() }
-                            .buttonStyle(.borderedProminent)
+        Group {
+            if let team {
+                TabView(selection: $section) {
+                    Tab("Games", systemImage: "calendar", value: .games) {
+                        NavigationStack(path: $path) {
+                            GamesList(team: team, path: $path)
+                                .navigationTitle(team.name)
+                                .toolbarTitleMenu { teamMenu(team) }
+                                .navigationDestination(for: Game.self) { GameScreen(game: $0) }
+                                .toolbar {
+                                    ToolbarItem(placement: .topBarLeading) {
+                                        Button("Settings", systemImage: "gearshape") { showsSettings = true }
+                                    }
+                                }
+                        }
+                    }
+                    Tab("Roster", systemImage: "person.3", value: .roster) {
+                        RosterList(team: team)
+                    }
+                    Tab("Rules", systemImage: "list.bullet.clipboard", value: .rules) {
+                        RuleSetsList(team: team)
                     }
                 }
-            }
-            .navigationTitle(team?.name ?? "Peanut Manager")
-            .toolbarTitleMenu {
-                if teams.count > 1 {
-                    ForEach(teams) { t in
-                        Button(t.name) { teamID = t.uid.uuidString }
-                    }
-                }
-            }
-            .navigationDestination(for: Game.self) { GameScreen(game: $0) }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Settings", systemImage: "gearshape") { showsSettings = true }
-                }
+                // Each team keeps its own place.
+                .id(team.persistentModelID)
+            } else {
+                WelcomeView(onCreate: { teamID = $0.uid.uuidString }, newTeam: $newTeam, loadSample: { loadSample() })
             }
         }
         .sheet(isPresented: $showsSettings) { SettingsScreen() }
+        .sheet(isPresented: $newTeam) { TeamSheet(team: nil) { teamID = $0.uid.uuidString } }
+        .sheet(item: $editingTeam) { TeamSheet(team: $0) }
         .sheet(item: $ai.consentRequest, onDismiss: { ai.consentSheetClosed() }) { request in
             ConsentSheet(request: request)
         }
         .task(debugSetup)
+    }
+
+    @ViewBuilder
+    private func teamMenu(_ current: Team) -> some View {
+        if teams.count > 1 {
+            Picker("Team", selection: Binding(get: { current.uid.uuidString }, set: { teamID = $0 })) {
+                ForEach(teams) { Text($0.name).tag($0.uid.uuidString) }
+            }
+        }
+        Button("Edit \(current.name)…", systemImage: "pencil") { editingTeam = current }
+        Button("New Team…", systemImage: "plus") { newTeam = true }
     }
 
     @discardableResult
@@ -58,10 +78,17 @@ struct HomeView: View {
 
     private func debugSetup() {
         #if DEBUG
+        let defaults = UserDefaults.standard
         // The query hasn't seen a team made just now, so use it directly.
         let seeded = DebugSupport.seedSample && teams.isEmpty ? loadSample() : nil
+        // `-PMTab roster|rules` opens that tab.
+        switch defaults.string(forKey: "PMTab") {
+        case "roster": section = .roster
+        case "rules": section = .rules
+        default: break
+        }
         // `-PMAddGame YES` adds a game a week after the last one, with the sixth player out, and opens it.
-        if UserDefaults.standard.bool(forKey: "PMAddGame"), let team = seeded ?? team,
+        if defaults.bool(forKey: "PMAddGame"), let team = seeded ?? team,
            let last = team.games.max(by: { $0.date < $1.date }) {
             let game = Game(opponent: "Tigers", date: last.date.addingTimeInterval(7 * 86_400), innings: last.innings)
             context.insert(game)
@@ -71,12 +98,12 @@ struct HomeView: View {
             path = [game]
             return
         }
-        // `-PMOpenGame YES` opens the team's next game, for screenshots.
         // `-PMSettings YES` opens Settings, for screenshots.
-        if UserDefaults.standard.bool(forKey: "PMSettings") { showsSettings = true }
+        if defaults.bool(forKey: "PMSettings") { showsSettings = true }
         // `-PMSignIn YES` starts Sign in with ChatGPT, to check OpenAI's page opens in the app.
-        if UserDefaults.standard.bool(forKey: "PMSignIn") { AIService.shared.signIn() }
-        if UserDefaults.standard.bool(forKey: "PMOpenGame"), let game = ((seeded ?? team)?.games ?? []).max(by: { $0.date < $1.date }) {
+        if defaults.bool(forKey: "PMSignIn") { AIService.shared.signIn() }
+        // `-PMOpenGame YES` opens the team's next game, for screenshots.
+        if defaults.bool(forKey: "PMOpenGame"), let game = ((seeded ?? team)?.games ?? []).max(by: { $0.date < $1.date }) {
             path = [game]
         }
         #endif
@@ -115,7 +142,7 @@ struct GamesList: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .bottomBar) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("New Game", systemImage: "plus") { addingGame = true }
                     .disabled(team.activePlayers.isEmpty)
             }

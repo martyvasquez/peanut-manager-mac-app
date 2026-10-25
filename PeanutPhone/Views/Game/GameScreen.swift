@@ -34,6 +34,8 @@ struct GameScreen: View {
         }
         .navigationTitle(model.game.opponent.isEmpty ? "Game" : model.game.opponent)
         .navigationBarTitleDisplayMode(.inline)
+        // The grid needs every point; the tabs come back on the way out.
+        .toolbar(.hidden, for: .tabBar)
         .toolbar { toolbar }
         .sheet(item: $feedbackFor, onDismiss: runRemake) { step in
             FeedbackSheet(prompt: step == .battingOrder ? "Bat Mia leadoff" : "Move Jake to the outfield") { feedback in
