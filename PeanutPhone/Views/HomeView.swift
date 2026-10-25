@@ -14,6 +14,7 @@ struct HomeView: View {
     @State private var showsSettings = false
     @State private var newTeam = false
     @State private var editingTeam: Team?
+    @State private var deletingTeam: Team?
 
     private var team: Team? { teams.first { $0.uid.uuidString == teamID } ?? teams.first }
 
@@ -68,6 +69,19 @@ struct HomeView: View {
         .sheet(isPresented: $showsSettings) { SettingsScreen() }
         .sheet(isPresented: $newTeam) { TeamSheet(team: nil) { teamID = $0.uid.uuidString } }
         .sheet(item: $editingTeam) { TeamSheet(team: $0) }
+        // The Mac's wording.
+        .confirmationDialog("Delete \(deletingTeam?.name ?? "team")?", isPresented: Binding(get: { deletingTeam != nil }, set: { if !$0 { deletingTeam = nil } }), titleVisibility: .visible) {
+            Button("Delete Team", role: .destructive) {
+                if let team = deletingTeam {
+                    path = []
+                    teamID = teams.first { $0.uid != team.uid }?.uid.uuidString ?? ""
+                    context.delete(team)
+                }
+                deletingTeam = nil
+            }
+        } message: {
+            Text("Its players, rules and games are deleted too. This can't be undone.")
+        }
         .sheet(item: $ai.consentRequest, onDismiss: { ai.consentSheetClosed() }) { request in
             ConsentSheet(request: request)
         }
@@ -83,6 +97,8 @@ struct HomeView: View {
         }
         Button("Edit \(current.name)…", systemImage: "pencil") { editingTeam = current }
         Button("New Team…", systemImage: "plus") { newTeam = true }
+        Divider()
+        Button("Delete \(current.name)…", systemImage: "trash", role: .destructive) { deletingTeam = current }
     }
 
     @discardableResult
@@ -152,6 +168,7 @@ struct GamesList<Header: View>: View {
             header
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 4, trailing: 0))
+                .listRowSeparator(.hidden)
             if !upcoming.isEmpty {
                 Section("Upcoming") { ForEach(upcoming, content: row) }
             }
@@ -159,6 +176,8 @@ struct GamesList<Header: View>: View {
                 Section("Past") { ForEach(past, content: row) }
             }
         }
+        // The heading sits where a large title would.
+        .contentMargins(.top, 0, for: .scrollContent)
         .overlay {
             // A game needs kids: no roster, no new games.
             if team.activePlayers.isEmpty && games.isEmpty {
