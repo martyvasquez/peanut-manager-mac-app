@@ -9,6 +9,7 @@ struct GameSetupSheet: View {
     let model: GameModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.undoManager) private var undoManager
+    @State private var importing = false
 
     var body: some View {
         let players = game.team?.activePlayers ?? []
@@ -54,6 +55,7 @@ struct GameSetupSheet: View {
                             }
                         } else {
                             LabeledContent("Trust", value: DataWeighting.coachOnly.label)
+                            Button("Import GameChanger Stats", systemImage: "square.and.arrow.down") { importing = true }
                         }
                         TextField("Notes", text: $game.notesForAI, prompt: Text("Cole pitches the 1st and 2nd"), axis: .vertical)
                             .lineLimit(2...6)
@@ -72,6 +74,7 @@ struct GameSetupSheet: View {
                     Text("Carries over the next time you play them.")
                 }
             }
+            .gameChangerImport(team: game.team, isPresented: $importing)
             .navigationTitle("Game")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

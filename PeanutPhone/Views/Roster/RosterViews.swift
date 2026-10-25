@@ -8,6 +8,7 @@ struct RosterList: View {
     let team: Team
     @State private var path: [Player] = []
     @State private var deleting: Player?
+    @State private var importing = false
 
     var body: some View {
         NavigationStack(path: $path) { list }
@@ -37,9 +38,12 @@ struct RosterList: View {
         .navigationDestination(for: Player.self) { PlayerEditor(player: $0) }
         .overlay {
             if team.players.isEmpty {
+                // A GameChanger export brings the whole roster (and stats) in one step.
                 ContentUnavailableView {
                     Label("No Players", systemImage: "person.3")
                 } actions: {
+                    Button("Import from GameChanger") { importing = true }
+                        .buttonStyle(.borderedProminent)
                     Button("Add Player") { addPlayer() }
                 }
             }
@@ -47,9 +51,13 @@ struct RosterList: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { EditButton() }
             ToolbarItem(placement: .topBarTrailing) {
+                Button("Import from GameChanger", systemImage: "square.and.arrow.down") { importing = true }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("Add Player", systemImage: "plus") { addPlayer() }
             }
         }
+        .gameChangerImport(team: team, isPresented: $importing)
         .confirmationDialog("Delete \(deleting?.name ?? "this player")?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
             Button("Delete Player", role: .destructive) {
                 if let deleting { context.delete(deleting) }

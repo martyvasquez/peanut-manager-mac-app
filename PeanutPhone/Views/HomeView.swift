@@ -81,6 +81,13 @@ struct HomeView: View {
         let defaults = UserDefaults.standard
         // The query hasn't seen a team made just now, so use it directly.
         let seeded = DebugSupport.seedSample && teams.isEmpty ? loadSample() : nil
+        // `-PMEmptyTeam YES` makes a team with no players yet.
+        if defaults.bool(forKey: "PMEmptyTeam"), teams.isEmpty {
+            let team = Team(name: "Trojans", ageGroup: "10U")
+            context.insert(team)
+            SampleData.addStarterRules(to: team, in: context)
+            teamID = team.uid.uuidString
+        }
         // `-PMTab roster|rules` opens that tab.
         switch defaults.string(forKey: "PMTab") {
         case "roster": section = .roster
@@ -116,6 +123,7 @@ struct GamesList: View {
     @Environment(\.modelContext) private var context
     @State private var addingGame = false
     @State private var deleting: Game?
+    @State private var importing = false
 
     var body: some View {
         let games = team.games.sorted { $0.date < $1.date }
@@ -132,7 +140,14 @@ struct GamesList: View {
         .overlay {
             // A game needs kids: no roster, no new games.
             if team.activePlayers.isEmpty && games.isEmpty {
-                ContentUnavailableView("No Players Yet", systemImage: "person.3", description: Text("Add your team first."))
+                ContentUnavailableView {
+                    Label("No Players Yet", systemImage: "person.3")
+                } description: {
+                    Text("Add your team first.")
+                } actions: {
+                    Button("Import from GameChanger") { importing = true }
+                        .buttonStyle(.borderedProminent)
+                }
             } else if games.isEmpty {
                 ContentUnavailableView {
                     Label("No Games", systemImage: "calendar")
@@ -147,6 +162,7 @@ struct GamesList: View {
                     .disabled(team.activePlayers.isEmpty)
             }
         }
+        .gameChangerImport(team: team, isPresented: $importing)
         .sheet(isPresented: $addingGame) {
             NewGameSheet(team: team) { path.append($0) }
         }
