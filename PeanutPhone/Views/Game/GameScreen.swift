@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import LineupKit
 import LineupAI
+import UIKit
 
 /// One game, in the night-before order: the batting order, then positions. The AI is an extra button on each
 /// step, never a gate: without it the coach builds both by hand.
@@ -15,6 +16,18 @@ struct GameScreen: View {
     /// An AI action pressed before AI is set up: Settings opens with what it would do.
     @State private var setUpFor: AIFeature?
     @State private var showsSetup = false
+    @Environment(\.scenePhase) private var scenePhase
+    /// The last AI run the coach started, so one iOS cut off can start again.
+    @State private var lastRun: Run?
+    /// The app went to the background mid-run; if the run didn't survive, it starts again on return.
+    @State private var interrupted = false
+    @State private var backgroundTime: UIBackgroundTaskIdentifier = .invalid
+
+    struct Run {
+        var step: GameModel.Step
+        var feedback: String?
+        var fillAnyway = false
+    }
 
     init(game: Game) {
         _model = State(initialValue: GameModel(game: game))
@@ -28,7 +41,7 @@ struct GameScreen: View {
                     .safeAreaInset(edge: .bottom) { battingAction }
             case .positions:
                 PositionsBoard(model: model) {
-                    if AIService.shared.isReady { model.setPositions(undoManager: undoManager) } else { setUpFor = .positions }
+                    if AIService.shared.isReady { start(Run(step: .positions)) } else { setUpFor = .positions }
                 }
             }
         }
@@ -56,7 +69,7 @@ struct GameScreen: View {
         // A lock that breaks a rule goes to the coach, never to the AI.
         .alert(model.pendingConflicts.count == 1 ? "A Locked Spot Breaks a Rule" : "Locked Spots Break Rules",
                isPresented: Binding(get: { !model.pendingConflicts.isEmpty }, set: { if !$0 { model.pendingConflicts = [] } })) {
-            Button("Fill Anyway") { model.fillAnyway(undoManager: undoManager) }
+            Button("Fill Anyway") { start(Run(step: .positions, feedback: lastRun?.feedback, fillAnyway: true)) }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(model.pendingConflicts.map(\.message).joined(separator: "\n\n") + "\n\nUnlock a spot, or fill anyway and keep your locks.")
@@ -66,6 +79,9 @@ struct GameScreen: View {
         .confirmationDialog("Clear this lineup?", isPresented: $confirmClear, titleVisibility: .visible) {
             Button("Clear Lineup", role: .destructive) { model.startOver(undoManager: undoManager) }
         }
+        .onChange(of: model.isGenerating) { _, on in generatingChanged(on) }
+        .onChange(of: scenePhase) { _, phase in phaseChanged(phase) }
+        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
         .onAppear(perform: debugSetup)
     }
 
@@ -146,7 +162,7 @@ struct GameScreen: View {
                         .frame(minHeight: 36)
                 }
                 if AIService.shared.isReady {
-                    BottomButton(title: "Make Batting Order", systemImage: "sparkles") { model.makeBattingOrder(undoManager: undoManager) }
+                    BottomButton(title: "Make Batting Order", systemImage: "sparkles") { start(Run(step: .battingOrder)) }
                 } else {
                     BottomButton(title: "Make Batting Order", systemImage: "sparkles", prominent: false) { setUpFor = .battingOrder }
                 }
@@ -162,9 +178,56 @@ struct GameScreen: View {
         guard let remake else { return }
         self.remake = nil
         switch remake.step {
-        case .battingOrder: model.makeBattingOrder(feedback: remake.feedback, undoManager: undoManager)
-        case .positions: model.setPositions(feedback: remake.feedback, undoManager: undoManager)
+        case .battingOrder: start(Run(step: .battingOrder, feedback: remake.feedback))
+        case .positions: start(Run(step: .positions, feedback: remake.feedback))
         }
+    }
+
+    private func start(_ run: Run) {
+        lastRun = run
+        switch run.step {
+        case .battingOrder: model.makeBattingOrder(feedback: run.feedback, undoManager: undoManager)
+        case .positions: model.setPositions(feedback: run.feedback, undoManager: undoManager, fillAnyway: run.fillAnyway)
+        }
+    }
+
+    // MARK: - Runs that outlast the screen
+
+    /// A run takes a minute or two, longer than auto-lock, and iOS drops a locked app's connection. So the screen
+    /// stays awake while the AI works, iOS is asked for extra time if the coach leaves anyway, and a run cut off
+    /// in the background starts again when they come back.
+    private func generatingChanged(_ on: Bool) {
+        UIApplication.shared.isIdleTimerDisabled = on
+        if on {
+            backgroundTime = UIApplication.shared.beginBackgroundTask(withName: "Lineup") { endBackgroundTime() }
+        } else {
+            endBackgroundTime()
+            if scenePhase == .active { resumeIfCutOff() }
+        }
+    }
+
+    private func endBackgroundTime() {
+        guard backgroundTime != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(backgroundTime)
+        backgroundTime = .invalid
+    }
+
+    private func phaseChanged(_ phase: ScenePhase) {
+        switch phase {
+        case .background: if model.isGenerating { interrupted = true }
+        case .active: resumeIfCutOff()
+        default: break
+        }
+    }
+
+    /// Back in front after leaving mid-run. Still running or finished in the extra time: nothing to do (a run still
+    /// going comes back here when it ends). Ended in an error: start it again, once.
+    private func resumeIfCutOff() {
+        guard interrupted, !model.isGenerating else { return }
+        interrupted = false
+        guard model.errorMessage != nil, !model.usageLimitReached, !model.blockedByPositions, let run = lastRun else { return }
+        model.errorMessage = nil
+        start(run)
     }
 
     /// Takes the document so the button checks again after every edit (UndoManager isn't observable).
@@ -203,7 +266,7 @@ struct GameScreen: View {
         // `-PMSetUp positions|battingOrder` opens Settings for that AI feature.
         if let feature = defaults.string(forKey: "PMSetUp").flatMap(AIFeature.init(rawValue:)) { setUpFor = feature }
         // `-PMFill YES` presses Fill the Rest (with -PMFakeAI, no AI company is involved).
-        if defaults.bool(forKey: "PMFill"), model.hasGrid { model.setPositions(undoManager: nil) }
+        if defaults.bool(forKey: "PMFill"), model.hasGrid { start(Run(step: .positions)) }
         #endif
     }
 }
