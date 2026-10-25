@@ -14,6 +14,7 @@ struct GameScreen: View {
     @State private var confirmClear = false
     /// An AI action pressed before AI is set up: Settings opens with what it would do.
     @State private var setUpFor: AIFeature?
+    @State private var showsSetup = false
 
     init(game: Game) {
         _model = State(initialValue: GameModel(game: game))
@@ -59,6 +60,7 @@ struct GameScreen: View {
             Text(model.pendingConflicts.map(\.message).joined(separator: "\n\n") + "\n\nUnlock a spot, or fill anyway and keep your locks.")
         }
         .sheet(item: $setUpFor) { SettingsScreen(feature: $0) }
+        .sheet(isPresented: $showsSetup) { GameSetupSheet(game: model.game, model: model) }
         .confirmationDialog("Clear this lineup?", isPresented: $confirmClear, titleVisibility: .visible) {
             Button("Clear Lineup", role: .destructive) { model.startOver(undoManager: undoManager) }
         }
@@ -82,6 +84,9 @@ struct GameScreen: View {
             .disabled(model.isGenerating)
         }
         ToolbarItem(placement: .topBarTrailing) {
+            Button("Game", systemImage: "slider.horizontal.3") { showsSetup = true }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
             Menu("More", systemImage: "ellipsis") {
                 Button("Undo", systemImage: "arrow.uturn.backward") { undoManager?.undo() }
                     .disabled(!canUndo(after: model.document))
@@ -91,6 +96,24 @@ struct GameScreen: View {
                     }
                     if model.step == .positions && model.isFilled {
                         Button("Remake Positions…", systemImage: "sparkles") { feedbackFor = .positions }
+                    }
+                }
+                Divider()
+                if !model.copySources.isEmpty {
+                    Menu("Copy Lineup From", systemImage: "doc.on.doc") {
+                        ForEach(model.copySources) { source in
+                            Button(Self.label(source)) { model.copyLineup(from: source, undoManager: undoManager) }
+                        }
+                    }
+                }
+                let history = model.game.history
+                if !history.isEmpty {
+                    Menu("Versions", systemImage: "clock.arrow.circlepath") {
+                        ForEach(history.reversed()) { version in
+                            Button(version.savedAt.formatted(date: .abbreviated, time: .shortened)) {
+                                model.restore(version, undoManager: undoManager)
+                            }
+                        }
                     }
                 }
                 Divider()
@@ -113,12 +136,24 @@ struct GameScreen: View {
         } else if model.isBattingOrderComplete {
             BottomButton(title: "Positions", systemImage: "arrow.right") { model.preparePositions() }
         } else if !model.hasBattingOrder {
-            if AIService.shared.isReady {
-                BottomButton(title: "Make Batting Order", systemImage: "sparkles") { model.makeBattingOrder(undoManager: undoManager) }
-            } else {
-                BottomButton(title: "Make Batting Order", systemImage: "sparkles", prominent: false) { setUpFor = .battingOrder }
+            VStack(spacing: 4) {
+                // A previous game's lineup as a starting point; copied spots count as the coach's picks.
+                if !model.hasDefense, let last = model.lastGame {
+                    Button("Copy \(Self.label(last))", systemImage: "doc.on.doc") { model.copyLineup(from: last, undoManager: undoManager) }
+                        .font(.subheadline.weight(.medium))
+                        .frame(minHeight: 36)
+                }
+                if AIService.shared.isReady {
+                    BottomButton(title: "Make Batting Order", systemImage: "sparkles") { model.makeBattingOrder(undoManager: undoManager) }
+                } else {
+                    BottomButton(title: "Make Batting Order", systemImage: "sparkles", prominent: false) { setUpFor = .battingOrder }
+                }
             }
         }
+    }
+
+    static func label(_ game: Game) -> String {
+        "\(game.opponent) · \(game.date.formatted(.dateTime.month(.abbreviated).day()))"
     }
 
     private func runRemake() {
@@ -161,6 +196,8 @@ struct GameScreen: View {
             model.assign(model.rows[1].id, to: .field(.p), inning: 1, undoManager: nil)
             model.assign(model.rows[4].id, to: .field(.ss), inning: 1, undoManager: nil)
         }
+        // `-PMGameSetup YES` opens the game's setup.
+        if defaults.bool(forKey: "PMGameSetup") { showsSetup = true }
         // `-PMSetUp positions|battingOrder` opens Settings for that AI feature.
         if let feature = defaults.string(forKey: "PMSetUp").flatMap(AIFeature.init(rawValue:)) { setUpFor = feature }
         // `-PMFill YES` presses Fill the Rest (with -PMFakeAI, no AI company is involved).
@@ -284,10 +321,11 @@ struct BattingOrderList: View {
                         Button {
                             withAnimation { model.placeBatter(player.id, inSlot: nil, undoManager: undoManager) }
                         } label: {
+                            // Explicit colors: a list button tints everything in it.
                             Label {
-                                Text(player.name).foregroundStyle(.primary)
+                                Text(player.name).foregroundStyle(Color.primary)
                             } icon: {
-                                Image(systemName: "plus.circle.fill")
+                                Image(systemName: "plus.circle.fill").foregroundStyle(Color.accentColor)
                             }
                         }
                     }
