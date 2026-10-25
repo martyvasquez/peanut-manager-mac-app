@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Foundation
 import LineupKit
 import LineupAI
@@ -251,13 +255,19 @@ final class AIService {
             defer { isSigningIn = false; signInTask = nil }
             do {
                 let (account, tokens) = try await auth.signIn(hostID: Self.hostID(), account: previous, idTokenHint: hint, askConsent: askConsent) { url in
+                    #if os(macOS)
                     await MainActor.run { _ = NSWorkspace.shared.open(url) }
+                    #else
+                    await MainActor.run { UIApplication.shared.open(url) }
+                    #endif
                 }
                 Self.saveRecord(Record(account: account, tokens: tokens))
                 adopt(account, tokens)
                 // One AI at a time: ChatGPT replaces Claude only now that it works.
                 if hasClaudeKey { removeClaudeKey() }
+                #if os(macOS)
                 NSApp.activate()
+                #endif
                 if tokens.planUsageGranted && !UserDefaults.standard.bool(forKey: Keys.welcomed) {
                     UserDefaults.standard.set(true, forKey: Keys.welcomed)
                     showWelcome = true
@@ -266,7 +276,9 @@ final class AIService {
             } catch is CancellationError {
             } catch {
                 signInError = error.localizedDescription
+                #if os(macOS)
                 NSApp.activate()
+                #endif
             }
         }
     }

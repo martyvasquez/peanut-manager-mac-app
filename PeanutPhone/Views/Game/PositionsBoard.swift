@@ -1,66 +1,46 @@
 import SwiftUI
 import LineupKit
 
-/// The game on a phone: the whole grid on one screen, and below it either the selected spot's positions (the tray)
+/// Step 2 on a phone: the whole grid on one screen, and below it either the picked spot's positions (the tray)
 /// or one inning on the field. Tap a spot to pick its position; with a spot picked, tap another spot in the same
 /// inning to swap the two. Tap an inning's number to see it on the field.
-struct PhoneGameView: View {
-    @State private var model = SpikeModel.sample()
+struct PositionsBoard: View {
+    let model: GameModel
     @State private var selected: CellKey?
     @State private var fieldInning = 1
+    @State private var swaps = 0
 
     private let panelHeight: CGFloat = 246
     private let headerHeight: CGFloat = 30
 
     var body: some View {
-        NavigationStack {
-            GeometryReader { geo in
-                let rows = model.rows
-                // Rows sized so the whole game fits above the panel; small phones scroll.
-                let fit = (geo.size.height - panelHeight - headerHeight - 8) / CGFloat(max(rows.count, 1))
-                let rowHeight = min(max(fit, 34), 48)
-                VStack(spacing: 0) {
-                    ScrollView {
-                        PhoneGrid(model: model, selected: $selected, fieldInning: $fieldInning,
-                                  width: geo.size.width - 24, rowHeight: rowHeight, headerHeight: headerHeight)
-                            .padding(.horizontal, 12)
-                            .padding(.top, 4)
-                    }
-                    .scrollBounceBehavior(.basedOnSize)
-                    panel
-                        .frame(height: panelHeight)
+        GeometryReader { geo in
+            let rows = model.rows
+            // Rows sized so the whole game fits above the panel; small phones scroll.
+            let fit = (geo.size.height - panelHeight - headerHeight - 8) / CGFloat(max(rows.count, 1))
+            VStack(spacing: 0) {
+                ScrollView {
+                    PositionsGrid(model: model, selected: $selected, fieldInning: $fieldInning, swaps: $swaps,
+                                  width: geo.size.width - 24, rowHeight: min(max(fit, 34), 48), headerHeight: headerHeight)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 4)
                 }
-            }
-            .navigationTitle(model.opponent)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Undo", systemImage: "arrow.uturn.backward") { withAnimation(.snappy) { model.undo() } }
-                        .disabled(!model.canUndo)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu("More", systemImage: "ellipsis") {
-                        Button("Clear Positions", systemImage: "eraser") {
-                            withAnimation(.snappy) { model.clearPositions() }
-                            selected = nil
-                        }
-                    }
-                }
+                .scrollBounceBehavior(.basedOnSize)
+                panel.frame(height: panelHeight)
             }
         }
-        .sensoryFeedback(.impact(weight: .medium), trigger: model.swaps)
+        .sensoryFeedback(.impact(weight: .medium), trigger: swaps)
         .sensoryFeedback(.selection, trigger: selected)
         .onAppear(perform: debugSetup)
     }
 
-    @ViewBuilder
     private var panel: some View {
         Group {
             if let key = selected {
                 PositionTray(model: model, key: key, selected: $selected)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             } else {
-                InningPanel(model: model, inning: $fieldInning)
+                InningField(model: model, inning: $fieldInning)
                     .transition(.opacity)
             }
         }
@@ -72,40 +52,51 @@ struct PhoneGameView: View {
 
     /// `-PMSelect 3:2` opens the tray on inning 3, row 2 (from 0), for screenshots.
     private func debugSetup() {
+        #if DEBUG
         guard let spec = UserDefaults.standard.string(forKey: "PMSelect") else { return }
         let parts = spec.split(separator: ":").compactMap { Int($0) }
         guard parts.count == 2, let player = model.rows[safe: parts[1]] else { return }
         selected = CellKey(inning: parts[0], player: player.id)
+        #endif
     }
 }
 
 // MARK: - Grid
 
-struct PhoneGrid: View {
-    let model: SpikeModel
+struct PositionsGrid: View {
+    let model: GameModel
     @Binding var selected: CellKey?
     @Binding var fieldInning: Int
+    @Binding var swaps: Int
     let width: CGFloat
     let rowHeight: CGFloat
     let headerHeight: CGFloat
+    @Environment(\.undoManager) private var undoManager
 
-    private var cellWidth: CGFloat { min(max((width - 96) / CGFloat(model.innings), 36), 56) }
-    private var nameWidth: CGFloat { width - cellWidth * CGFloat(model.innings) }
+    private var innings: Int { max(model.game.innings, 1) }
+    private var cellWidth: CGFloat { min(max((width - 96) / CGFloat(innings), 36), 56) }
+    private var nameWidth: CGFloat { width - cellWidth * CGFloat(innings) }
+    /// Locks tell the AI what to keep; without AI there's nothing to keep them from.
+    private var showsLocks: Bool { AIService.shared.isReady }
 
     var body: some View {
         let rows = model.rows
-        let problems = problemCells
-        let selectedSlot = selected.flatMap(model.slot)
+        let ctx = model.context
+        let findings = model.findings
+        let problems = problemCells(findings)
+        let selectedSlot = selected.flatMap { model.lineup.slot(of: $0.player, inning: $0.inning) }
         VStack(spacing: 0) {
             header
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, player in
                 HStack(spacing: 0) {
-                    nameCell(player, order: index + 1)
-                    ForEach(1...model.innings, id: \.self) { inning in
-                        cell(CellKey(inning: inning, player: player.id), problem: problems.contains(CellKey(inning: inning, player: player.id)), selectedSlot: selectedSlot)
+                    nameCell(player, order: index + 1, breaks: findings.contains { $0.severity == .violation && $0.player == player.id && $0.inning == nil })
+                    ForEach(1...innings, id: \.self) { inning in
+                        let key = CellKey(inning: inning, player: player.id)
+                        cell(key, problem: problems.contains(key), selectedSlot: selectedSlot, ctx: ctx)
                     }
                 }
                 .frame(height: rowHeight)
+                .opacity(ctx.availability(of: player.id).present ? 1 : 0.4)
                 .overlay(alignment: .bottom) { Rectangle().fill(.separator.opacity(0.5)).frame(height: 0.5) }
             }
         }
@@ -114,7 +105,7 @@ struct PhoneGrid: View {
     private var header: some View {
         HStack(spacing: 0) {
             Color.clear.frame(width: nameWidth)
-            ForEach(1...model.innings, id: \.self) { inning in
+            ForEach(1...innings, id: \.self) { inning in
                 let shown = selected?.inning == inning || (selected == nil && fieldInning == inning)
                 Text("\(inning)")
                     .font(.subheadline.weight(shown ? .bold : .medium).monospacedDigit())
@@ -129,15 +120,13 @@ struct PhoneGrid: View {
         }
     }
 
-    private func nameCell(_ player: PlayerSnapshot, order: Int) -> some View {
-        let breaks = !ruleBreaks(player.id).isEmpty
-        let isSelectedRow = selected?.player == player.id
-        return HStack(spacing: 6) {
+    private func nameCell(_ player: PlayerSnapshot, order: Int, breaks: Bool) -> some View {
+        HStack(spacing: 6) {
             Text(model.lineup.battingOrder.contains(player.id) ? "\(order)" : "")
                 .font(.footnote.monospacedDigit()).foregroundStyle(.tertiary)
                 .frame(width: 18, alignment: .trailing)
             Text(player.shortName)
-                .font(.subheadline.weight(isSelectedRow ? .semibold : .regular))
+                .font(.subheadline.weight(selected?.player == player.id ? .semibold : .regular))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .foregroundStyle(breaks ? AnyShapeStyle(Color.red) : AnyShapeStyle(.primary))
@@ -146,17 +135,17 @@ struct PhoneGrid: View {
         .frame(width: nameWidth, alignment: .leading)
     }
 
-    private func cell(_ key: CellKey, problem: Bool, selectedSlot: Slot?) -> some View {
-        let slot = model.slot(key)
+    private func cell(_ key: CellKey, problem: Bool, selectedSlot: Slot?, ctx: GameContext) -> some View {
+        let slot = model.lineup.slot(of: key.player, inning: key.inning)
         let isSelected = selected == key
-        let available = model.context.availability(of: key.player).isAvailable(inning: key.inning)
+        let available = ctx.availability(of: key.player).isAvailable(inning: key.inning)
         // The picked kid's position, lit in every inning, so you can follow who plays it.
-        let lit = !isSelected && slot != nil && slot == selectedSlot && { if case .field = slot { true } else { false } }()
+        let lit: Bool = if !isSelected, case .field? = slot, slot == selectedSlot { true } else { false }
         // With a placed spot picked, the placed spots it can't swap with in its inning fade.
         let sameInning = selected.map { $0.inning == key.inning && !isSelected } ?? false
-        let swappable = sameInning && selectedSlot != nil && slot != nil && model.canSwap(selected!.player, key.player, inning: key.inning)
-        let faded = sameInning && selectedSlot != nil && slot != nil && !swappable
-        let locked = model.isLocked(key)
+        let faded = sameInning && selectedSlot != nil && slot != nil && !model.canSwap(selected!.player, key.player, inning: key.inning)
+        let locked = showsLocks && model.isLocked(key)
+        let adjusted = model.document.provenance[key] == .appAdjusted
 
         return ZStack(alignment: .topTrailing) {
             RoundedRectangle(cornerRadius: 7)
@@ -165,6 +154,9 @@ struct PhoneGrid: View {
                       : lit ? AnyShapeStyle(Color.accentColor.opacity(0.14))
                       : available ? AnyShapeStyle(.quaternary.opacity(0.5))
                       : AnyShapeStyle(Color.clear))
+            if adjusted && !isSelected {
+                RoundedRectangle(cornerRadius: 7).strokeBorder(Color.orange.opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+            }
             Text(label(slot, available: available))
                 .font(slot == .bench ? .caption.weight(.semibold) : .subheadline.weight(slot == .field(.p) ? .bold : .medium))
                 .foregroundStyle(isSelected ? AnyShapeStyle(Color.white)
@@ -186,11 +178,15 @@ struct PhoneGrid: View {
         .contentShape(Rectangle())
         .onTapGesture { if available { tap(key) } }
         .contextMenu {
-            if available, slot != nil {
-                Button(locked ? "Unlock" : "Lock", systemImage: locked ? "lock.open" : "lock") { model.toggleLock(key) }
-            }
-            if available, slot != .bench {
-                Button("Sit", systemImage: "chair") { withAnimation(.snappy) { model.assign(key.player, to: .bench, inning: key.inning) } }
+            if available {
+                if showsLocks, slot != nil {
+                    Button(locked ? "Unlock" : "Lock", systemImage: locked ? "lock.open" : "lock") { model.toggleLock(key, undoManager: undoManager) }
+                }
+                if slot != .bench {
+                    Button("Sit", systemImage: "chair") {
+                        withAnimation(.snappy) { model.assign(key.player, to: .bench, inning: key.inning, undoManager: undoManager) }
+                    }
+                }
             }
         }
         .animation(.snappy(duration: 0.2), value: slot)
@@ -201,9 +197,12 @@ struct PhoneGrid: View {
     private func tap(_ key: CellKey) {
         guard let current = selected else { selected = key; return }
         if current == key { selected = nil; return }
-        if current.inning == key.inning, model.slot(current) != nil, model.slot(key) != nil,
+        let lineup = model.lineup
+        if current.inning == key.inning,
+           lineup.slot(of: current.player, inning: current.inning) != nil, lineup.slot(of: key.player, inning: key.inning) != nil,
            model.canSwap(current.player, key.player, inning: key.inning) {
-            withAnimation(.snappy) { model.swap(current.player, key.player, inning: key.inning) }
+            withAnimation(.snappy) { model.swap(current.player, key.player, inning: key.inning, undoManager: undoManager) }
+            swaps += 1
             selected = nil
             return
         }
@@ -219,13 +218,9 @@ struct PhoneGrid: View {
         }
     }
 
-    private func ruleBreaks(_ player: PlayerID) -> [Finding] {
-        model.findings.filter { $0.severity == .violation && $0.player == player && $0.inning == nil }
-    }
-
-    private var problemCells: Set<CellKey> {
+    private func problemCells(_ findings: [Finding]) -> Set<CellKey> {
         var cells = Set<CellKey>()
-        for finding in model.findings where finding.severity == .violation {
+        for finding in findings where finding.severity == .violation {
             if let inning = finding.inning, let player = finding.player { cells.insert(CellKey(inning: inning, player: player)) }
             if let inning = finding.inning, let position = finding.position, finding.player == nil,
                let holder = model.lineup.innings[safe: inning - 1]?.positions[position] {
@@ -240,13 +235,14 @@ struct PhoneGrid: View {
 
 /// The picked spot's choices, laid out like the field: open, taken (tap to swap), theirs now, can't play.
 struct PositionTray: View {
-    let model: SpikeModel
+    let model: GameModel
     let key: CellKey
     @Binding var selected: CellKey?
+    @Environment(\.undoManager) private var undoManager
 
     var body: some View {
         let player = model.context.player(key.player)
-        let assignment = model.lineup.innings[key.inning - 1]
+        let assignment = model.lineup.innings[safe: key.inning - 1] ?? InningAssignment()
         let current = assignment.slot(of: key.player)
         let locked = model.isLocked(key)
         VStack(spacing: 10) {
@@ -254,8 +250,8 @@ struct PositionTray: View {
                 Text(player?.shortName ?? "").font(.headline)
                 Text("Inning \(key.inning)").font(.headline).foregroundStyle(.secondary)
                 Spacer()
-                if current != nil {
-                    Button(locked ? "Unlock" : "Lock", systemImage: locked ? "lock.fill" : "lock.open") { model.toggleLock(key) }
+                if AIService.shared.isReady, current != nil {
+                    Button(locked ? "Unlock" : "Lock", systemImage: locked ? "lock.fill" : "lock.open") { model.toggleLock(key, undoManager: undoManager) }
                         .labelStyle(.iconOnly)
                         .foregroundStyle(locked ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                         .frame(width: 40, height: 36)
@@ -265,7 +261,7 @@ struct PositionTray: View {
                     .disabled(key.inning <= 1)
                 Button("Next Inning", systemImage: "chevron.right") { step(1) }
                     .labelStyle(.iconOnly).frame(width: 40, height: 36)
-                    .disabled(key.inning >= model.innings)
+                    .disabled(key.inning >= model.game.innings)
             }
             .font(.body.weight(.semibold))
             .buttonStyle(.plain)
@@ -295,7 +291,6 @@ struct PositionTray: View {
         let holder = assignment.positions[position].flatMap { $0 == key.player ? nil : model.context.player($0) }
         let fit = player?.profile[position] ?? .can
         let mine = current == .field(position)
-        let taken = holder != nil
         return Button { pick(.field(position)) } label: {
             VStack(spacing: 1) {
                 HStack(spacing: 2) {
@@ -303,7 +298,11 @@ struct PositionTray: View {
                     Text(position.label).strikethrough(!fit.isEligible)
                 }
                 .font(.headline)
-                if let holder { Text(holder.firstName).font(.caption).foregroundStyle(mine ? AnyShapeStyle(Color.white) : AnyShapeStyle(.secondary)).lineLimit(1) }
+                if let holder {
+                    Text(holder.firstName).font(.caption)
+                        .foregroundStyle(mine ? AnyShapeStyle(Color.white) : AnyShapeStyle(.secondary))
+                        .lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity, minHeight: 42)
             .foregroundStyle(mine ? AnyShapeStyle(Color.white)
@@ -311,7 +310,7 @@ struct PositionTray: View {
                              : AnyShapeStyle(.primary))
             .background(mine ? AnyShapeStyle(Color.accentColor)
                         : !fit.isEligible ? AnyShapeStyle(Color.clear)
-                        : AnyShapeStyle(Color.primary.opacity(taken ? 0.07 : 0.14)),
+                        : AnyShapeStyle(Color.primary.opacity(holder != nil ? 0.07 : 0.14)),
                         in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(!fit.isEligible ? Color.secondary.opacity(0.25) : .clear, style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
             .contentShape(Rectangle())
@@ -324,9 +323,10 @@ struct PositionTray: View {
     /// After a pick, the tray moves to the next kid in this inning who isn't placed yet, so an inning fills top
     /// to bottom; once everyone's placed it closes.
     private func pick(_ slot: Slot) {
-        withAnimation(.snappy) { model.assign(key.player, to: slot, inning: key.inning) }
+        withAnimation(.snappy) { model.assign(key.player, to: slot, inning: key.inning, undoManager: undoManager) }
         let rows = model.rows.map(\.id)
-        let unplaced = Set(model.unplaced(inning: key.inning).map(\.id))
+        let assignment = model.lineup.innings[safe: key.inning - 1] ?? InningAssignment()
+        let unplaced = Set(model.context.availablePlayers(inning: key.inning).map(\.id).filter { assignment.slot(of: $0) == nil })
         let start = rows.firstIndex(of: key.player) ?? 0
         let next = (rows[(start + 1)...] + rows[..<start]).first(where: unplaced.contains)
         selected = next.map { CellKey(inning: key.inning, player: $0) }
@@ -339,17 +339,18 @@ struct PositionTray: View {
 
 // MARK: - Inning on the field
 
-/// One inning as the coach pictures it, with the rule status above it. Swipe or use the arrows to step innings.
-struct InningPanel: View {
-    let model: SpikeModel
+/// One inning as the coach pictures it, with the rule status beside it. Swipe or use the arrows to step innings.
+struct InningField: View {
+    let model: GameModel
     @Binding var inning: Int
 
     private let scale: CGFloat = 0.64
 
     var body: some View {
-        let assignment = model.lineup.innings[inning - 1]
-        let sitting = assignment.sitting.compactMap { model.context.player($0) }
-        let unplaced = model.unplaced(inning: inning)
+        let ctx = model.context
+        let assignment = model.lineup.innings[safe: inning - 1] ?? InningAssignment()
+        let sitting = assignment.sitting.compactMap { ctx.player($0) }
+        let unplaced = ctx.availablePlayers(inning: inning).filter { assignment.slot(of: $0.id) == nil }
         let violations = model.findings.filter { $0.severity == .violation }
         VStack(spacing: 6) {
             HStack(spacing: 4) {
@@ -357,7 +358,7 @@ struct InningPanel: View {
                     .labelStyle(.iconOnly).frame(width: 36, height: 32).disabled(inning <= 1)
                 Text("Inning \(inning)").font(.headline).monospacedDigit()
                 Button("Next Inning", systemImage: "chevron.right") { inning += 1 }
-                    .labelStyle(.iconOnly).frame(width: 36, height: 32).disabled(inning >= model.innings)
+                    .labelStyle(.iconOnly).frame(width: 36, height: 32).disabled(inning >= model.game.innings)
                 Spacer()
                 status(violations)
             }
@@ -368,8 +369,7 @@ struct InningPanel: View {
                 FieldDrawing(scale: scale)
                 ForEach(Position.allCases, id: \.self) { position in
                     let p = FieldGeometry.point(FieldGeometry.fielder[position]!)
-                    let holder = assignment.positions[position].flatMap { model.context.player($0) }
-                    spot(position, holder: holder)
+                    spot(position, holder: assignment.positions[position].flatMap { ctx.player($0) })
                         .position(x: p.x * scale, y: p.y * scale)
                 }
             }
@@ -377,7 +377,7 @@ struct InningPanel: View {
             .frame(maxWidth: .infinity)
 
             HStack(spacing: 6) {
-                Text(unplaced.isEmpty ? "Sitting" : "Not placed")
+                Text(unplaced.isEmpty ? "Sitting" : "Not Placed")
                     .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                 Text((unplaced.isEmpty ? sitting : unplaced).map(\.firstName).joined(separator: ", "))
                     .font(.footnote).lineLimit(1)
@@ -388,7 +388,7 @@ struct InningPanel: View {
         .padding(.top, 12)
         .contentShape(Rectangle())
         .gesture(DragGesture(minimumDistance: 30).onEnded { value in
-            if value.translation.width < -40, inning < model.innings { inning += 1 }
+            if value.translation.width < -40, inning < model.game.innings { inning += 1 }
             if value.translation.width > 40, inning > 1 { inning -= 1 }
         })
         .animation(.snappy, value: inning)
@@ -403,7 +403,8 @@ struct InningPanel: View {
             Label("Follows your rules", systemImage: "checkmark.circle.fill")
                 .font(.subheadline.weight(.medium)).foregroundStyle(.green)
         } else {
-            Text("\(model.openSpots) open").font(.subheadline).foregroundStyle(.secondary)
+            let open = model.lineup.innings.reduce(0) { $0 + $1.openPositions.count }
+            Text("\(open) open").font(.subheadline).foregroundStyle(.secondary)
         }
     }
 
@@ -424,4 +425,20 @@ struct InningPanel: View {
                 .overlay(Circle().strokeBorder(Color.secondary.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
         }
     }
+}
+
+extension PlayerSnapshot {
+    /// "Alex R.": enough to tell kids apart in a narrow column.
+    var shortName: String {
+        let parts = name.split(separator: " ")
+        guard let first = parts.first else { return name }
+        guard parts.count > 1, let initial = parts.last?.first else { return String(first) }
+        return "\(first) \(initial)."
+    }
+
+    var firstName: String { name.split(separator: " ").first.map(String.init) ?? name }
+}
+
+extension Array {
+    subscript(safe index: Int) -> Element? { indices.contains(index) ? self[index] : nil }
 }

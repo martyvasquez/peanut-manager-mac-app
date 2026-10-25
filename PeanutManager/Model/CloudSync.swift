@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import CoreData
 import Foundation
 import Observation
@@ -37,7 +41,11 @@ final class CloudSync {
     func start(syncing: Bool, timeout: Duration = .seconds(30)) {
         isOn = syncing
         // Changes made on another device arrive as silent pushes.
+        #if os(macOS)
         if syncing { Task { NSApplication.shared.registerForRemoteNotifications() } }
+        #else
+        if syncing { Task { UIApplication.shared.registerForRemoteNotifications() } }
+        #endif
         #if DEBUG
         if syncing { logEvents() }
         if DebugSupport.iCloudWait { isLookingInICloud = true; return }

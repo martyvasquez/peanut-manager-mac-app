@@ -1,8 +1,6 @@
 import SwiftUI
 import LineupKit
 
-// Copied from RosterViews.swift for the spike; the port would move these into a shared file.
-
 /// Little League infield proportions in feet (60-ft bases, 46-ft mound), home plate at the origin and +y toward
 /// center field. The outfield is drawn shallower than a real 200-ft fence so the infield has room.
 nonisolated enum FieldGeometry {
