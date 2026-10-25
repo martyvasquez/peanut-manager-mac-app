@@ -104,7 +104,7 @@ This key is for App Review only and has a spending limit. Then, in the game, cli
 
 Requests go directly from the device to OpenAI or Anthropic; the app asks permission, naming the company, before the first one. There is no server of our own and no account to create. Data is stored on the device and synced through the user's private iCloud account (CloudKit), with player information end-to-end encrypted.
 
-About com.apple.security.network.server: it's used only by Sign in with ChatGPT (Settings → ChatGPT → Sign In). That's an OAuth sign-in in the user's browser, and OpenAI redirects it back to http://127.0.0.1:1455/auth/callback (an OAuth loopback redirect, RFC 8252). While a sign-in is in progress, the app listens on 127.0.0.1 only, accepts that one callback request, and then stops listening. It never accepts connections from other devices.
+About com.apple.security.network.server: it's used only by the "Sign In with ChatGPT" button (Settings → ChatGPT). That's an OAuth sign-in in the user's browser, and OpenAI redirects it back to http://127.0.0.1:1455/auth/callback (an OAuth loopback redirect, RFC 8252). While a sign-in is in progress, the app listens on 127.0.0.1 only, accepts that one callback request, and then stops listening. It never accepts connections from other devices.
 ```
 
 **App Sandbox Information** (optional; explains the entitlements):
