@@ -84,6 +84,7 @@ targets:
       - path: PeanutManager/Views/Games/GameModel.swift
       - path: PeanutManager/Views/Shared/Field.swift
       - path: PeanutManager/App/FakeLLMClient.swift
+      - path: PeanutManager/Printing/LineupCardView.swift
       - path: PeanutManager/Resources/sample-team.csv
         buildPhase: resources
       - path: PeanutManager/Resources/sample-ai.json

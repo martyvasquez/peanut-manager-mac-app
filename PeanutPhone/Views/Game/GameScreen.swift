@@ -101,11 +101,20 @@ struct GameScreen: View {
             .frame(width: 200)
             .disabled(model.isGenerating)
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button("Game", systemImage: "slider.horizontal.3") { showsSetup = true }
+        // The night-before path ends here: print the card, or send it.
+        if model.isFilled && !model.isGenerating {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu("Share", systemImage: "square.and.arrow.up") {
+                    Button("Print…", systemImage: "printer") { LineupExport.print(model) }
+                    Button("Send Lineup Card…", systemImage: "doc.richtext") { LineupExport.sharePDF(model) }
+                    Button("Send as Text…", systemImage: "text.bubble") { LineupExport.shareText(model) }
+                }
+            }
         }
         ToolbarItem(placement: .topBarTrailing) {
             Menu("More", systemImage: "ellipsis") {
+                Button("Game Setup…", systemImage: "slider.horizontal.3") { showsSetup = true }
+                Divider()
                 Button("Undo", systemImage: "arrow.uturn.backward") { undoManager?.undo() }
                     .disabled(!canUndo(after: model.document))
                 if AIService.shared.isReady && !model.isGenerating {
@@ -260,6 +269,12 @@ struct GameScreen: View {
         if defaults.bool(forKey: "PMLockDemo"), model.hasGrid, model.rows.count > 4 {
             model.assign(model.rows[1].id, to: .field(.p), inning: 1, undoManager: nil)
             model.assign(model.rows[4].id, to: .field(.ss), inning: 1, undoManager: nil)
+        }
+        // `-PMExport YES` writes the lineup card and text to Documents, to check them.
+        if defaults.bool(forKey: "PMExport"), model.isFilled {
+            let folder = URL.documentsDirectory
+            try? LineupExport.pdf(model)?.write(to: folder.appending(path: "lineup.pdf"))
+            try? LineupExport.text(model).write(to: folder.appending(path: "lineup.txt"), atomically: true, encoding: .utf8)
         }
         // `-PMGameSetup YES` opens the game's setup.
         if defaults.bool(forKey: "PMGameSetup") { showsSetup = true }
