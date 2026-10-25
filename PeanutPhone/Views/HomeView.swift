@@ -45,6 +45,9 @@ struct HomeView: View {
                 }
                 // Each team keeps its own place.
                 .id(team.persistentModelID)
+            } else if CloudSync.shared.isLookingInICloud {
+                // A new phone downloading the library: wait here rather than offer New Team and make a duplicate.
+                ICloudWaitView()
             } else {
                 WelcomeView(onCreate: { teamID = $0.uid.uuidString }, newTeam: $newTeam, loadSample: { loadSample() })
             }

@@ -92,3 +92,24 @@ struct TeamSheet: View {
         dismiss()
     }
 }
+
+/// A new phone downloading the library from iCloud. It gives up after 30 seconds (`CloudSync`), then welcomes.
+struct ICloudWaitView: View {
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "figure.baseball")
+                .font(.system(size: 64, weight: .light))
+                .foregroundStyle(.tint)
+                .padding(.bottom, 8)
+            Text("Peanut Manager").font(.largeTitle.weight(.bold))
+            HStack(spacing: 8) {
+                ProgressView()
+                Text("Looking for your teams in iCloud…")
+            }
+            .font(.title3)
+            .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
