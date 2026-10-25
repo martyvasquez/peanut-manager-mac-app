@@ -32,13 +32,51 @@ struct StatTiles: View {
         VStack(alignment: .leading, spacing: 8) {
             // A single kind sits under its own section heading already.
             if kinds.count > 1 { Text(title.uppercased()).font(.caption.weight(.semibold)).foregroundStyle(.tertiary) }
+            #if os(macOS)
             TileRow(alignment: .top, spacing: 10) {
                 ForEach(Array(tiles.enumerated()), id: \.offset) { _, tile in
                     self.tile(tile)
                 }
             }
+            #else
+            // A phone is too narrow for tiles: one full-width line per number, in one card.
+            VStack(spacing: 0) {
+                ForEach(Array(tiles.enumerated()), id: \.offset) { index, tile in
+                    if index > 0 { Divider().padding(.leading, 16) }
+                    line(tile)
+                }
+            }
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+            #endif
         }
     }
+
+    #if os(iOS)
+    /// ".429  OBP" on the left; where that sits on the team, and the rank, on the right.
+    private func line(_ tile: Tile) -> some View {
+        let standing: Standing? = if case .ranked(let metric) = tile { ranks.standing(player, metric) } else { nil }
+        let (value, label): (String, String) = switch tile {
+        case .ranked(let metric): (standing.map { metric.format($0.value) } ?? "–", metric.label)
+        case .plain(let value, let label): (value, label)
+        }
+        return HStack(spacing: 12) {
+            Text(value).font(.title3.weight(.semibold).monospacedDigit())
+                .foregroundStyle(standing != nil && standing?.rank == nil ? .secondary : .primary)
+                .frame(minWidth: 64, alignment: .leading)
+            Text(label).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+            Spacer(minLength: 8)
+            if let standing {
+                VStack(alignment: .trailing, spacing: 4) {
+                    if standing.rank != nil { StandingStrip(standing: standing, ranks: ranks, width: 120) }
+                    RankLabel(standing: standing).font(.footnote.weight(.medium))
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .accessibilityElement(children: .combine)
+    }
+    #endif
 
     @ViewBuilder
     private func tile(_ tile: Tile) -> some View {
