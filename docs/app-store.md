@@ -117,7 +117,7 @@ About com.apple.security.network.server: it's used only by the "Sign In with Cha
 
 Printing isn't in App Store Connect's list, so it has no row. Don't pick `photos.project-conversion.prints`: it's a different entitlement the app doesn't have.
 
-**Version Release:** Manually release this version.
+**Version Release:** Automatically release this version (Marty, Oct 25: 1.0 goes live when approved).
 
 
 ---
