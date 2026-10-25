@@ -6,6 +6,8 @@ import LineupKit
 /// inning to swap the two. Tap an inning's number to see it on the field.
 struct PositionsBoard: View {
     let model: GameModel
+    /// Fill the Rest: the AI fills every spot the coach hasn't placed.
+    let fill: () -> Void
     @State private var selected: CellKey?
     @State private var fieldInning = 1
     @State private var swaps = 0
@@ -36,11 +38,15 @@ struct PositionsBoard: View {
 
     private var panel: some View {
         Group {
-            if let key = selected {
+            if model.isGenerating {
+                Progress(status: model.status) { model.cancel() }
+                    .padding(.top, 16)
+                    .transition(.opacity)
+            } else if let key = selected {
                 PositionTray(model: model, key: key, selected: $selected)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             } else {
-                InningField(model: model, inning: $fieldInning)
+                InningField(model: model, inning: $fieldInning, fill: fill)
                     .transition(.opacity)
             }
         }
@@ -48,6 +54,7 @@ struct PositionsBoard: View {
         .background(.background.secondary, in: UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
         .ignoresSafeArea(edges: .bottom)
         .animation(.snappy(duration: 0.25), value: selected == nil)
+        .animation(.snappy(duration: 0.25), value: model.isGenerating)
     }
 
     /// `-PMSelect 3:2` opens the tray on inning 3, row 2 (from 0), for screenshots.
@@ -389,6 +396,7 @@ struct PositionTray: View {
 struct InningField: View {
     let model: GameModel
     @Binding var inning: Int
+    let fill: () -> Void
 
     private let scale: CGFloat = 0.64
 
@@ -442,12 +450,28 @@ struct InningField: View {
 
     @ViewBuilder
     private func status(_ violations: [Finding]) -> some View {
-        if !violations.isEmpty {
+        // Until the grid is full, the next thing to do is fill it; a rule a placed spot already breaks shows in red on the grid.
+        if !model.isFilled && AIService.shared.isReady {
+            Button(action: fill) {
+                Label(model.document.locks.isEmpty ? "Fill Positions" : "Fill the Rest", systemImage: "sparkles")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+        } else if !violations.isEmpty {
             Label("\(violations.count) rule \(violations.count == 1 ? "problem" : "problems")", systemImage: "exclamationmark.circle.fill")
                 .font(.subheadline.weight(.medium)).foregroundStyle(.red)
         } else if model.isFilled {
-            Label("Follows your rules", systemImage: "checkmark.circle.fill")
-                .font(.subheadline.weight(.medium)).foregroundStyle(.green)
+            // Counted live, so the orange outlines on the grid explain themselves.
+            let adjusted = model.document.provenance.values.filter { $0 == .appAdjusted }.count
+            VStack(alignment: .trailing, spacing: 1) {
+                Label("Follows your rules", systemImage: "checkmark.circle.fill")
+                    .font(.subheadline.weight(.medium)).foregroundStyle(.green)
+                if adjusted > 0 {
+                    Text("\(adjusted) spot\(adjusted == 1 ? "" : "s") changed by the app")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+            }
         } else {
             let open = model.lineup.innings.reduce(0) { $0 + $1.openPositions.count }
             Text("\(open) open").font(.subheadline).foregroundStyle(.secondary)

@@ -8,6 +8,7 @@ struct HomeView: View {
     @Environment(\.modelContext) private var context
     @AppStorage("phoneTeam") private var teamID = ""
     @State private var path: [Game] = []
+    @Bindable private var ai = AIService.shared
 
     private var team: Team? { teams.first { $0.uid.uuidString == teamID } ?? teams.first }
 
@@ -35,19 +36,25 @@ struct HomeView: View {
             }
             .navigationDestination(for: Game.self) { GameScreen(game: $0) }
         }
+        .sheet(item: $ai.consentRequest, onDismiss: { ai.consentSheetClosed() }) { request in
+            ConsentSheet(request: request)
+        }
         .task(debugSetup)
     }
 
-    private func loadSample() {
-        guard let sample = try? SampleData.makeTeam(in: context) else { return }
+    @discardableResult
+    private func loadSample() -> Team? {
+        guard let sample = try? SampleData.makeTeam(in: context) else { return nil }
         teamID = sample.uid.uuidString
+        return sample
     }
 
     private func debugSetup() {
         #if DEBUG
-        if DebugSupport.seedSample, teams.isEmpty { loadSample() }
+        // The query hasn't seen a team made just now, so use it directly.
+        let seeded = DebugSupport.seedSample && teams.isEmpty ? loadSample() : nil
         // `-PMOpenGame YES` opens the team's next game, for screenshots.
-        if UserDefaults.standard.bool(forKey: "PMOpenGame"), let game = (team?.games ?? []).max(by: { $0.date < $1.date }) {
+        if UserDefaults.standard.bool(forKey: "PMOpenGame"), let game = ((seeded ?? team)?.games ?? []).max(by: { $0.date < $1.date }) {
             path = [game]
         }
         #endif
