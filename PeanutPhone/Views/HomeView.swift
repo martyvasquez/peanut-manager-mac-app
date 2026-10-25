@@ -9,6 +9,7 @@ struct HomeView: View {
     @AppStorage("phoneTeam") private var teamID = ""
     @State private var path: [Game] = []
     @Bindable private var ai = AIService.shared
+    @State private var showsSettings = false
 
     private var team: Team? { teams.first { $0.uid.uuidString == teamID } ?? teams.first }
 
@@ -35,7 +36,13 @@ struct HomeView: View {
                 }
             }
             .navigationDestination(for: Game.self) { GameScreen(game: $0) }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Settings", systemImage: "gearshape") { showsSettings = true }
+                }
+            }
         }
+        .sheet(isPresented: $showsSettings) { SettingsScreen() }
         .sheet(item: $ai.consentRequest, onDismiss: { ai.consentSheetClosed() }) { request in
             ConsentSheet(request: request)
         }
@@ -54,6 +61,10 @@ struct HomeView: View {
         // The query hasn't seen a team made just now, so use it directly.
         let seeded = DebugSupport.seedSample && teams.isEmpty ? loadSample() : nil
         // `-PMOpenGame YES` opens the team's next game, for screenshots.
+        // `-PMSettings YES` opens Settings, for screenshots.
+        if UserDefaults.standard.bool(forKey: "PMSettings") { showsSettings = true }
+        // `-PMSignIn YES` starts Sign in with ChatGPT, to check OpenAI's page opens in the app.
+        if UserDefaults.standard.bool(forKey: "PMSignIn") { AIService.shared.signIn() }
         if UserDefaults.standard.bool(forKey: "PMOpenGame"), let game = ((seeded ?? team)?.games ?? []).max(by: { $0.date < $1.date }) {
             path = [game]
         }

@@ -451,12 +451,14 @@ struct InningField: View {
     @ViewBuilder
     private func status(_ violations: [Finding]) -> some View {
         // Until the grid is full, the next thing to do is fill it; a rule a placed spot already breaks shows in red on the grid.
-        if !model.isFilled && AIService.shared.isReady {
+        // Without AI it stays, outlined, as the way to set it up.
+        if !model.isFilled {
+            let ready = AIService.shared.isReady
             Button(action: fill) {
-                Label(model.document.locks.isEmpty ? "Fill Positions" : "Fill the Rest", systemImage: "sparkles")
+                Label(ready && !model.document.locks.isEmpty ? "Fill the Rest" : "Fill Positions", systemImage: "sparkles")
                     .font(.subheadline.weight(.semibold))
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(ready ? AnyPrimitiveButtonStyle(.borderedProminent) : AnyPrimitiveButtonStyle(.bordered))
             .buttonBorderShape(.capsule)
         } else if !violations.isEmpty {
             Label("\(violations.count) rule \(violations.count == 1 ? "problem" : "problems")", systemImage: "exclamationmark.circle.fill")
@@ -472,9 +474,6 @@ struct InningField: View {
                         .font(.caption).foregroundStyle(.orange)
                 }
             }
-        } else {
-            let open = model.lineup.innings.reduce(0) { $0 + $1.openPositions.count }
-            Text("\(open) open").font(.subheadline).foregroundStyle(.secondary)
         }
     }
 

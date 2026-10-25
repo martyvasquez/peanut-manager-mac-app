@@ -12,6 +12,8 @@ struct GameScreen: View {
     /// What the coach asked for in Remake…, run once that sheet has closed so the next sheet (consent) can open.
     @State private var remake: (step: GameModel.Step, feedback: String)?
     @State private var confirmClear = false
+    /// An AI action pressed before AI is set up: Settings opens with what it would do.
+    @State private var setUpFor: AIFeature?
 
     init(game: Game) {
         _model = State(initialValue: GameModel(game: game))
@@ -24,7 +26,9 @@ struct GameScreen: View {
                 BattingOrderList(model: model)
                     .safeAreaInset(edge: .bottom) { battingAction }
             case .positions:
-                PositionsBoard(model: model) { model.setPositions(undoManager: undoManager) }
+                PositionsBoard(model: model) {
+                    if AIService.shared.isReady { model.setPositions(undoManager: undoManager) } else { setUpFor = .positions }
+                }
             }
         }
         .navigationTitle(model.game.opponent.isEmpty ? "Game" : model.game.opponent)
@@ -54,6 +58,7 @@ struct GameScreen: View {
         } message: {
             Text(model.pendingConflicts.map(\.message).joined(separator: "\n\n") + "\n\nUnlock a spot, or fill anyway and keep your locks.")
         }
+        .sheet(item: $setUpFor) { SettingsScreen(feature: $0) }
         .confirmationDialog("Clear this lineup?", isPresented: $confirmClear, titleVisibility: .visible) {
             Button("Clear Lineup", role: .destructive) { model.startOver(undoManager: undoManager) }
         }
@@ -107,8 +112,12 @@ struct GameScreen: View {
                 .padding(.bottom, 8)
         } else if model.isBattingOrderComplete {
             BottomButton(title: "Positions", systemImage: "arrow.right") { model.preparePositions() }
-        } else if AIService.shared.isReady && !model.hasBattingOrder {
-            BottomButton(title: "Make Batting Order", systemImage: "sparkles") { model.makeBattingOrder(undoManager: undoManager) }
+        } else if !model.hasBattingOrder {
+            if AIService.shared.isReady {
+                BottomButton(title: "Make Batting Order", systemImage: "sparkles") { model.makeBattingOrder(undoManager: undoManager) }
+            } else {
+                BottomButton(title: "Make Batting Order", systemImage: "sparkles", prominent: false) { setUpFor = .battingOrder }
+            }
         }
     }
 
@@ -152,6 +161,8 @@ struct GameScreen: View {
             model.assign(model.rows[1].id, to: .field(.p), inning: 1, undoManager: nil)
             model.assign(model.rows[4].id, to: .field(.ss), inning: 1, undoManager: nil)
         }
+        // `-PMSetUp positions|battingOrder` opens Settings for that AI feature.
+        if let feature = defaults.string(forKey: "PMSetUp").flatMap(AIFeature.init(rawValue:)) { setUpFor = feature }
         // `-PMFill YES` presses Fill the Rest (with -PMFakeAI, no AI company is involved).
         if defaults.bool(forKey: "PMFill"), model.hasGrid { model.setPositions(undoManager: nil) }
         #endif
@@ -162,6 +173,8 @@ struct GameScreen: View {
 struct BottomButton: View {
     let title: String
     let systemImage: String
+    /// Filled for the next step; outlined for an AI action that needs setting up first.
+    var prominent = true
     let action: () -> Void
 
     var body: some View {
@@ -170,7 +183,7 @@ struct BottomButton: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, minHeight: 50)
         }
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(prominent ? AnyPrimitiveButtonStyle(.borderedProminent) : AnyPrimitiveButtonStyle(.bordered))
         .buttonBorderShape(.capsule)
         .padding(.horizontal, 20)
         .padding(.bottom, 8)
@@ -284,4 +297,15 @@ struct BattingOrderList: View {
         .environment(\.editMode, .constant(.active))
         .disabled(model.isGenerating)
     }
+}
+
+/// Picks a button style at run time.
+struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
+    private let make: (Configuration) -> AnyView
+
+    init(_ style: some PrimitiveButtonStyle) {
+        make = { AnyView(style.makeBody(configuration: $0)) }
+    }
+
+    func makeBody(configuration: Configuration) -> some View { make(configuration) }
 }

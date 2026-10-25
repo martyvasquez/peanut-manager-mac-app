@@ -111,7 +111,7 @@ targets:
         aps-environment: development
     settings:
       base:
-        PRODUCT_NAME: PeanutPhone
+        PRODUCT_NAME: Peanut Manager
         PRODUCT_MODULE_NAME: PeanutPhone
         # The Mac app's bundle ID, so the App Store sells one app on both (universal purchase).
         PRODUCT_BUNDLE_IDENTIFIER: com.martyvasquez.PeanutManager

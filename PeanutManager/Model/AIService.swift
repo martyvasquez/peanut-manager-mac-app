@@ -253,12 +253,16 @@ final class AIService {
         let hint = Self.loadRecord()?.tokens?.idToken
         signInTask = Task {
             defer { isSigningIn = false; signInTask = nil }
+            #if os(iOS)
+            defer { WebSignIn.shared.close() }
+            #endif
             do {
                 let (account, tokens) = try await auth.signIn(hostID: Self.hostID(), account: previous, idTokenHint: hint, askConsent: askConsent) { url in
                     #if os(macOS)
                     await MainActor.run { _ = NSWorkspace.shared.open(url) }
                     #else
-                    await MainActor.run { UIApplication.shared.open(url) }
+                    // In a sheet over the app, so the app stays in front to hear OpenAI's reply on 127.0.0.1.
+                    await MainActor.run { WebSignIn.shared.open(url) }
                     #endif
                 }
                 Self.saveRecord(Record(account: account, tokens: tokens))
