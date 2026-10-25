@@ -32,6 +32,9 @@ struct PositionsBoard: View {
             }
         }
         .sensoryFeedback(.impact(weight: .medium), trigger: swaps)
+        // The whole game has to fit on one screen, so the grid and tray stop growing at the largest text sizes
+        // that still fit (as Calendar's month grid does); everything else in the app scales fully.
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .sensoryFeedback(.selection, trigger: selected)
         .onAppear(perform: debugSetup)
     }
@@ -185,7 +188,8 @@ struct PositionsGrid: View {
         HStack(spacing: 6) {
             Text(model.lineup.battingOrder.contains(player.id) ? "\(order)" : "")
                 .font(.footnote.monospacedDigit()).foregroundStyle(.tertiary)
-                .frame(width: 18, alignment: .trailing)
+                .fixedSize()
+                .frame(minWidth: 18, alignment: .trailing)
             Text(player.shortName)
                 .font((compact ? Font.footnote : Font.subheadline).weight(selected?.player == player.id ? .semibold : .regular))
                 .lineLimit(1)
@@ -254,6 +258,10 @@ struct PositionsGrid: View {
             }
         }
         .animation(.snappy(duration: 0.2), value: slot)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spokenLabel(key, slot: slot, available: available, locked: locked, problem: problem))
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityHint(selected.map { $0.inning == key.inning && $0 != key } == true ? "Swaps with the picked spot" : "")
     }
 
     /// First tap picks a spot. With a placed spot picked, a tap on another placed spot in its inning swaps them;
@@ -272,6 +280,23 @@ struct PositionsGrid: View {
         }
         selected = key
     }
+
+    /// "Gray Mitchell, inning 1, center field, locked."
+    private func spokenLabel(_ key: CellKey, slot: Slot?, available: Bool, locked: Bool, problem: Bool) -> String {
+        let name = model.context.name(key.player)
+        let spot: String = switch slot {
+        case _ where !available: "not here"
+        case .field(let position): Self.spoken[position] ?? position.label
+        case .bench: "sitting"
+        case nil: "open"
+        }
+        return [name, "inning \(key.inning)", spot, locked ? "locked" : nil, problem ? "breaks a rule" : nil].compactMap { $0 }.joined(separator: ", ")
+    }
+
+    private static let spoken: [Position: String] = [
+        .p: "pitcher", .c: "catcher", .first: "first base", .second: "second base", .third: "third base",
+        .ss: "shortstop", .lf: "left field", .cf: "center field", .rf: "right field",
+    ]
 
     private func label(_ slot: Slot?, available: Bool) -> String {
         guard available else { return "·" }
@@ -440,6 +465,8 @@ struct InningField: View {
             }
             .frame(width: FieldGeometry.size.width * scale, height: FieldGeometry.size.height * scale)
             .frame(maxWidth: .infinity)
+            // Names sit at fixed spots on a small field; bigger type would run them together.
+            .dynamicTypeSize(...DynamicTypeSize.large)
 
             HStack(spacing: 6) {
                 Text(unplaced.isEmpty ? "Sitting" : "Not Placed")
