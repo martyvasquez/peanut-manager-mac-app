@@ -47,6 +47,15 @@ struct GameScreen: View {
 
     private func debugSetup() {
         #if DEBUG
+        // `-PMInnings 9` adds innings to the game (a test library only), each a copy of the inning six before it,
+        // to try long games.
+        let innings = UserDefaults.standard.integer(forKey: "PMInnings")
+        while innings > model.game.innings {
+            let added = model.game.innings + 1
+            model.insertInning(at: added, undoManager: nil)
+            model.copyInning(max(added - 6, 1))
+            model.pasteInning(into: added, undoManager: nil)
+        }
         switch UserDefaults.standard.string(forKey: "PMStep") {
         case "batting": model.step = .battingOrder
         case "positions": model.preparePositions()

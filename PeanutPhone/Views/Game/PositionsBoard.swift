@@ -73,9 +73,19 @@ struct PositionsGrid: View {
     let headerHeight: CGFloat
     @Environment(\.undoManager) private var undoManager
 
+    @AppStorage("gridFitsAllInnings") private var fitsAll = false
+
     private var innings: Int { max(model.game.innings, 1) }
-    private var cellWidth: CGFloat { min(max((width - 96) / CGFloat(innings), 36), 56) }
-    private var nameWidth: CGFloat { width - cellWidth * CGFloat(innings) }
+    /// Up to six innings always fit. Past six there are two sizes, and a pinch picks one: comfortable cells with
+    /// the later innings a swipe away (a sliver of the next one shows), or every inning on screen in narrower cells.
+    private var showsAll: Bool { innings <= 6 || fitsAll }
+    private var nameWidth: CGFloat { innings > 6 && fitsAll ? 88 : 96 }
+    private var cellWidth: CGFloat {
+        let columns = showsAll ? CGFloat(innings) : 6.35
+        return min(max((width - nameWidth) / columns, showsAll ? 26 : 36), 56)
+    }
+    /// Narrow cells take smaller type.
+    private var compact: Bool { cellWidth < 36 }
     /// Locks tell the AI what to keep; without AI there's nothing to keep them from.
     private var showsLocks: Bool { AIService.shared.isReady }
 
@@ -85,32 +95,67 @@ struct PositionsGrid: View {
         let findings = model.findings
         let problems = problemCells(findings)
         let selectedSlot = selected.flatMap { model.lineup.slot(of: $0.player, inning: $0.inning) }
-        VStack(spacing: 0) {
-            header
-            ForEach(Array(rows.enumerated()), id: \.element.id) { index, player in
-                HStack(spacing: 0) {
+        // Names stay put; the innings scroll under them when they don't all fit.
+        HStack(alignment: .top, spacing: 0) {
+            VStack(spacing: 0) {
+                Color.clear.frame(height: headerHeight)
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, player in
                     nameCell(player, order: index + 1, breaks: findings.contains { $0.severity == .violation && $0.player == player.id && $0.inning == nil })
-                    ForEach(1...innings, id: \.self) { inning in
-                        let key = CellKey(inning: inning, player: player.id)
-                        cell(key, problem: problems.contains(key), selectedSlot: selectedSlot, ctx: ctx)
+                        .frame(height: rowHeight)
+                        .opacity(ctx.availability(of: player.id).present ? 1 : 0.4)
+                        .overlay(alignment: .bottom) { separator }
+                }
+            }
+            .frame(width: nameWidth)
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal) {
+                    VStack(spacing: 0) {
+                        header
+                        ForEach(rows) { player in
+                            HStack(spacing: 0) {
+                                ForEach(1...innings, id: \.self) { inning in
+                                    let key = CellKey(inning: inning, player: player.id)
+                                    cell(key, problem: problems.contains(key), selectedSlot: selectedSlot, ctx: ctx)
+                                }
+                            }
+                            .frame(height: rowHeight)
+                            .opacity(ctx.availability(of: player.id).present ? 1 : 0.4)
+                            .overlay(alignment: .bottom) { separator }
+                        }
                     }
                 }
-                .frame(height: rowHeight)
-                .opacity(ctx.availability(of: player.id).present ? 1 : 0.4)
-                .overlay(alignment: .bottom) { Rectangle().fill(.separator.opacity(0.5)).frame(height: 0.5) }
+                .scrollIndicators(.hidden)
+                .scrollDisabled(showsAll && cellWidth * CGFloat(innings) <= width - nameWidth + 0.5)
+                // The picked spot and the inning on the field stay in view.
+                .onChange(of: selected?.inning) { _, inning in
+                    if let inning { withAnimation(.snappy) { proxy.scrollTo(inning) } }
+                }
+                .onChange(of: fieldInning) { _, inning in
+                    withAnimation(.snappy) { proxy.scrollTo(inning) }
+                }
             }
         }
+        .simultaneousGesture(MagnifyGesture().onEnded { value in
+            guard innings > 6 else { return }
+            if value.magnification < 0.85, !fitsAll { withAnimation(.snappy) { fitsAll = true } }
+            if value.magnification > 1.15, fitsAll { withAnimation(.snappy) { fitsAll = false } }
+        })
+        .sensoryFeedback(.impact(weight: .light), trigger: fitsAll)
+    }
+
+    private var separator: some View {
+        Rectangle().fill(.separator.opacity(0.5)).frame(height: 0.5)
     }
 
     private var header: some View {
         HStack(spacing: 0) {
-            Color.clear.frame(width: nameWidth)
             ForEach(1...innings, id: \.self) { inning in
                 let shown = selected?.inning == inning || (selected == nil && fieldInning == inning)
                 Text("\(inning)")
                     .font(.subheadline.weight(shown ? .bold : .medium).monospacedDigit())
                     .foregroundStyle(shown ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
                     .frame(width: cellWidth, height: headerHeight)
+                    .id(inning)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         selected = nil
@@ -126,7 +171,7 @@ struct PositionsGrid: View {
                 .font(.footnote.monospacedDigit()).foregroundStyle(.tertiary)
                 .frame(width: 18, alignment: .trailing)
             Text(player.shortName)
-                .font(.subheadline.weight(selected?.player == player.id ? .semibold : .regular))
+                .font((compact ? Font.footnote : Font.subheadline).weight(selected?.player == player.id ? .semibold : .regular))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .foregroundStyle(breaks ? AnyShapeStyle(Color.red) : AnyShapeStyle(.primary))
@@ -158,7 +203,8 @@ struct PositionsGrid: View {
                 RoundedRectangle(cornerRadius: 7).strokeBorder(Color.orange.opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
             }
             Text(label(slot, available: available))
-                .font(slot == .bench ? .caption.weight(.semibold) : .subheadline.weight(slot == .field(.p) ? .bold : .medium))
+                .font(slot == .bench ? (compact ? .system(size: 9, weight: .semibold) : .caption.weight(.semibold))
+                      : (compact ? Font.footnote : Font.subheadline).weight(slot == .field(.p) ? .bold : .medium))
                 .foregroundStyle(isSelected ? AnyShapeStyle(Color.white)
                                  : problem ? AnyShapeStyle(Color.red)
                                  : lit ? AnyShapeStyle(Color.accentColor)
@@ -172,7 +218,7 @@ struct PositionsGrid: View {
                     .padding(3)
             }
         }
-        .padding(2.5)
+        .padding(compact ? 2 : 2.5)
         .frame(width: cellWidth, height: rowHeight)
         .opacity(faded ? 0.35 : 1)
         .contentShape(Rectangle())
