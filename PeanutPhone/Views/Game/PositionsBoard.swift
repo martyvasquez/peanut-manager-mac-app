@@ -79,6 +79,8 @@ struct PositionsGrid: View {
     let rowHeight: CGFloat
     let headerHeight: CGFloat
     @Environment(\.undoManager) private var undoManager
+    /// Tap a name for the kid's card.
+    @State private var cardPlayer: PlayerSnapshot?
 
     @AppStorage("gridFitsAllInnings") private var fitsAll = false
 
@@ -142,6 +144,13 @@ struct PositionsGrid: View {
                 }
             }
         }
+        .sheet(item: $cardPlayer) { PlayerSheet(model: model, player: $0, focus: .fielding) }
+        #if DEBUG
+        // `-PMCard Name` opens the card of the first kid whose name starts with Name.
+        .onAppear {
+            if let name = UserDefaults.standard.string(forKey: "PMCard") { cardPlayer = rows.first { $0.name.hasPrefix(name) } }
+        }
+        #endif
         .simultaneousGesture(MagnifyGesture().onEnded { value in
             guard innings > 6 else { return }
             if value.magnification < 0.85, !fitsAll { withAnimation(.snappy) { fitsAll = true } }
@@ -185,6 +194,8 @@ struct PositionsGrid: View {
             Spacer(minLength: 0)
         }
         .frame(width: nameWidth, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { cardPlayer = player }
     }
 
     private func cell(_ key: CellKey, problem: Bool, selectedSlot: Slot?, ctx: GameContext) -> some View {

@@ -364,6 +364,8 @@ extension GameModel.Step: Identifiable {
 struct BattingOrderList: View {
     let model: GameModel
     @Environment(\.undoManager) private var undoManager
+    /// Tap a kid in the order for their card.
+    @State private var cardPlayer: PlayerSnapshot?
 
     var body: some View {
         let slots = model.battingSlots
@@ -378,7 +380,8 @@ struct BattingOrderList: View {
                             .font(.body.monospacedDigit()).foregroundStyle(.tertiary)
                             .frame(width: 24, alignment: .trailing)
                         if let id, let player = model.context.player(id) {
-                            Text(player.name)
+                            Button(player.name) { cardPlayer = player }
+                                .foregroundStyle(Color.primary)
                         } else {
                             Text("Empty").foregroundStyle(.tertiary)
                         }
@@ -414,6 +417,7 @@ struct BattingOrderList: View {
         }
         .environment(\.editMode, .constant(.active))
         .disabled(model.isGenerating)
+        .sheet(item: $cardPlayer) { PlayerSheet(model: model, player: $0, focus: .batting) }
     }
 }
 
