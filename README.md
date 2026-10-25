@@ -59,6 +59,8 @@ xcodebuild -exportArchive -archivePath build/PeanutPhone.xcarchive \
 
 iOS and macOS build numbers are counted separately; raise `CURRENT_PROJECT_VERSION` for whichever uploads next.
 
+To put a syncing build on a registered iPhone without TestFlight, export the same archive with an `ExportOptions.plist` whose method is `release-testing` and destination `export`, then `xcrun devicectl device install app --device <id> "build/…/Peanut Manager.ipa"`. It syncs the real library (production). Delete the app first if the phone ran Debug builds, so their local test data can't upload.
+
 ## Layout
 
 | Path | What |
